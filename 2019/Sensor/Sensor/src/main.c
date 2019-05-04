@@ -126,29 +126,19 @@ void SysTick_Handler(void)
 #define WS_COUNTS 6 
 volatile uint32_t last_ws1 = 0;
 volatile uint32_t last_ws2 = 0;
-volatile uint32_t ticks_rev_ws1[WS_COUNTS] = {0};
-volatile uint32_t ticks_rev_ws2[WS_COUNTS] = {0};
-volatile int ticker_ws1 = 0;
-volatile int ticker_ws2 = 0;
+volatile uint32_t ticks_spoke_ws1;
+volatile uint32_t ticks_spoke_ws2;
 
 void ws1_trip(void)
 {
-	ticks_rev_ws1[ticker_ws1] = g_ul_ms_ticks - last_ws1;
+	ticks_spoke_ws1 = g_ul_ms_ticks - last_ws1;
 	last_ws1 = g_ul_ms_ticks;
-	
-	if (++ticker_ws1 >= WS_COUNTS) {
-		ticker_ws1 = 0;
-	}
 }
 
 void ws2_trip(void)
 {
-	ticks_rev_ws2[ticker_ws2] = g_ul_ms_ticks - last_ws2;
+	ticks_spoke_ws2 = g_ul_ms_ticks - last_ws2;
 	last_ws2 = g_ul_ms_ticks;
-	
-	if (++ticker_ws2 >= WS_COUNTS) {
-		ticker_ws2 = 0;
-	}
 }
 
 void configure_extint_channel(void)
@@ -201,7 +191,6 @@ int main (void)
 {
 	int i;
 	uint8_t data[8];
-	uint32_t ticks_total_rev_ws1, ticks_total_rev_ws2;
 	uint32_t rpm_ws1, rpm_ws2;
 	
 	int sensor_id;
@@ -259,23 +248,19 @@ int main (void)
 		ledstate = !ledstate;
 		
 		#ifdef WS_ENABLE
-		ticks_total_rev_ws1 = ticks_total_rev_ws2 = 0;
-		for (i = 0; i < WS_COUNTS; ++i) {
-			// wheel hasn't moved for 0.5 sec
-			if (g_ul_ms_ticks - last_ws1 > 50000)
-				ticks_rev_ws1[i] = 0;
-			if (g_ul_ms_ticks - last_ws2 > 50000)
-				ticks_rev_ws2[i] = 0;
+		// wheel hasn't moved for 0.5 sec
+		if (g_ul_ms_ticks - last_ws1 > 50000)
+			ticks_spoke_ws1 = 0;
+		if (g_ul_ms_ticks - last_ws2 > 50000)
+			ticks_spoke_ws2 = 0;
 
-			ticks_total_rev_ws1 += ticks_rev_ws1[i];
-			ticks_total_rev_ws2 += ticks_rev_ws2[i];
-		}
-		if (ticks_total_rev_ws1 > 0)
-			rpm_ws1 = min(6000000UL / ticks_total_rev_ws1, 1023);
+		// calculate wheel RPM
+		if (ticks_spoke_ws1 > 0)
+			rpm_ws1 = min(1000000UL / ticks_spoke_ws1, 1023);
 		else
 			rpm_ws1 = 0;
-		if (ticks_total_rev_ws2 > 0)
-			rpm_ws2 = min(6000000UL / ticks_total_rev_ws2, 1023);
+		if (ticks_spoke_ws2 > 0)
+			rpm_ws2 = min(1000000UL / ticks_spoke_ws2, 1023);
 		else
 			rpm_ws2 = 0;
 		#endif
