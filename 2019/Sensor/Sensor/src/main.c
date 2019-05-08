@@ -126,8 +126,8 @@ void SysTick_Handler(void)
 #define WS_COUNTS 6 
 volatile uint32_t last_ws1 = 0;
 volatile uint32_t last_ws2 = 0;
-volatile uint32_t ticks_spoke_ws1;
-volatile uint32_t ticks_spoke_ws2;
+volatile uint32_t ticks_spoke_ws1 = 0;
+volatile uint32_t ticks_spoke_ws2 = 0;
 
 void ws1_trip(void)
 {
@@ -191,14 +191,15 @@ int main (void)
 {
 	int i;
 	uint8_t data[8];
-	uint32_t rpm_ws1, rpm_ws2;
+	uint16_t rpm_ws1, rpm_ws2;
 	
 	int sensor_id;
 	int sensor_ready;
 	uint16_t sensor_data[6];
+	
+	uint32_t next;
 
 	system_init();
-	delay_init();
 	
 	// 10kHz
 	SysTick_Config(48000000 / 100000);
@@ -242,47 +243,59 @@ int main (void)
 		adc_start_conversion(&adc_instance);
 		while (adc_read(&adc_instance, sensor_data + 5) == STATUS_BUSY) ;
 		
-		delay_ms(20);
+		next = g_ul_ms_ticks + 20 * 100;
+		while(g_ul_ms_ticks < next) {};
 		
 		port_pin_set_output_level(LED_0_PIN, ledstate);
 		ledstate = !ledstate;
 		
 		#ifdef WS_ENABLE
 		// wheel hasn't moved for 0.5 sec
-		if (g_ul_ms_ticks - last_ws1 > 50000)
+		
+		if (g_ul_ms_ticks - last_ws1 > 50000) {
 			ticks_spoke_ws1 = 0;
-		if (g_ul_ms_ticks - last_ws2 > 50000)
+		}
+		if (g_ul_ms_ticks - last_ws2 > 50000) {
 			ticks_spoke_ws2 = 0;
+		}
+		
 
 		// calculate wheel RPM
-		if (ticks_spoke_ws1 > 0)
-			rpm_ws1 = min(1000000UL / ticks_spoke_ws1, 1023);
-		else
+		if (ticks_spoke_ws1 > 0) {
+			rpm_ws1 = 1000000UL / ticks_spoke_ws1;
+		} else {
 			rpm_ws1 = 0;
-		if (ticks_spoke_ws2 > 0)
-			rpm_ws2 = min(1000000UL / ticks_spoke_ws2, 1023);
-		else
+		}
+		if (rpm_ws1 > 10000) {
+			rpm_ws1 = 0;
+		}
+		
+		if (ticks_spoke_ws2 > 0) {
+			rpm_ws2 = 1000000UL / ticks_spoke_ws2;
+		} else {
 			rpm_ws2 = 0;
+		}
+		if (rpm_ws2 > 10000) {
+			rpm_ws2 = 0;
+		}
 		#endif
 		
-		INIT_DataLogger3(data);
 		#ifdef BOARD_1
-		SET_DataLogger3_Analog1(data, sensor_data[0]);
-		SET_DataLogger3_Analog2(data, sensor_data[1]);
+		INIT_DataLoggerBoard1(data);
+		SET_DataLoggerBoard1_BrakePressureRear(data, sensor_data[0]);
+		SET_DataLoggerBoard1_BrakePressureFront(data, sensor_data[1]);
+		SET_DataLoggerBoard1_CGGyroscope(data, sensor_data[2]);
+		SET_DataLoggerBoard1_CGAccelRawX(data, sensor_data[3]);
+		SET_DataLoggerBoard1_CGAccelRawY(data, sensor_data[4]);
+		SET_DataLoggerBoard1_CGAccelRawZ(data, sensor_data[5]);
+		can_send_extended_message(ID_DataLoggerBoard1, data, 8);
 		#endif
 		#ifdef BOARD_2
-		SET_DataLogger3_Analog1(data, rpm_ws1);
-		SET_DataLogger3_Analog2(data, rpm_ws2);
-		#endif
-		SET_DataLogger3_Analog3(data, sensor_data[2]);
-		SET_DataLogger3_Analog4(data, sensor_data[3]);
-		SET_DataLogger3_Analog5(data, sensor_data[4]);
-		SET_DataLogger3_Analog6(data, sensor_data[5]);
-		#ifdef BOARD_1
-		can_send_extended_message(ID_DataLogger3, data, 8);
-		#endif
-		#ifdef BOARD_2
-		can_send_extended_message(ID_DataLogger3 + 1, data, 8);
+		INIT_DataLoggerBoard2(data);
+		SET_DataLoggerBoard2_WheelSpeed1(data, rpm_ws1);
+		SET_DataLoggerBoard2_WheelSpeed2(data, rpm_ws2);
+		SET_DataLoggerBoard2_BrakeTemp(data, sensor_data[2]);
+		can_send_extended_message(ID_DataLoggerBoard2, data, 8);
 		#endif
 
 		
