@@ -95,37 +95,43 @@ int main (void)
 		res = f_puts("year,month,day,hour,min,sec,ms,id,data\n", &file_object);
 		if (res == -1) goto sd_cleanup;
 		
+		int canline_ptr = 0;
 		// Main l00p
 		while (1) {
 			if (rtc_calendar_is_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_0)) {
 				rtc_calendar_clear_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_0);
 				++onetwentyeighths;
 			}
+			// every second
 			if (rtc_calendar_is_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_7)) {
 				rtc_calendar_clear_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_7);
 				onetwentyeighths = 0;
 				g_ul_ms_ticks = 0;
 				read_time(&now);
+				if (now.second % 1 == 0) {
+					// Flush
+					f_sync(&file_object);
+				}
 			}
-			while (canline_updated) {
+			can_disable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
+			while (canline_i > 0) {
 				// Critical section
-				can_disable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
+				volatile can_message_t * cl = canline + (canline_ptr++);
 				sprintf(line, "%d,%d,%d,%d,%d,%d,%d,%08lx,%02x%02x%02x%02x%02x%02x%02x%02x\n",
 					now.year, now.month, now.day, now.hour, now.minute, now.second, Min(g_ul_ms_ticks, 999),
-					canline.id,
-					canline.data.arr[0], canline.data.arr[1], canline.data.arr[2], canline.data.arr[3],
-					canline.data.arr[4], canline.data.arr[5], canline.data.arr[6], canline.data.arr[7]);
-				printf(".", line);
+					cl->id,
+					cl->data.arr[0], cl->data.arr[1], cl->data.arr[2], cl->data.arr[3],
+					cl->data.arr[4], cl->data.arr[5], cl->data.arr[6], cl->data.arr[7]);
+				
+
 				port_pin_set_output_level(LED_0_PIN, ledstate);
 				ledstate = !ledstate;
 
 				// Write line
 				if (f_puts(line, &file_object) == -1) goto sd_cleanup;
-				// Flush
-				f_sync(&file_object);
-				canline_updated = 0;
-				can_enable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
+				if (--canline_i == 0) canline_ptr = 0;
 			}
+			can_enable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
 		}
 		
 		sd_cleanup:

@@ -31,7 +31,8 @@ typedef struct {
 	can_data_t data;
 } can_message_t;
 
-extern volatile can_message_t canline;
+extern volatile can_message_t canline[64];
+extern volatile int canline_i;
 extern volatile int canline_updated;
 
 extern struct rtc_module rtc_instance;

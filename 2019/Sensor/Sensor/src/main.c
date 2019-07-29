@@ -201,7 +201,7 @@ int main (void)
 
 	system_init();
 	
-	// 10kHz
+	// 100kHz
 	SysTick_Config(48000000 / 100000);
 	
 
@@ -223,81 +223,24 @@ int main (void)
 	system_interrupt_enable_global();
 
 	while(1) {
-		adc_set_negative_input(&adc_instance, ADC_NEGATIVE_INPUT_GND);
-		adc_set_positive_input(&adc_instance, ADC_POSITIVE_INPUT_PIN0 );
-		adc_start_conversion(&adc_instance);
-		while (adc_read(&adc_instance, sensor_data + 0) == STATUS_BUSY) ;
-		adc_set_positive_input(&adc_instance, ADC_POSITIVE_INPUT_PIN1);
-		adc_start_conversion(&adc_instance);
-		while (adc_read(&adc_instance, sensor_data + 1) == STATUS_BUSY) ;
-		adc_set_positive_input(&adc_instance, ADC_POSITIVE_INPUT_PIN4);
-		adc_start_conversion(&adc_instance);
-		while (adc_read(&adc_instance, sensor_data + 2) == STATUS_BUSY) ;
-		adc_set_positive_input(&adc_instance, ADC_POSITIVE_INPUT_PIN5);
-		adc_start_conversion(&adc_instance);
-		while (adc_read(&adc_instance, sensor_data + 3) == STATUS_BUSY) ;
-		adc_set_positive_input(&adc_instance, ADC_POSITIVE_INPUT_PIN6);
-		adc_start_conversion(&adc_instance);
-		while (adc_read(&adc_instance, sensor_data + 4) == STATUS_BUSY) ;
-		adc_set_positive_input(&adc_instance, ADC_POSITIVE_INPUT_PIN7);
-		adc_start_conversion(&adc_instance);
-		while (adc_read(&adc_instance, sensor_data + 5) == STATUS_BUSY) ;
-		
-		next = g_ul_ms_ticks + 20 * 100;
+
+		next = g_ul_ms_ticks + 1 * 100;
 		while(g_ul_ms_ticks < next) {};
 		
 		port_pin_set_output_level(LED_0_PIN, ledstate);
 		ledstate = !ledstate;
 		
-		#ifdef WS_ENABLE
-		// wheel hasn't moved for 0.5 sec
+		uint32_t start = g_ul_ms_ticks;
 		
-		if (g_ul_ms_ticks - last_ws1 > 50000) {
-			ticks_spoke_ws1 = 0;
-		}
-		if (g_ul_ms_ticks - last_ws2 > 50000) {
-			ticks_spoke_ws2 = 0;
-		}
+		*((uint64_t*)data) = 0;
 		
+		can_send_extended_message(ID_AEMEngine0, data, 8);
 
-		// calculate wheel RPM
-		if (ticks_spoke_ws1 > 0) {
-			rpm_ws1 = 1000000UL / ticks_spoke_ws1;
-		} else {
-			rpm_ws1 = 0;
-		}
-		if (rpm_ws1 > 10000) {
-			rpm_ws1 = 0;
-		}
+		uint32_t	delta = g_ul_ms_ticks - start;
 		
-		if (ticks_spoke_ws2 > 0) {
-			rpm_ws2 = 1000000UL / ticks_spoke_ws2;
-		} else {
-			rpm_ws2 = 0;
-		}
-		if (rpm_ws2 > 10000) {
-			rpm_ws2 = 0;
-		}
-		#endif
+		*((uint32_t*)data) = delta;
 		
-		#ifdef BOARD_1
-		INIT_DataLoggerBoard1(data);
-		SET_DataLoggerBoard1_BrakePressureRear(data, sensor_data[0]);
-		SET_DataLoggerBoard1_BrakePressureFront(data, sensor_data[1]);
-		SET_DataLoggerBoard1_CGGyroscope(data, sensor_data[2]);
-		SET_DataLoggerBoard1_CGAccelRawX(data, sensor_data[3]);
-		SET_DataLoggerBoard1_CGAccelRawY(data, sensor_data[4]);
-		SET_DataLoggerBoard1_CGAccelRawZ(data, sensor_data[5]);
-		can_send_extended_message(ID_DataLoggerBoard1, data, 8);
-		#endif
-		#ifdef BOARD_2
-		INIT_DataLoggerBoard2(data);
-		SET_DataLoggerBoard2_WheelSpeed1(data, rpm_ws1);
-		SET_DataLoggerBoard2_WheelSpeed2(data, rpm_ws2);
-		SET_DataLoggerBoard2_BrakeTemp(data, sensor_data[2]);
-		can_send_extended_message(ID_DataLoggerBoard2, data, 8);
-		#endif
-
+		can_send_extended_message(ID_AEMEngine3, data, 8);	
 		
 		
 	}

@@ -9,7 +9,8 @@
 #include "util.h"
 
 volatile int canline_updated;
-volatile can_message_t canline;
+volatile can_message_t canline[64];
+volatile int canline_i = 0;
 
 struct can_module can_instance;
 
@@ -65,70 +66,29 @@ void CAN0_Handler(void)
 	status = can_read_interrupt_status(&can_instance);
 
 
-	if (status & CAN_RX_BUFFER_NEW_MESSAGE) {
-		can_clear_interrupt_status(&can_instance, CAN_RX_BUFFER_NEW_MESSAGE);
-		for (i = 0; i < CONF_CAN0_RX_BUFFER_NUM; i++) {
-			if (can_rx_get_buffer_status(&can_instance, i)) {
-				rx_buffer_index = i;
-				can_rx_clear_buffer_status(&can_instance, i);
-				can_get_rx_buffer_element(&can_instance, &rx_element_buffer,
-				rx_buffer_index);
-				if (rx_element_buffer.R0.bit.XTD) {
-					printf("\n\r Extended message received in Rx buffer. The received data is: \r\n");
-					} else {
-					printf("\n\r Standard message received in Rx buffer. The received data is: \r\n");
-				}
-				for (i = 0; i < rx_element_buffer.R1.bit.DLC; i++) {
-					printf("  %d",rx_element_buffer.data[i]);
-				}
-				printf("\r\n\r\n");
-			}
-		}
-	}
-	if (status & CAN_RX_FIFO_0_NEW_MESSAGE) {
-		can_clear_interrupt_status(&can_instance, CAN_RX_FIFO_0_NEW_MESSAGE);
-		can_get_rx_fifo_0_element(&can_instance, &rx_element_fifo_0,
-		standard_receive_index);
-		can_rx_fifo_acknowledge(&can_instance, 0,
-		standard_receive_index);
-		standard_receive_index++;
-		if (standard_receive_index == CONF_CAN0_RX_FIFO_0_NUM) {
-			standard_receive_index = 0;
-		}
-		for (i = 0; i < rx_element_fifo_0.R1.bit.DLC; i++) {
-			// store data
-			canline.id = CAN_RX_ELEMENT_R0_ID(rx_element_fifo_0.R0.bit.ID)>>18;
-			canline.data.arr[i] = rx_element_fifo_0.data[i];
-			canline.ts = CAN_RX_ELEMENT_R1_RXTS(rx_element_buffer.R1.bit.RXTS);
-		}
-		canline_updated = 1;
-	}
-	
 	
 	
 	if (status & CAN_RX_FIFO_1_NEW_MESSAGE) {
 		can_clear_interrupt_status(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
-		can_get_rx_fifo_1_element(&can_instance, &rx_element_fifo_1,
-		extended_receive_index);
-		can_rx_fifo_acknowledge(&can_instance, 1,
-		extended_receive_index);
-		extended_receive_index++;
-		if (extended_receive_index == CONF_CAN0_RX_FIFO_1_NUM) {
+		can_get_rx_fifo_1_element(&can_instance, &rx_element_fifo_1, extended_receive_index);
+		can_rx_fifo_acknowledge(&can_instance, 1, extended_receive_index);
+		if (++extended_receive_index == CONF_CAN0_RX_FIFO_1_NUM) {
 			extended_receive_index = 0;
 		}
+		if (canline_i >= 64) return;
+		
+		canline[canline_i].id = CAN_RX_ELEMENT_R0_ID(rx_element_fifo_1.R0.bit.ID);
+		canline[canline_i].ts = CAN_RX_ELEMENT_R1_RXTS(rx_element_buffer.R1.bit.RXTS);
 		for (i = 0; i < rx_element_fifo_1.R1.bit.DLC; i++) {
 			// store data
-			canline.id = CAN_RX_ELEMENT_R0_ID(rx_element_fifo_1.R0.bit.ID);
-			canline.data.arr[i] = rx_element_fifo_1.data[i];
-			canline.ts = CAN_RX_ELEMENT_R1_RXTS(rx_element_buffer.R1.bit.RXTS);
+			canline[canline_i].data.arr[i] = rx_element_fifo_1.data[i];
 		}
 		canline_updated = 1;
+		++canline_i;
 	}
 
-	if ((status & CAN_PROTOCOL_ERROR_ARBITRATION)
-	|| (status & CAN_PROTOCOL_ERROR_DATA)) {
-		can_clear_interrupt_status(&can_instance, CAN_PROTOCOL_ERROR_ARBITRATION
-		| CAN_PROTOCOL_ERROR_DATA);
+	if ((status & CAN_PROTOCOL_ERROR_ARBITRATION) || (status & CAN_PROTOCOL_ERROR_DATA)) {
+		can_clear_interrupt_status(&can_instance, CAN_PROTOCOL_ERROR_ARBITRATION | CAN_PROTOCOL_ERROR_DATA);
 		printf("Protocol error, please double check the clock in two boards. \r\n\r\n");
 	}
 }
