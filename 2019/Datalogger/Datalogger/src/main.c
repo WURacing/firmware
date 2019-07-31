@@ -9,6 +9,29 @@ void SysTick_Handler(void)
 
 bool ledstate;
 
+void shiftLeft (char myarray[], int size, int shiftBy)
+{
+	if(shiftBy > size){
+		shiftBy = shiftBy - size;
+	}
+
+	if(size == 1){
+		//do nothing
+	}
+	else{
+		char temp;
+		//for loop to print the array with indexes moved up (to the left) <-- by 2
+		for (int i=0; i < size-shiftBy; i++)
+		{//EXAMPLE shift by 3  for a c-string of 5
+			temp = myarray[i];//temp = myarray[0]
+			myarray[i] = myarray[i + shiftBy];//myarray[0] == myarray[2]
+			myarray[i + shiftBy] = temp;//myarray[2] = temp(value previously at index i)
+		}
+
+	}
+}
+
+
 int main (void)
 {
 	system_init();
@@ -24,6 +47,7 @@ int main (void)
 	port_pin_set_output_level(LED_0_PIN, 1);
 	
 	configure_can();
+	can_disable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
 	
 	system_interrupt_enable_global();
 
@@ -45,7 +69,9 @@ int main (void)
 	FATFS fs;
 	FIL file_object;
 	FILINFO file_stat;
-	char line[256];
+	char line[4150];
+	int buf_len = 0;
+	size_t unsynced_buf = 0;
 	int logno = 0;
 	int onetwentyeighths = 0;
 
@@ -97,6 +123,7 @@ int main (void)
 		
 		int canline_ptr = 0;
 		// Main l00p
+		can_enable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
 		while (1) {
 			if (rtc_calendar_is_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_0)) {
 				rtc_calendar_clear_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_0);
@@ -108,27 +135,40 @@ int main (void)
 				onetwentyeighths = 0;
 				g_ul_ms_ticks = 0;
 				read_time(&now);
+				/*
 				if (now.second % 1 == 0) {
 					// Flush
 					f_sync(&file_object);
+				}*/
+			}
+			if (buf_len > 4096) {
+				f_write(&file_object, line, buf_len, NULL);
+				
+				shiftLeft(line, buf_len, 4096);
+				
+				buf_len -= 4096;
+				
+				if (++unsynced_buf > 10) {
+					unsynced_buf = 0;
+					f_sync(&file_object);
 				}
+				
 			}
 			can_disable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
-			while (canline_i > 0) {
+			while (canline_i > 0 && buf_len < 4100) {
 				// Critical section
 				volatile can_message_t * cl = canline + (canline_ptr++);
-				sprintf(line, "%d,%d,%d,%d,%d,%d,%d,%08lx,%02x%02x%02x%02x%02x%02x%02x%02x\n",
-					now.year, now.month, now.day, now.hour, now.minute, now.second, Min(g_ul_ms_ticks, 999),
+				buf_len += sprintf(line + buf_len, "%d,%d,%08lx,%02x%02x%02x%02x%02x%02x%02x%02x\n",
+					/*now.year, now.month, now.day, now.hour, now.minute,*/ now.second, Min(g_ul_ms_ticks, 999),
 					cl->id,
 					cl->data.arr[0], cl->data.arr[1], cl->data.arr[2], cl->data.arr[3],
 					cl->data.arr[4], cl->data.arr[5], cl->data.arr[6], cl->data.arr[7]);
-				
 
 				port_pin_set_output_level(LED_0_PIN, ledstate);
 				ledstate = !ledstate;
 
 				// Write line
-				if (f_puts(line, &file_object) == -1) goto sd_cleanup;
+				//if (f_puts(line, &file_object) == -1) goto sd_cleanup;
 				if (--canline_i == 0) canline_ptr = 0;
 			}
 			can_enable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);

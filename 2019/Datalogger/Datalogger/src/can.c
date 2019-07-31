@@ -75,7 +75,10 @@ void CAN0_Handler(void)
 		if (++extended_receive_index == CONF_CAN0_RX_FIFO_1_NUM) {
 			extended_receive_index = 0;
 		}
-		if (canline_i >= 64) return;
+		if (canline_i >= 64) {
+			can_disable_interrupt(&can_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
+			return;
+		}
 		
 		canline[canline_i].id = CAN_RX_ELEMENT_R0_ID(rx_element_fifo_1.R0.bit.ID);
 		canline[canline_i].ts = CAN_RX_ELEMENT_R1_RXTS(rx_element_buffer.R1.bit.RXTS);
