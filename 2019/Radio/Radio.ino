@@ -5,6 +5,24 @@
 #include <mcp2515.h>
 #include <mcp2515_defs.h>
 #include <avr/wdt.h>
+//Arduino Ethernet, LGPL2
+#ifndef htonl
+#define htonl(x) ( ((x)<<24 & 0xFF000000UL) | \
+                   ((x)<< 8 & 0x00FF0000UL) | \
+                   ((x)>> 8 & 0x0000FF00UL) | \
+                   ((x)>>24 & 0x000000FFUL) )
+#endif
+
+typedef struct {
+  uint32_t id;
+  int32_t ts;
+  uint8_t data[8];
+  uint8_t checksum;
+  char pad[3];
+} can_packet_t;
+
+#define OUTGOING_LEN 8
+can_packet_t outgoing_buf[OUTGOING_LEN];
 
 SoftwareSerial lteSerial(8, 9);
 LTE_Shield lte;
@@ -18,6 +36,12 @@ volatile int updated = 0;
 char txmessage[TXBUFLEN];
 
 void setup() {
+  for (int i = 0; i < OUTGOING_LEN; ++i) {
+    outgoing_buf[i].id = 0;
+    outgoing_buf[i].pad[0] = 'W';
+    outgoing_buf[i].pad[1] = 'U';
+    outgoing_buf[i].pad[2] = '\n';
+  }
   Serial.begin(9600);
   while (!Serial) {
     ;
@@ -35,27 +59,51 @@ void setup() {
 }
 
 void loop() {
-  int r;
+  int r, target;
   tnow = millis();
   if (mcp2515_check_message()) {
     if (mcp2515_get_message(&message)) {
-      mgood = 1;
+      // find the slot in the buffer
+      for (target = 0; target < OUTGOING_LEN; ++target) {
+        if (outgoing_buf[target].id == 0 || outgoing_buf[target].id == message.id)
+          break;
+      }
+      // store the message
+      if (target < OUTGOING_LEN) {
+        outgoing_buf[target].id = message.id;
+        outgoing_buf[target].ts = tnow;
+        for (int i = 0; i < 8; ++i) {
+          outgoing_buf[target].data[i] = message.data[i];
+        }
+      }
       debu(".");
     }
   }
   if (next_send < tnow) {
     next_send = tnow + 250;
     debu("-");
-    if (mgood) {
-      snprintf(txmessage, TXBUFLEN, "WU%08x,%02x%02x%02x%02x%02x%02x%02x%02x", message.id, message.data[0], message.data[1], message.data[2], message.data[3], message.data[4], message.data[5], message.data[6], message.data[7]);
-      debug(txmessage);
-      r = sendData(txmessage);
+    // find number of packets to send, perform endianness conversion
+    for (target = 0; target < OUTGOING_LEN; ++target) {
+      if (outgoing_buf[target].id == 0)
+        break;
+      outgoing_buf[target].checksum = 0;
+      outgoing_buf[target].ts = outgoing_buf[target].ts - tnow; // offset ms from current time
+      for (int i = 0; i < 8; ++i)
+        outgoing_buf[target].checksum ^= outgoing_buf[target].data[i];
+      outgoing_buf[target].id = htonl(outgoing_buf[target].id); // little to big
+      outgoing_buf[target].ts = htonl(outgoing_buf[target].ts); // little to big
+    }
+    // send packets if there are any
+    if (target > 0) {
+      r = sendData((uint8_t *)outgoing_buf, target * sizeof(can_packet_t));
       snprintf(txmessage, TXBUFLEN, "%d", r);
       debug(txmessage);
     }
-    mgood = 0;
+    // clear old buffer
+    for (target = 0; target < OUTGOING_LEN; ++target) {
+      outgoing_buf[target].id = 0;
+    }
   }
-//  debu("#");
   updated = lte.poll();
 }
 
@@ -74,7 +122,7 @@ void debug(const char *msg) {
 }
 
 volatile int socket = -1;
-int sendData(const char *msg) {
+int sendData(const char *buf, unsigned int len) {
   int ret = 0;
   if (socket < 0) {
     socket = lte.socketOpen(LTE_SHIELD_UDP);
@@ -82,13 +130,9 @@ int sendData(const char *msg) {
       return -2;
     }
   }
-  ret = lte.socketSendTo(socket, URL, PORT, msg);
+  ret = lte.socketSendTo(socket, URL, PORT, buf, len);
   if (ret == LTE_SHIELD_SUCCESS) {
     ret = 0;
-  } else {
-    //ret = 2;
-//    if (lte.socketClose(socket) == LTE_SHIELD_SUCCESS)
-//    socket = -1;
   }
   return ret;
 }
