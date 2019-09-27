@@ -65,17 +65,34 @@
 // From module: Delay routines
 #include <delay.h>
 
+// From module: FatFS file system
+#include <diskio.h>
+#include <ff.h>
+#include <ffconf.h>
+#include <integer.h>
+
 // From module: Generic board support
 #include <board.h>
 
 // From module: Interrupt management - SAM implementation
 #include <interrupt.h>
 
+// From module: Memory Control Access Interface
+#include <ctrl_access.h>
+
 // From module: PORT - GPIO Pin Control
 #include <port.h>
 
 // From module: Part identification macros
 #include <parts.h>
+
+// From module: RTC - Real Time Counter in Calendar Mode (Callback APIs)
+#include <rtc_calendar.h>
+#include <rtc_calendar_interrupt.h>
+#include <rtc_tamper.h>
+
+// From module: SD/MMC Memory Control Access - Enable
+#include <sd_mmc_mem.h>
 
 // From module: SD/MMC stack on SPI interface
 #include <sd_mmc.h>
@@ -106,5 +123,8 @@
 
 // From module: SYSTEM - Reset Management for SAM C20/C21
 #include <reset.h>
+
+// From module: Supported ports of FatFS
+#include <diskio.h>
 
 #endif // ASF_H

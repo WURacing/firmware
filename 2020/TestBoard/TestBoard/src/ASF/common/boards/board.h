@@ -434,6 +434,8 @@ extern void board_init(void);
 }
 #endif
 
+#define ACCESS_MEM_TO_RAM_ENABLED
+
 /**
  * \}
  */
