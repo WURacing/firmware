@@ -1,9 +1,6 @@
 #include <SparkFun_LTE_Shield_Arduino_Library.h>
-#include <Canbus.h>
-#include <defaults.h>
-#include <global.h>
-#include <mcp2515.h>
-#include <mcp2515_defs.h>
+#include <mcp_can.h>
+#include <SPI.h>
 #include <avr/wdt.h>
 //Arduino Ethernet, LGPL2
 #ifndef htonl
@@ -26,14 +23,20 @@ can_packet_t outgoing_buf[OUTGOING_LEN];
 
 SoftwareSerial lteSerial(8, 9);
 LTE_Shield lte;
-const char URL[] = "35.162.212.169";
-const unsigned int PORT = 10000;
-tCAN message;
+const char URL[] = "178.128.235.225";
+const unsigned int PORT = 9999;
 unsigned long next_send = 0, tnow;
 volatile int mgood = 0;
 volatile int updated = 0;
 #define TXBUFLEN 30
 char txmessage[TXBUFLEN];
+
+long unsigned int rxId;
+unsigned char len = 0;
+unsigned char rxBuf[8];
+char msgString[128];    
+#define CAN0_INT 2
+MCP_CAN CAN0(10);  
 
 void setup() {
   for (int i = 0; i < OUTGOING_LEN; ++i) {
@@ -46,10 +49,11 @@ void setup() {
   while (!Serial) {
     ;
   }
-  if (!Canbus.init(CANSPEED_500)) {
+  if (CAN0.begin(MCP_ANY, CAN_500KBPS, MCP_16MHZ) != CAN_OK) {
     debug("E2");
     reboot();
   }
+  CAN0.setMode(MCP_NORMAL);
   if (!lte.begin(lteSerial, 9600)) {
     debug("E1");
     reboot();
@@ -61,23 +65,22 @@ void setup() {
 void loop() {
   int r, target;
   tnow = millis();
-  if (mcp2515_check_message()) {
-    if (mcp2515_get_message(&message)) {
-      // find the slot in the buffer
-      for (target = 0; target < OUTGOING_LEN; ++target) {
-        if (outgoing_buf[target].id == 0 || outgoing_buf[target].id == message.id)
-          break;
-      }
-      // store the message
-      if (target < OUTGOING_LEN) {
-        outgoing_buf[target].id = message.id;
-        outgoing_buf[target].ts = tnow;
-        for (int i = 0; i < 8; ++i) {
-          outgoing_buf[target].data[i] = message.data[i];
-        }
-      }
-      debu(".");
+  if (!digitalRead(CAN0_INT)) {
+    CAN0.readMsgBuf(&rxId, &len, rxBuf);
+    // find the slot in the buffer
+    for (target = 0; target < OUTGOING_LEN; ++target) {
+      if (outgoing_buf[target].id == 0 || outgoing_buf[target].id == rxId)
+        break;
     }
+    // store the message
+    if (target < OUTGOING_LEN) {
+      outgoing_buf[target].id = rxId;
+      outgoing_buf[target].ts = tnow;
+      for (int i = 0; i < len; ++i) {
+        outgoing_buf[target].data[i] = rxBuf[i];
+      }
+    }
+    debu(".");
   }
   if (next_send < tnow) {
     next_send = tnow + 250;
@@ -98,6 +101,9 @@ void loop() {
       r = sendData((uint8_t *)outgoing_buf, target * sizeof(can_packet_t));
       snprintf(txmessage, TXBUFLEN, "%d", r);
       debug(txmessage);
+      if (r == 4) {
+        reboot();
+      }
     }
     // clear old buffer
     for (target = 0; target < OUTGOING_LEN; ++target) {
