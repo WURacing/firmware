@@ -42,6 +42,30 @@ void config_pins(void) {
 	port_pin_set_config(PIN_PA12, &config_port_pin);
 }
 
+void shift_array_left(char *arr, const size_t size, const size_t bits) {
+	const size_t chunks = bits / (8);
+
+	if (chunks >= size) {
+		return;
+	}
+
+	if (chunks) {
+		memmove(arr, arr + chunks, size - chunks);
+	}
+
+	const size_t left = bits % (8);
+
+	// If we have non directly addressable bits left we need to move the whole thing one by one.
+	if (left) {
+		const size_t right = (8) - left;
+		const size_t l = size - chunks - 1;
+		for (size_t i = 0; i < l; i++) {
+			arr[i] = ((arr[i] << left) & ~left) | (arr[i+1] >> right);
+		}
+		arr[l] = (arr[l] << left) & ~left;
+	}
+}
+
 int main (void)
 {
 	system_init();
@@ -67,7 +91,8 @@ int main (void)
 	FATFS fs;
 	FIL file_object;
 	FILINFO file_stat;
-	char line[256];
+	char line[2200];
+	int buf_len = 0;
 	int logno = 0;
 	int onetwentyeighths = 0;
 	
@@ -148,9 +173,13 @@ int main (void)
 		
 		// Main l00p
 		//port_pin_set_output_level(LED_0_PIN, 1);
+		int led_0_state = 0;
+		int led_1_state = 0;
+		int canline_ptr = 0;
+
 		port_pin_set_output_level(LED_1_PIN, 1);
 		int count = 0;
-		while (count < 50) {
+		while (1) {
 			/*
 			if (rtc_calendar_is_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_0)) {
 				rtc_calendar_clear_periodic_interval(&rtc_instance, RTC_CALENDAR_PERIODIC_INTERVAL_0);
@@ -163,8 +192,31 @@ int main (void)
 				read_time(&now);
 			}
 			*/
+			if (buf_len > 2048) {
+				f_write(&file_object, line, 2048, NULL);
+				buf_len -= 2048;
+				
+				f_sync(&file_object);
+				
+				shift_array_left(line, 2048, 2200 * 8);
+			}
+			
 			if (canline_0_updated) {
-				sprintf(line, "bus0\n");
+				
+				volatile can_message_t * cl = canline + (canline_ptr++);
+
+				buf_len += sprintf(line + buf_len, "%08lx,%02x%02x%02x%02x%02x%02x%02x%02x\n",
+				cl->id,
+				cl->data.arr[0], cl->data.arr[1], cl->data.arr[2], cl->data.arr[3],
+				cl->data.arr[4], cl->data.arr[5], cl->data.arr[6], cl->data.arr[7]);
+
+				port_pin_set_output_level(LED_0_PIN, led_0_state);
+				led_0_state = !led_0_state;
+
+				canline_0_updated = 0;
+				if (--canline_i == 0) canline_ptr = 0;
+				/*
+				sprintf(line + len, "bus0\n");
 				//printf(".", line);
 				//port_pin_set_output_level(LED_0_PIN);
 
@@ -174,9 +226,23 @@ int main (void)
 				f_sync(&file_object);
 				canline_0_updated = 0;
 				count++;
+				*/
 			}
 			if (canline_1_updated) {
-				sprintf(line, "bus1\n");
+				volatile can_message_t * cl = canline + (canline_ptr++);
+
+				buf_len += sprintf(line + buf_len, "%08lx,%02x%02x%02x%02x%02x%02x%02x%02x\n",
+				cl->id,
+				cl->data.arr[0], cl->data.arr[1], cl->data.arr[2], cl->data.arr[3],
+				cl->data.arr[4], cl->data.arr[5], cl->data.arr[6], cl->data.arr[7]);
+
+				port_pin_set_output_level(LED_1_PIN, led_1_state);
+				led_1_state = !led_1_state;
+
+				canline_1_updated = 0;
+				if (--canline_i == 0) canline_ptr = 0;
+				/*
+				sprintf(line + len, "bus1\n");
 				//printf(".", line);
 				//port_pin_set_output_level(LED_0_PIN);
 
@@ -186,7 +252,24 @@ int main (void)
 				f_sync(&file_object);
 				canline_1_updated = 0;
 				count++;
+				*/
 			}
+			/* else {
+				sprintf(line, "nobus\n");
+				//printf(".", line);
+				//port_pin_set_output_level(LED_0_PIN);
+
+				// Write line
+				if (f_puts(line, &file_object) == -1) goto sd_cleanup;
+				// Flush
+				f_sync(&file_object);
+				count++;
+				port_pin_set_output_level(LED_0_PIN, 1);
+				delay_ms(100);
+				port_pin_set_output_level(LED_0_PIN, 0);
+				delay_ms(100);
+			}
+			*/
 			/*
 			while (canline_updated) {
 				// Critical section

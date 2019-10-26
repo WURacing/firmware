@@ -19,6 +19,9 @@ doncu, forget about
 http://asf.atmel.com/docs/latest/samc21/html/asfdoc_sam0_can_basic_use_case.html
 */
 
+volatile can_message_t canline[64];
+volatile int canline_i = 0;
+
 void configure_can(void)
 {
 	
@@ -132,22 +135,38 @@ void CAN0_Handler(void)
 		if (standard_receive_index == CONF_CAN0_RX_FIFO_0_NUM) {
 			standard_receive_index = 0;
 		}
+		if (canline_i >= 64) return;
+		canline[canline_i].id = CAN_RX_ELEMENT_R0_ID(rx_element_fifo_0.R0.bit.ID);
+		canline[canline_i].ts = CAN_RX_ELEMENT_R1_RXTS(rx_element_buffer.R1.bit.RXTS);
+		
+		for (i = 0; i < rx_element_fifo_1.R1.bit.DLC; i++) {
+			// store data
+			canline[canline_i].data.arr[i] = rx_element_fifo_0.data[i];
+		}
 		canline_0_updated = 1;
 	}
 	
 	
 	
 	if (status & CAN_RX_FIFO_1_NEW_MESSAGE) {
-		can_clear_interrupt_status(&can0_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
-		can_get_rx_fifo_1_element(&can0_instance, &rx_element_fifo_1,
+		can_clear_interrupt_status(&can1_instance, CAN_RX_FIFO_1_NEW_MESSAGE);
+		can_get_rx_fifo_1_element(&can1_instance, &rx_element_fifo_1,
 		extended_receive_index);
-		can_rx_fifo_acknowledge(&can0_instance, 1,
+		can_rx_fifo_acknowledge(&can1_instance, 1,
 		extended_receive_index);
 		extended_receive_index++;
 		if (extended_receive_index == CONF_CAN0_RX_FIFO_1_NUM) {
 			extended_receive_index = 0;
 		}
-		canline_0_updated = 1;
+		if (canline_i >= 64) return;
+		canline[canline_i].id = CAN_RX_ELEMENT_R0_ID(rx_element_fifo_1.R0.bit.ID);
+		canline[canline_i].ts = CAN_RX_ELEMENT_R1_RXTS(rx_element_buffer.R1.bit.RXTS);
+		
+		for (i = 0; i < rx_element_fifo_1.R1.bit.DLC; i++) {
+			// store data
+			canline[canline_i].data.arr[i] = rx_element_fifo_1.data[i];
+		}
+		canline_1_updated = 1;
 	}
 
 	if ((status & CAN_PROTOCOL_ERROR_ARBITRATION)

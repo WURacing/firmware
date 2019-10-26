@@ -253,7 +253,7 @@ int main (void)
 		adc_start_conversion(&adc_instance);
 		while (adc_read(&adc_instance, sensor_data + 5) == STATUS_BUSY) ;
 		
-		delay_ms(20);
+		delay_ms(25);
 		
 		port_pin_set_output_level(LED_0_PIN, ledstate);
 		ledstate = !ledstate;
@@ -298,6 +298,12 @@ int main (void)
 		#endif
 		#ifdef BOARD_2
 		can_send_extended_message(ID_DataLogger3 + 1, data, 8);
+		#endif
+		#ifdef BOARD_3
+		can_send_extended_message(ID_DataLogger3 + 10, data, 8);
+		#endif
+		#ifdef BOARD_4
+		can_send_extended_message(ID_DataLogger3 + 61, data, 8);
 		#endif
 
 		

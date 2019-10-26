@@ -33,7 +33,7 @@
 
 #ifndef CONF_BOARD_H
 #define CONF_BOARD_H
-#define LED_0_PIN PIN_PA28
+#define LED_0_PIN PIN_PB12
 
 #define CAN_TX_MUX_SETTING MUX_PA24G_CAN0_TX
 #define CAN_RX_MUX_SETTING MUX_PA25G_CAN0_RX
@@ -52,7 +52,7 @@
 #define WS2_PINMUX PINMUX_PA11A_EIC_EXTINT11
 #define WS2_LINE 11
 
-#define BOARD_2
+#define BOARD_3
 
 #ifdef BOARD_2
 #define WS_ENABLE

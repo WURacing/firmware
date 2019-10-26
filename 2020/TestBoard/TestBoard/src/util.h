@@ -17,11 +17,13 @@ typedef struct {
 	can_data_t data;
 } can_message_t;
 
-extern volatile can_message_t canline;
-
 extern volatile int canline_0_updated;
 
 extern volatile int canline_1_updated;
+
+extern volatile can_message_t canline[64];
+
+extern volatile int canline_i;
 
 extern struct can_module can_instance;
 
