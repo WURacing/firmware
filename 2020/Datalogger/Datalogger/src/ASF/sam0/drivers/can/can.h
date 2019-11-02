@@ -1248,21 +1248,21 @@ enum can_interrupt_source {
 	/** Message stored to Dedicated Rx Buffer Interrupt Enable. */
 	CAN_RX_BUFFER_NEW_MESSAGE = CAN_IE_DRXE,
 	/** Bit Error Corrected Interrupt Enable. */
-	CAN_BIT_ERROR_CORRECTED = CAN_IE_BECE,
+	CAN_BIT_ERROR_CORRECTED = CAN_IE_BECE, // ME
 	/** Bit Error Uncorrected Interrupt Enable. */
 	CAN_BIT_ERROR_UNCORRECTED = CAN_IE_BEUE,
 	/** Error Logging Overflow Interrupt Enable. */
 	CAN_ERROR_LOGGING_OVERFLOW = CAN_IE_ELOE,
 	/** Error Passive Interrupt Enable. */
-	CAN_ERROR_PASSIVE = CAN_IE_EPE,
+	CAN_ERROR_PASSIVE = CAN_IE_EPE, // ME
 	/** Warning Status Interrupt Enable. */
-	CAN_WARNING_STATUS = CAN_IE_EWE,
+	CAN_WARNING_STATUS = CAN_IE_EWE, // ME
 	/** Bus_Off Status Interrupt Enable. */
 	CAN_BUS_OFF = CAN_IE_BOE,
 	/** Watchdog Interrupt Interrupt Enable. */
 	CAN_WATCHDOG = CAN_IE_WDIE,
 	/** Protocol Error in Arbitration Phase Enable. */
-	CAN_PROTOCOL_ERROR_ARBITRATION = CAN_IE_PEAE,
+	CAN_PROTOCOL_ERROR_ARBITRATION = CAN_IE_PEAE, // ME
 	/** Protocol Error in Data Phase Enable. */
 	CAN_PROTOCOL_ERROR_DATA = CAN_IE_PEDE,
 	/** Access to Reserved Address Enable. */

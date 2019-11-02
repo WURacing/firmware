@@ -59,8 +59,8 @@
 
 #  define SD_MMC_CS                  PIN_PA10
 
-#  define SD_MMC_0_CD_GPIO          PIN_PA16
-#  define SD_MMC_0_CD_DETECT_VALUE   0
+//#  define SD_MMC_0_CD_GPIO          PIN_PA16
+//#  define SD_MMC_0_CD_DETECT_VALUE   0
 
 
 /* Define the SPI clock source */

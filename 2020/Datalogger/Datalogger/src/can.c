@@ -32,8 +32,8 @@ void configure_can(void)
 	canline_updated = 0;
 	
 	can_init(&can_instance, CAN_MODULE, &config_can);
-	can_set_baudrate(CAN_MODULE, 500000);
-
+	//can_set_baudrate(CAN_MODULE, 500000);
+	can_set_baudrate(CAN_MODULE, 1000000);
 	can_start(&can_instance);
 
 	/* Enable interrupts for this CAN module */
