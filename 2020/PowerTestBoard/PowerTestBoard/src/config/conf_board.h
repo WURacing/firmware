@@ -1,0 +1,47 @@
+/**
+ * \file
+ *
+ * \brief User board configuration template
+ *
+ * Copyright (c) 2014-2018 Microchip Technology Inc. and its subsidiaries.
+ *
+ * \asf_license_start
+ *
+ * \page License
+ *
+ * Subject to your compliance with these terms, you may use Microchip
+ * software and any derivatives exclusively with Microchip products.
+ * It is your responsibility to comply with third party license terms applicable
+ * to your use of third party software (including open source software) that
+ * may accompany Microchip software.
+ *
+ * THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES,
+ * WHETHER EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE,
+ * INCLUDING ANY IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY,
+ * AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT WILL MICROCHIP BE
+ * LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE, INCIDENTAL OR CONSEQUENTIAL
+ * LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND WHATSOEVER RELATED TO THE
+ * SOFTWARE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS BEEN ADVISED OF THE
+ * POSSIBILITY OR THE DAMAGES ARE FORESEEABLE.  TO THE FULLEST EXTENT
+ * ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON ALL CLAIMS IN ANY WAY
+ * RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
+ * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
+ *
+ * \asf_license_stop
+ *
+ */
+
+#ifndef CONF_BOARD_H
+#define CONF_BOARD_H
+
+#define LED1_PIN PIN_PA27
+#define LED2_PIN PIN_PA28
+
+static const int TONY_PINS_1[] =  { PIN_PA27, PIN_PA28, PIN_PB08, PIN_PB09, PIN_PA04, PIN_PA05, PIN_PA06, PIN_PA07, PIN_PB00, PIN_PB01, PIN_PB02, PIN_PB03, PIN_PB04, PIN_PB05, PIN_PB06, PIN_PB07 };
+	
+#define MCP23017_PINMUX_PAD0 PINMUX_PA22C_SERCOM3_PAD0
+#define MCP23017_PINMUX_PAD1 PINMUX_PA23C_SERCOM3_PAD1
+#define MCP23017_MODULE SERCOM3
+
+
+#endif // CONF_BOARD_H
