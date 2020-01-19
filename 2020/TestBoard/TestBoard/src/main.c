@@ -292,9 +292,6 @@ int main (void)
 			}
 			*/
 		}
-		if (count > 50) {
-			break;
-		}
 		
 		}
 		

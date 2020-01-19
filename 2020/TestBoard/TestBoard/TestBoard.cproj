@@ -322,8 +322,8 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800104067</avrtoolserialnumber>
-    <avrdeviceexpectedsignature>0x11010400</avrdeviceexpectedsignature>
+    <avrtoolserialnumber>J42700007447</avrtoolserialnumber>
+    <avrdeviceexpectedsignature>0x11010500</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_atmelice>
       <ToolOptions>
@@ -333,7 +333,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800104067</ToolNumber>
+      <ToolNumber>J42700007447</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <avrtoolinterfaceclock>2000000</avrtoolinterfaceclock>
