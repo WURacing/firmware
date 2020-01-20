@@ -70,7 +70,7 @@ static int init_sd_card_and_filesystem(void)
 		return 3;
 	}
 	
-	strcpy(linebuf, "year,month,day,hour,min,sec,ms,id,data\n");
+	strncpy(linebuf, "year,month,day,hour,min,sec,ms,id,data\n", LINE_BUFLEN);
 	res = f_write(&file_object, linebuf, strlen(linebuf), NULL);
 	if (res == -1)
 	{
