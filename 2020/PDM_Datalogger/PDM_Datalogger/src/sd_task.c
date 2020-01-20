@@ -19,6 +19,14 @@ FILINFO file_stat;
 char filename[50];
 int logno = 0;
 
+#define WRITE_BUFLEN 2048
+char writebuf[WRITE_BUFLEN];
+char *writebufptr = writebuf;
+
+#define LINE_BUFLEN 100
+char linebuf[LINE_BUFLEN];
+
+
 static int init_sd_card_and_filesystem(void)
 {
 	do
@@ -62,7 +70,8 @@ static int init_sd_card_and_filesystem(void)
 		return 3;
 	}
 	
-	res = f_puts("year,month,day,hour,min,sec,ms,id,data\n", &file_object);
+	strcpy(linebuf, "year,month,day,hour,min,sec,ms,id,data\n");
+	res = f_write(&file_object, linebuf, strlen(linebuf), NULL);
 	if (res == -1)
 	{
 		return 4;
@@ -72,18 +81,14 @@ static int init_sd_card_and_filesystem(void)
 	return 0;
 }
 
-#define WRITE_BUFLEN 2048
-char writebuf[WRITE_BUFLEN];
-char *writebufptr = writebuf;
-
-void buffer_data(const char *input)
+static void buffer_data(const char *input)
 {
 	int len;
 	len = strlen(input);
 	if (len == 0) return; // base case
 	
 	// add characters from input to buffer as they fit
-	while (*input != NULL && writebufptr < (writebuf + WRITE_BUFLEN))
+	while (*input != '\0' && writebufptr < (writebuf + WRITE_BUFLEN))
 	{
 		// write current input char to current buf position
 		*(writebufptr++) = *(input++);
@@ -97,14 +102,11 @@ void buffer_data(const char *input)
 		f_sync(&file_object);
 	}
 	// did we finish writing the line in case of overflow?
-	if (*input != NULL)
+	if (*input != '\0')
 	{
 		buffer_data(input);
 	}
 }
-
-#define LINE_BUFLEN 100
-char linebuf[LINE_BUFLEN];
 
 void sd_task(void *pvParameters)
 {
