@@ -86,8 +86,6 @@ int main(void)
     cpu_irq_enable();
 
     delay_ms(1000);
-	
-	#define TMP_PKT_ID 0x1f00110
 
     char test_file_name[50];
     Ctrl_status status;
@@ -205,6 +203,8 @@ int main(void)
                     canline_0_updated = 0;
                     if (--canline_i == 0)
                         canline_ptr = 0;
+					
+					pkt_count++;
                 }
                 if (canline_1_updated)
                 {
@@ -221,9 +221,11 @@ int main(void)
                     canline_1_updated = 0;
                     //if (--canline_i == 0)
                     canline_ptr = 0;
+					pkt_count++;
                 }
 				
-				if (count % 100 == 0) {
+				if (pkt_count >= 10) {
+					pkt_count = 0;
 					volatile uint16_t tmp = read_tmp75a();
 					
 					tmp_data[0] = tmp_data[1] = tmp_data[2] = 0;

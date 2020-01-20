@@ -107,7 +107,7 @@ static enum status_code configure_adc(void)
 	config.clock_prescaler = ADC_CLOCK_PRESCALER_DIV8;
 	config.reference = ADC_REFERENCE_INTVCC2;
 	config.positive_input = ADC_POSITIVE_INPUT_PIN0;
-	config.resolution = ADC_RESOLUTION_10BIT;
+	config.resolution = ADC_RESOLUTION_12BIT;
 	result = adc_init(&adc[0], ADC0, &config);
 	if (result != STATUS_OK) return result;
 	result = adc_init(&adc[1], ADC1, &config);

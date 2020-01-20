@@ -4,6 +4,8 @@
 #include <asf.h>
 #include <stdint.h>
 
+#define TMP_PKT_ID 0x1f00aa0
+
 void configure_can(void);
 
 typedef union {
@@ -26,6 +28,8 @@ extern volatile can_message_t canline[64];
 extern volatile int canline_i;
 
 extern struct can_module can_instance;
+
+extern volatile int pkt_count;
 
 void configure_i2c(void);
 

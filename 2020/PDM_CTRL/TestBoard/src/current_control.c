@@ -13,7 +13,7 @@
 #define I2C_TIMEOUT 1000
 
 // DEFAULT TO ON
-uint8_t current_control_A, current_control_B = 0x00;
+volatile uint8_t current_control_A, current_control_B = 0x00;
 
 
 enum status_code configure_current_control(void)
@@ -67,13 +67,13 @@ uint16_t set_current_control(void)
 void set_current_control_reg(uint8_t data_line, uint8_t STATE) {
 	if (data_line > 8) {
 		data_line -= 8;
-		if (STATE == CURRENT_ON) {
+		if (STATE == LC_CURRENT_OFF) {
 			current_control_B |= (1 << data_line);
 		} else {
 			current_control_B &= ~(1 << data_line);
 		}
 	} else {
-		if (STATE == CURRENT_ON) {
+		if (STATE == LC_CURRENT_OFF) {
 			current_control_A |= (1 << data_line);
 			} else {
 			current_control_A &= ~(1 << data_line);

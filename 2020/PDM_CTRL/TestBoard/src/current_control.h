@@ -7,8 +7,11 @@
 #ifndef CURRENT_CONTROL_H_
 #define CURRENT_CONTROL_H_
 
-#define CURRENT_ON 0x00
-#define CURRENT_OFF 0x01
+#define LC_CURRENT_ON 0x00
+#define LC_CURRENT_OFF 0x01
+
+#define HC_CURRENT_ON 0x01
+#define HC_CURRENT_OFF 0x00
 
 #include <asf.h>
 

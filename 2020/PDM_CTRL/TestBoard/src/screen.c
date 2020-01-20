@@ -196,9 +196,10 @@ void screen_render(void)
 {
 	if (++msgi >= 8)
 		msgi = 0;
-	
+	/*
 	if (msgi % 2 == 1)
 		mcp23017_send_data(0, 0);
 	else
-		mcp23017_send_data(SevenSegmentASCII[msg[msgi/2]-0x20], 1 << (msgi/2));
+	*/
+	mcp23017_send_data(SevenSegmentASCII[msg[msgi/2]], 1 << (msgi/2));
 }

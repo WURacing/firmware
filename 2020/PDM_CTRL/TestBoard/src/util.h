@@ -4,6 +4,24 @@
 #include <asf.h>
 #include <stdint.h>
 
+// MCU AIR FET CURRENT_CTRL
+#define TMP_PKT_ID 0x1f00aa1
+
+// 16 14 12 10 8 6 all * 4
+#define LC_PKT_ID 0x1f00cc0
+
+// 0x0000 fuel_pump rad_fan total
+#define HC_PKT_ID 0x1f00cc1
+
+// c * 0.0244 - 7.5 = A
+#define LC_CURR_LIMIT 410 // 410 ~= 2.5 Amps
+
+// c * 0.08877 - 45.45 = A
+#define HC_CURR_LIMIT 625 // 625 ~= 10 Amps
+
+// c * 0.061 - 6.25 = A
+#define TOTAL_CURR_LIMIT 430 // 430 ~= 20 Amps
+
 void configure_can(void);
 
 typedef union {

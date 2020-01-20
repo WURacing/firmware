@@ -21,6 +21,7 @@ http://asf.atmel.com/docs/latest/samc21/html/asfdoc_sam0_can_basic_use_case.html
 
 volatile can_message_t canline[64];
 volatile int canline_i = 0;
+volatile int pkt_count = 0;
 
 void configure_can(void)
 {
@@ -169,6 +170,7 @@ void CAN0_Handler(void)
 			canline[canline_i].data.arr[i] = rx_element_fifo_1.data[i];
 		}
 		canline_1_updated = 1;
+		pkt_count++;
 	}
 
 	if ((status & CAN_PROTOCOL_ERROR_ARBITRATION)
