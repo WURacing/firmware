@@ -442,7 +442,6 @@ extern void board_init(void);
 #ifdef __cplusplus
 }
 #endif
-#define ACCESS_MEM_TO_RAM_ENABLED
 
 /**
  * \}

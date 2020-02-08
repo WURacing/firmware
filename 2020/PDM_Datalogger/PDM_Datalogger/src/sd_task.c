@@ -83,9 +83,7 @@ static int init_sd_card_and_filesystem(void)
 
 static void buffer_data(const char *input)
 {
-	int len;
-	len = strlen(input);
-	if (len == 0) return; // base case
+	if (*input == '\0') return; // base case
 	
 	// add characters from input to buffer as they fit
 	while (*input != '\0' && writebufptr < (writebuf + WRITE_BUFLEN))
@@ -112,24 +110,28 @@ void sd_task(void *pvParameters)
 {
 	enum read_message_status rms;
 	struct can_message message;
+	int hr, min, sec, ms;
 	
-	vSemaphoreCreateBinary(new_data_semaphore);
 	//vQueueAddToRegistry(new_data_semaphore, "Incoming CAN data");
     //xSemaphoreTake(notification_semaphore, 0);
 	
 	// set up the SD card
 	while (init_sd_card_and_filesystem() != 0);
 
-	
 	while (1)
 	{
 		if (xSemaphoreTake(new_data_semaphore, 1000))
 		{
+			ms = xTaskGetTickCount(); // THIS ASSUMES KERNEL TICKS AT 1000Hz
+			sec = ms / 1000; ms = ms % 1000;
+			min = sec / 60; sec = sec % 60;
+			hr = min / 60; min = min % 60;
 			// read all new messages, just in case we swallowed an interrupt
 			while ((rms = read_message(&message)) == READ_ONE)
 			{
 				// format message
-				snprintf(linebuf, LINE_BUFLEN, "0,0,0,0,0,0,0,%08lx,%02x%02x%02x%02x%02x%02x%02x%02x\n",
+				snprintf(linebuf, LINE_BUFLEN, "0,0,0,%d,%d,%d,%d,%08lx,%02x%02x%02x%02x%02x%02x%02x%02x\n",
+					hr, min, sec, ms,
 					message.id, message.data[0], message.data[1], message.data[2], message.data[3],
 					message.data[4], message.data[5], message.data[6], message.data[7]
 				);

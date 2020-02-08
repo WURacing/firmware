@@ -33,11 +33,21 @@
 
 int main (void)
 {
+	//sysclk_init();
 	system_init();
+	delay_init();
+	
+	vSemaphoreCreateBinary(new_data_semaphore);
+	
+	vQueueAddToRegistry(new_data_semaphore, "data");
+	
+	configure_can();
+	
+	sd_mmc_init();
 
 	/* Insert application code here, after the board has been initialized. */
 	
-	xTaskCreate(sd_task, "SD writing", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1, &sd_task_id);
+	xTaskCreate(sd_task, "SD", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1, &sd_task_id);
 	
 	vTaskStartScheduler();
 	while(1);

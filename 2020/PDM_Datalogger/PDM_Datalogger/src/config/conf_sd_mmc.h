@@ -50,31 +50,17 @@
 #define SD_MMC_SPI_MEM_CNT          1
 
 /* Select the SPI module SD/MMC is connected to */
-#ifdef EXT1_SPI_MODULE /* Default configuration for Xplained Pro kit */
-#  define SD_MMC_SPI                 EXT1_SPI_MODULE
-#  define SD_MMC_SPI_PINMUX_SETTING  EXT1_SPI_SERCOM_MUX_SETTING
-#  define SD_MMC_SPI_PINMUX_PAD0     EXT1_SPI_SERCOM_PINMUX_PAD0
-#  define SD_MMC_SPI_PINMUX_PAD1     EXT1_SPI_SERCOM_PINMUX_PAD1
-#  define SD_MMC_SPI_PINMUX_PAD2     EXT1_SPI_SERCOM_PINMUX_PAD2
-#  define SD_MMC_SPI_PINMUX_PAD3     EXT1_SPI_SERCOM_PINMUX_PAD3
+#  define SD_MMC_SPI                 SERCOM5
+#  define SD_MMC_SPI_PINMUX_SETTING  SPI_SIGNAL_MUX_SETTING_N
+#  define SD_MMC_SPI_PINMUX_PAD0     PINMUX_PB16C_SERCOM5_PAD0
+#  define SD_MMC_SPI_PINMUX_PAD1     PINMUX_PB17C_SERCOM5_PAD1
+#  define SD_MMC_SPI_PINMUX_PAD2     PINMUX_UNUSED
+#  define SD_MMC_SPI_PINMUX_PAD3     PINMUX_PA21C_SERCOM5_PAD3
 
-#  define SD_MMC_CS                  EXT1_PIN_15
+#  define SD_MMC_CS                  PIN_PA20
 
-#  define SD_MMC_0_CD_GPIO           (EXT1_PIN_10)
+#  define SD_MMC_0_CD_GPIO           PIN_PA27
 #  define SD_MMC_0_CD_DETECT_VALUE   0
-#else /* Dummy configuration */
-#  define SD_MMC_SPI                 0
-#  define SD_MMC_SPI_PINMUX_SETTING  0
-#  define SD_MMC_SPI_PINMUX_PAD0     0
-#  define SD_MMC_SPI_PINMUX_PAD1     0
-#  define SD_MMC_SPI_PINMUX_PAD2     0
-#  define SD_MMC_SPI_PINMUX_PAD3     0
-
-#  define SD_MMC_CS                  0
-
-#  define SD_MMC_0_CD_GPIO           0
-#  define SD_MMC_0_CD_DETECT_VALUE   0
-#endif
 
 /* Define the SPI clock source */
 #define SD_MMC_SPI_SOURCE_CLOCK    GCLK_GENERATOR_0
@@ -83,4 +69,3 @@
 #define SD_MMC_SPI_MAX_CLOCK       4000000
 
 #endif /* CONF_SD_MMC_H_INCLUDED */
-
