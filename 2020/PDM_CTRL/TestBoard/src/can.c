@@ -51,7 +51,7 @@ void configure_can(void)
 	config_can0.timestamp_prescaler = 0xf;
 	
 	can_init(&can0_instance, CAN0_MODULE, &config_can0);
-		can_set_baudrate(CAN0_MODULE, 500000);
+		can_set_baudrate(CAN0_MODULE, 250000);
 
 	can_start(&can0_instance);
 	
@@ -62,8 +62,8 @@ void configure_can(void)
 	can_get_config_defaults(&config_can1);
 	config_can1.automatic_retransmission = false;
 	can_init(&can1_instance, CAN1_MODULE, &config_can1);
-	can_start(&can1_instance);
-	can_set_baudrate(CAN1_MODULE, 500000);
+	can_set_baudrate(CAN1_MODULE, 250000);
+		can_start(&can1_instance);
 	
 	canline_1_updated = 0;
 	/* Enable interrupts for this CAN module */
