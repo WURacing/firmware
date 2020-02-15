@@ -37,12 +37,12 @@ void configure_can(void)
 	config_can.nonmatching_frames_action_extended = CAN_NONMATCHING_FRAMES_FIFO_1;
 	
 	can_init(&can_instance[0], CAN0_MODULE, &config_can);
-	can_start(&can_instance[0]);
 	can_set_baudrate(CAN0_MODULE, CAN0_BAUD);
+	can_start(&can_instance[0]);
 
 	can_init(&can_instance[1], CAN1_MODULE, &config_can);
-	can_start(&can_instance[1]);
 	can_set_baudrate(CAN1_MODULE, CAN1_BAUD);
+	can_start(&can_instance[1]);
 	
 	// Enable interrupts for this CAN module
 	system_interrupt_enable(SYSTEM_INTERRUPT_MODULE_CAN0);
