@@ -44,10 +44,18 @@ int main (void)
 	configure_can();
 	
 	sd_mmc_init();
+	
+	configure_led();
 
 	/* Insert application code here, after the board has been initialized. */
 	
-	xTaskCreate(sd_task, "SD", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 1, &sd_task_id);
+	xTaskCreate(sd_task, "SD", configMINIMAL_STACK_SIZE + 1000, NULL, tskIDLE_PRIORITY + 2, &sd_task_id);
+	
+	//xTaskCreate(led_task, "LED", configMINIMAL_STACK_SIZE + 50, NULL, tskIDLE_PRIORITY + 1, &led_task_id);
+	
+	/* Create one Software Timer.*/
+	led_task_id = xTimerCreate("LED", 10, pdTRUE, 0, led_task);
+	xTimerStart(led_task_id, 0); 
 	
 	vTaskStartScheduler();
 	while(1);

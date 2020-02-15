@@ -1121,6 +1121,9 @@
     <Compile Include="src\ASF\sam0\drivers\can\can.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\led_task.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\sd_task.c">
       <SubType>compile</SubType>
     </Compile>

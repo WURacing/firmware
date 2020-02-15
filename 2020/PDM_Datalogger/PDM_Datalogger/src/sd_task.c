@@ -81,9 +81,10 @@ static int init_sd_card_and_filesystem(void)
 	return 0;
 }
 
-static void buffer_data(const char *input)
+static int buffer_data(const char *input)
 {
-	if (*input == '\0') return; // base case
+	int res;
+	if (*input == '\0') return 0; // base case
 	
 	// add characters from input to buffer as they fit
 	while (*input != '\0' && writebufptr < (writebuf + WRITE_BUFLEN))
@@ -95,15 +96,18 @@ static void buffer_data(const char *input)
 	if (writebufptr == (writebuf + WRITE_BUFLEN))
 	{
 		// sync buffers
-		f_write(&file_object, writebuf, WRITE_BUFLEN, NULL);
+		res = f_write(&file_object, writebuf, WRITE_BUFLEN, NULL);
 		writebufptr = writebuf;
-		f_sync(&file_object);
+		if (res != 0) return res;
+		res = f_sync(&file_object);
+		if (res != 0) return res;
 	}
 	// did we finish writing the line in case of overflow?
 	if (*input != '\0')
 	{
-		buffer_data(input);
+		return buffer_data(input);
 	}
+	return 0;
 }
 
 void sd_task(void *pvParameters)
@@ -114,14 +118,17 @@ void sd_task(void *pvParameters)
 	
 	//vQueueAddToRegistry(new_data_semaphore, "Incoming CAN data");
     //xSemaphoreTake(notification_semaphore, 0);
-	
+sd_start:	
 	// set up the SD card
 	while (init_sd_card_and_filesystem() != 0);
+	
+	led0 = 1;
 
 	while (1)
 	{
 		if (xSemaphoreTake(new_data_semaphore, 1000))
 		{
+			led1 = !led1;
 			ms = xTaskGetTickCount(); // THIS ASSUMES KERNEL TICKS AT 1000Hz
 			sec = ms / 1000; ms = ms % 1000;
 			min = sec / 60; sec = sec % 60;
@@ -135,7 +142,11 @@ void sd_task(void *pvParameters)
 					message.id, message.data[0], message.data[1], message.data[2], message.data[3],
 					message.data[4], message.data[5], message.data[6], message.data[7]
 				);
-				buffer_data(linebuf);
+				if (buffer_data(linebuf) != 0)
+				{
+					led0 = led1 = 0;
+					goto sd_start;
+				}
 			}
 			if (rms == READ_ERROR)
 			{

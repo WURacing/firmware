@@ -33,4 +33,12 @@ extern xTaskHandle sd_task_id;
 
 void sd_task(void *pvParameters);
 
+extern xTimerHandle led_task_id;
+
+extern volatile int led0, led1;
+
+void led_task(void *pvParameters);
+
+void configure_led(void);
+
 #endif /* EXPORTS_H_ */

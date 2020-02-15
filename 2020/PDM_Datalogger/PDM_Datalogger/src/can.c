@@ -70,44 +70,42 @@ static void extract_message(struct can_rx_element_buffer *buf, struct can_messag
 	}
 }
 
-static enum read_message_status read_message_module(struct can_module *module, struct can_message *output, int * status)
+static enum read_message_status read_message_module(struct can_module *module, struct can_message *output)
 {
 	uint32_t i;
 	struct can_rx_element_buffer buf;
 	volatile CAN_RXF0S_Type rxfifos0;
 	volatile CAN_RXF1S_Type rxfifos1;
 	
-	if (*status & CAN_RX_BUFFER_NEW_MESSAGE)
+	
+	for (i = 0; i < CONF_CAN0_RX_BUFFER_NUM; ++i)
 	{
-		*status &= ~CAN_RX_BUFFER_NEW_MESSAGE;
-		for (i = 0; i < CONF_CAN0_RX_BUFFER_NUM; ++i)
+		if (can_rx_get_buffer_status(module, i))
 		{
-			if (can_rx_get_buffer_status(module, i))
-			{
-				can_rx_clear_buffer_status(module, i);
-				if (can_get_rx_buffer_element(module, &buf, i) != STATUS_OK)
-					return READ_ERROR;
-				extract_message(&buf, output);
-				return READ_ONE;
-			}
+			can_rx_clear_buffer_status(module, i);
+			if (can_get_rx_buffer_element(module, &buf, i) != STATUS_OK)
+				return READ_ERROR;
+			extract_message(&buf, output);
+			return READ_ONE;
 		}
 	}
-	if (*status & CAN_RX_FIFO_0_NEW_MESSAGE)
+	
+
+	// start reading from "get index" of FIFO, first unread
+	rxfifos0.reg = can_rx_get_fifo_status(module, 0);
+	if (rxfifos0.bit.F0FL > 0) // fill level
 	{
-		*status &= ~CAN_RX_FIFO_0_NEW_MESSAGE;
-		// start reading from "get index" of FIFO, first unread
-		rxfifos0.reg = can_rx_get_fifo_status(module, 0);
 		if (can_get_rx_fifo_0_element(module, &buf, rxfifos0.bit.F0GI) != STATUS_OK)
 			return READ_ERROR;
 		can_rx_fifo_acknowledge(module, 0, rxfifos0.bit.F0GI);
 		extract_message(&buf, output);
 		return READ_ONE;
 	}
-	if (*status & CAN_RX_FIFO_1_NEW_MESSAGE)
+
+	// start reading from "get index" of FIFO, first unread
+	rxfifos1.reg = can_rx_get_fifo_status(module, 1);
+	if (rxfifos1.bit.F1FL > 0) // fill level
 	{
-		*status &= ~CAN_RX_FIFO_1_NEW_MESSAGE;
-		// start reading from "get index" of FIFO, first unread
-		rxfifos1.reg = can_rx_get_fifo_status(module, 1);
 		if (can_get_rx_fifo_1_element(module, &buf, rxfifos1.bit.F1GI) != STATUS_OK)
 			return READ_ERROR;
 		can_rx_fifo_acknowledge(module, 1, rxfifos1.bit.F1GI);
@@ -120,9 +118,9 @@ static enum read_message_status read_message_module(struct can_module *module, s
 enum read_message_status read_message(struct can_message *output)
 {
 	int ret;
-	ret = read_message_module(&can_instance[0], output, &can_i_status[0]);
+	ret = read_message_module(&can_instance[0], output);
 	if (ret != READ_NONE) return ret;
-	ret = read_message_module(&can_instance[1], output, &can_i_status[1]);
+	ret = read_message_module(&can_instance[1], output);
 	return ret;
 }
 
