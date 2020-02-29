@@ -23,7 +23,7 @@ can_packet_t outgoing_buf[OUTGOING_LEN];
 
 SoftwareSerial lteSerial(8, 9);
 LTE_Shield lte;
-const char URL[] = "178.128.235.225";
+const char URL[] = "3.18.176.160";
 const unsigned int PORT = 9999;
 unsigned long next_send = 0, tnow;
 volatile int mgood = 0;
