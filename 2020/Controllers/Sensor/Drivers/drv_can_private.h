@@ -19,7 +19,7 @@
 #define CAN0_TX_EVENT_FIFO_NUM 0
 #define CAN0_TX_EVENT_FIFO_HIGH_WATER_INT_LEVEL 0 /* 0: interrupt disabled */
 
-#define CAN0_TX_BUFFERS_NUM 1 /* dedicated transmit buffers. should match DRV_CAN_TX_BUFFER_COUNT */
+#define CAN0_TX_BUFFERS_NUM 3 /* dedicated transmit buffers. should match DRV_CAN_TX_BUFFER_COUNT */
 #define CAN0_TX_FIFO_NUM 0  /* tx queue size, for non-dedicated messages */
 #define CAN0_TX_DATA_SIZE CAN_TXESC_TBDS_DATA8_Val
 
@@ -31,6 +31,8 @@ enum drv_can_rx_buffer_table {
 
 enum drv_can_tx_buffer_table {
 	DRV_CAN_TX_BUFFER_ERROR,
+	DRV_CAN_TX_BUFFER_SENS_1,
+	DRV_CAN_TX_BUFFER_SENS_2,
 	
 	DRV_CAN_TX_BUFFER_COUNT
 };

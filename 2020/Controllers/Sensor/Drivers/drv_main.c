@@ -8,6 +8,7 @@
 #include "drv_main.h"
 #include "drv_gpio.h"
 #include "drv_can.h"
+#include "drv_adc.h"
 #include "sam.h"
 
 /************************************************************************/
@@ -25,6 +26,7 @@ void drv_init(void)
 	
 	drv_gpio_init();
 	drv_can_init();
+	drv_adc_init();
 }
 
 /************************************************************************/

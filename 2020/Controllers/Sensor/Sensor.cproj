@@ -178,6 +178,14 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\Drivers\drv_adc.c">
+      <SubType>compile</SubType>
+      <Link>Drivers\drv_adc.c</Link>
+    </Compile>
+    <Compile Include="..\Shared\Drivers\drv_adc.h">
+      <SubType>compile</SubType>
+      <Link>Drivers\drv_adc.h</Link>
+    </Compile>
     <Compile Include="..\Shared\Drivers\drv_can.c">
       <SubType>compile</SubType>
       <Link>Drivers\drv_can.c</Link>
@@ -322,6 +330,12 @@
     <Compile Include="Applications\app_main.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="Applications\app_sensorRead.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Applications\app_sensorRead.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Applications\app_statusLight.c">
       <SubType>compile</SubType>
     </Compile>
@@ -332,6 +346,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Device_Startup\system_samc21.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Drivers\drv_adc_private.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Drivers\drv_adc_private.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Drivers\drv_can_private.c">
