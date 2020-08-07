@@ -27,7 +27,7 @@ void app_statusLight_init(void)
 
 void app_statusLight_periodic(void)
 {
-	static int lastError;
+	static int lastError = 7;
 	TickType_t time = xTaskGetTickCount();
 	
 	if (globalError != lastError)
@@ -51,10 +51,5 @@ void app_statusLight_periodic(void)
 		nextLightExpiration = time + nextLightPeriod;
 		
 		drv_gpio_toggle(DRV_GPIO_PIN_LED);
-	}
-	
-	if (time % 2000 == 0)
-	{
-		globalError += 1;
 	}
 }
