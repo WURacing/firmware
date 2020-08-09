@@ -1,7 +1,9 @@
 #include "drv_uart.h"
+#include <stdbool.h>
+#include <string.h>
 
 #define RXBUFLEN 200
-char rxbuf[RXBUFLEN] = {0};
+volatile char rxbuf[RXBUFLEN] = {0};
 int rxbufi = 0;
 
 void drv_uart_init(void)
@@ -19,7 +21,14 @@ void drv_uart_init(void)
 		GCLK->PCHCTRL[SERCOM0_GCLK_ID_CORE] = pclock;
 	}
 	
-	// TODO  interrupts, DMA
+	// set up pins
+	PORT->Group[0].PMUX[PIN_PA08/2].bit.PMUXE = MUX_PA08C_SERCOM0_PAD0;
+	PORT->Group[0].PMUX[PIN_PA09/2].bit.PMUXO = MUX_PA09C_SERCOM0_PAD1;
+	PORT->Group[0].PINCFG[PIN_PA08].bit.PMUXEN = 1;
+	PORT->Group[0].PINCFG[PIN_PA09].bit.PMUXEN = 1;
+	
+	// Enable interrupt
+	NVIC->ISER[0] = (1 << 9); 
 	
 	SERCOM0->USART.CTRLA.bit.ENABLE = 0;
 	while (SERCOM0->USART.SYNCBUSY.reg) {};
@@ -51,7 +60,7 @@ void drv_uart_init(void)
 		SERCOM0->USART.CTRLB.reg = ctrlb.reg;
 	}
 	
-	SERCOM0->USART.BAUD.bit.BAUD = 63019;
+	SERCOM0->USART.BAUD.bit.BAUD = 63019; // 115200
 	
 	{ // Enable RX interrupt
 		SERCOM_USART_INTENSET_Type intenset = {
@@ -63,27 +72,47 @@ void drv_uart_init(void)
 	}
 	
 	SERCOM0->USART.CTRLA.bit.ENABLE = 1;
-	// Enable interrupt
-	NVIC->ISER[0] = (1 << 9); 
+	while (SERCOM0->USART.SYNCBUSY.reg) {};
 }
 
 void drv_uart_periodic(void)
 {
+	static bool sent = false;
 	
+	if (sent)
+	{
+		volatile char * x = rxbuf;
+	}
+	else
+	{
+		sent = true;
+	}
 }
 
 void drv_uart_send_message(const char * msg)
 {
 	// Clear existing errors
 	SERCOM0->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
-	while (msg)
+	while (*msg)
 	{
 		// Wait til we good to write more
 		while (! SERCOM0->USART.INTFLAG.bit.DRE) {};
 		SERCOM0->USART.DATA.reg = *(msg++);
 		// maybe wait until transmit complete
+		while (!SERCOM0->USART.INTFLAG.bit.TXC) {};
 	}
 	// maybe check errors HAHA
+}
+
+void drv_uart_clear_response(void)
+{
+	rxbufi = 0;
+	memset(rxbuf, 0, RXBUFLEN);
+}
+
+volatile const char * drv_uart_get_response_buffer(void)
+{
+	return rxbuf;
 }
 
 void SERCOM0_Handler(void)

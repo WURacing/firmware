@@ -47,7 +47,6 @@ void drv_can_init(void)
 #endif
 	
 	// set up pin mux for CAN pins
-	// TODO next line kills itself
 	PORT->Group[0].PMUX[PIN_PA24/2].bit.PMUXE = MUX_PA24G_CAN0_TX;
 	PORT->Group[0].PMUX[PIN_PA25/2].bit.PMUXO = MUX_PA25G_CAN0_RX;
 	PORT->Group[0].PINCFG[PIN_PA24].bit.PMUXEN = 1;
