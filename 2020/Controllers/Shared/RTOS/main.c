@@ -24,8 +24,9 @@ int main(void)
 {
     SystemInit();
 
+// TODO: different priorities
 	xTaskCreate(DriverTask, "DRV", configMINIMAL_STACK_SIZE + 1000, NULL, 1, &DriverTaskID);
-	xTaskCreate(ApplicationTask, "APP", configMINIMAL_STACK_SIZE + 1000, NULL, 1, &ApplicationTaskID);
+	xTaskCreate(ApplicationTask, "APP", configMINIMAL_STACK_SIZE + 1000, NULL, 2, &ApplicationTaskID);
 	
 	vTaskStartScheduler();
 	while(1);

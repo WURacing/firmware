@@ -4,6 +4,7 @@
 
 #define RXBUFLEN 200
 volatile char rxbuf[RXBUFLEN] = {0};
+volatile char outgoing_log[1000];
 int rxbufi = 0;
 
 void drv_uart_init(void)
@@ -77,17 +78,9 @@ void drv_uart_init(void)
 
 void drv_uart_periodic(void)
 {
-	static bool sent = false;
-	
-	if (sent)
-	{
-		volatile char * x = rxbuf;
-	}
-	else
-	{
-		sent = true;
-	}
 }
+
+volatile char * logptr = outgoing_log;
 
 void drv_uart_send_message(const char * msg)
 {
@@ -95,6 +88,7 @@ void drv_uart_send_message(const char * msg)
 	SERCOM0->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
 	while (*msg)
 	{
+		//*(logptr++) = *msg;
 		// Wait til we good to write more
 		while (! SERCOM0->USART.INTFLAG.bit.DRE) {};
 		SERCOM0->USART.DATA.reg = *(msg++);
@@ -103,6 +97,21 @@ void drv_uart_send_message(const char * msg)
 	}
 	// maybe check errors HAHA
 }
+
+void drv_uart_send_data(const uint8_t * msg, unsigned length)
+{
+	const uint8_t * target = msg + length;
+	while (msg < target)
+	{
+		//*(logptr++) = *msg;
+		// Wait til we good to write more
+		while (! SERCOM0->USART.INTFLAG.bit.DRE) {};
+		SERCOM0->USART.DATA.reg = *(msg++);
+		// maybe wait until transmit complete
+		while (!SERCOM0->USART.INTFLAG.bit.TXC) {};
+	}
+}
+
 
 void drv_uart_clear_response(void)
 {

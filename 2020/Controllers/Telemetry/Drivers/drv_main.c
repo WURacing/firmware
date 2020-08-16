@@ -8,6 +8,8 @@
 #include "drv_uart.h"
 #include "drv_can.h"
 #include "drv_uart.h"
+#include "drv_divas.h"
+#include "drv_lte.h"
 #include "sam.h"
 
 void drv_init(void)
@@ -20,6 +22,7 @@ void drv_init(void)
 	// wait for synchronization
 	while(OSCCTRL->OSC48MSYNCBUSY.reg) ;
 
+	drv_divas_init();
 	drv_can_init();
 	drv_uart_init();
 	drv_lte_init();

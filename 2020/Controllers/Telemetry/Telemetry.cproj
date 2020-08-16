@@ -129,6 +129,7 @@
       <Value>../RTOS</Value>
       <Value>../Drivers</Value>
       <Value>../Applications</Value>
+      <Value>../../Shared/DBC/dbc</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.level>Optimize (-O1)</armgcc.compiler.optimization.level>
@@ -164,6 +165,10 @@
   <armgcc.preprocessingassembler.debugging.DebugLevel>Default (-Wa,-g)</armgcc.preprocessingassembler.debugging.DebugLevel>
 </ArmGcc>
     </ToolchainSettings>
+    <PreBuildEvent>set TEMPLATES=$(MSBuildProjectDirectory)\..\Shared\DBC\hsk-libs\scripts\templates.dbc2c
+set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
+"$(DevEnvDir)\shellUtils\make" -C $(MSBuildProjectDirectory)\..\Shared\DBC dbc/2020.1.0.dbc
+</PreBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Shared\Drivers\drv_can.c">
@@ -316,6 +321,12 @@
     <Compile Include="Applications\app_statusLight.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="Applications\app_telemetry.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Applications\app_telemetry.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Device_Startup\startup_samc21.c">
       <SubType>compile</SubType>
     </Compile>
@@ -326,6 +337,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Drivers\drv_can_private.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Drivers\drv_divas.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Drivers\drv_divas.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Drivers\drv_lte.c">

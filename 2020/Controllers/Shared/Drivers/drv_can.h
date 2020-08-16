@@ -57,4 +57,35 @@ struct drv_can_rx_buffer_element * drv_can_get_rx_buffer(int id);
 struct drv_can_tx_buffer_element * drv_can_get_tx_buffer(int id);
 void drv_can_queue_tx_buffer(int id);
 bool drv_can_check_rx_buffer(int id);
+void drv_can_clear_rx_buffer(int id);
+
+#define DRV_CAN_XTD_FILTER(MSG) { \
+	.XIDFE_0 = { \
+		.bit = { \
+			.EFEC = CAN_XIDFE_0_EFEC_STRXBUF_Val, \
+			.EFID1 = ID_ ## MSG, \
+		} \
+	}, \
+	.XIDFE_1 = { \
+		.bit = { \
+			.EFID2 = (0 << 9) | (0 << 6) | (DRV_CAN_RX_BUFFER_ ## MSG) \
+		} \
+	} \
+}
+
+#define DRV_CAN_TX_BUFFER(MSG) 	[DRV_CAN_TX_BUFFER_ ## MSG] = { \
+	.TXBE_0 = { \
+		.bit = { \
+			.ID = ID_ ## MSG, \
+			.RTR = 0, \
+			.XTD = EXT_ ## MSG, \
+		} \
+	}, \
+	.TXBE_1 = { \
+		.bit = { \
+			.DLC = DLC_ ## MSG, \
+			.EFC = 0, \
+		} \
+	} \
+}
 

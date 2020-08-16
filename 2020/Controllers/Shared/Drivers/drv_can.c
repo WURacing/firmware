@@ -52,7 +52,8 @@ void drv_can_init(void)
 	PORT->Group[0].PINCFG[PIN_PA24].bit.PMUXEN = 1;
 	PORT->Group[0].PINCFG[PIN_PA25].bit.PMUXEN = 1;
 	
-	// TODO: set up NVIC interrupts
+	// Enable interrupt
+	NVIC->ISER[0] = (1 << 15) | (1 << 16);
 	
 	// put CAN module into configuration mode
 	CAN0->CCCR.bit.INIT = 1;
@@ -189,6 +190,7 @@ void drv_can_init(void)
 			.bit = {
 				.RF1NE = 1, /* interrupt on new FIFO message */
 				.RF0NE = 1, /* interrupt on new FIFO message */
+				.DRXE  = 1, /* interrupt on new Rx buffer message */
 			}
 		};
 		CAN0->IE.reg = ie.reg;
@@ -219,7 +221,7 @@ void drv_can_init(void)
 
 void CAN0_Handler()
 {
-	
+	CAN0->IR.reg = 0xFFFFFFFF;
 }
 
 void CAN1_Handler()
@@ -275,5 +277,20 @@ bool drv_can_check_rx_buffer(int id)
 	else
 	{
 		return false;
+	}
+}
+
+void drv_can_clear_rx_buffer(int id)
+{
+	if (id < CAN0_RX_BUFFERS_NUM)
+	{
+		if (id < 32)
+		{
+			CAN0->NDAT1.reg = (1 << id);
+		}
+		else
+		{
+			CAN0->NDAT2.reg = (1 << (id - 32));
+		}
 	}
 }
