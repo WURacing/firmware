@@ -22,6 +22,18 @@ static const struct drv_can_extended_filter extendedFilters[CAN0_EXTENDED_FILTER
 	DRV_CAN_XTD_FILTER(PE14),
 	DRV_CAN_XTD_FILTER(PE15),
 	DRV_CAN_XTD_FILTER(PE16),
+	DRV_CAN_XTD_FILTER(CG_Sensor),
+	DRV_CAN_XTD_FILTER(Dash_Stat),
+	DRV_CAN_XTD_FILTER(FL_Upright),
+	DRV_CAN_XTD_FILTER(FR_Upright),
+	DRV_CAN_XTD_FILTER(RL_Upright),
+	DRV_CAN_XTD_FILTER(RR_Upright),
+	DRV_CAN_XTD_FILTER(Front_Sensor),
+	DRV_CAN_XTD_FILTER(Rear_Sensor),
+	DRV_CAN_XTD_FILTER(GPS_POS),
+	DRV_CAN_XTD_FILTER(PDM_Current_A),
+	DRV_CAN_XTD_FILTER(PDM_Current_B),
+	DRV_CAN_XTD_FILTER(PDM_PWR),
 };
 
 // Definitions for each transmit buffer
