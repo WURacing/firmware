@@ -51,9 +51,9 @@ static void app_cantx_populate_message(TimerHandle_t xTimerHandle)
 		case PCBA_ID_SENSOR_BOARD_FRONT:
 		{
 			INIT_Front_Sensor(buffer->DB);
-			SET_Front_Sensor_Brake_Pressure_Front(buffer->DB,	sensorResults[DRV_ADC_SEQUENCE_A0]);
-			SET_Front_Sensor_Pitot(buffer->DB,					sensorResults[DRV_ADC_SEQUENCE_A1]);
-			SET_Front_Sensor_Steer_Position(buffer->DB,			sensorResults[DRV_ADC_SEQUENCE_A4]);
+			SET_Front_Sensor_Brake_Pressure_Front(buffer->DB,	sensorResults.results[DRV_ADC_CHANNEL_SENSE4]);
+			SET_Front_Sensor_Pitot(buffer->DB,					sensorResults.results[DRV_ADC_CHANNEL_SENSE5]);
+			SET_Front_Sensor_Steer_Position(buffer->DB,			sensorResults.results[DRV_ADC_CHANNEL_SENSE6]);
 			break;
 		}
 		default:
@@ -61,5 +61,5 @@ static void app_cantx_populate_message(TimerHandle_t xTimerHandle)
 			break;
 		}
 	}
-	drv_can_queue_tx_buffer((enum drv_can_tx_buffer_table)0U);
+	drv_can_queue_tx_buffer(CAN1, (enum drv_can_tx_buffer_table)0U);
 }

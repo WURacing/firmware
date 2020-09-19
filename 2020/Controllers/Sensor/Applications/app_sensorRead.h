@@ -15,6 +15,6 @@
 void app_sensorRead_init(void);
 void app_sensorRead_periodic(void);
 
-extern uint16_t sensorResults[DRV_ADC_SEQUENCE_COUNT];
+extern struct drv_adc_results sensorResults;
 
 #endif /* APP_SENSORREAD_H_ */

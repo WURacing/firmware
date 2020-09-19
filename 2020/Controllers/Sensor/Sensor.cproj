@@ -5,7 +5,7 @@
     <ProjectVersion>7.0</ProjectVersion>
     <ToolchainName>com.Atmel.ARMGCC.C</ToolchainName>
     <ProjectGuid>{c6a9f152-186d-457e-b12e-a0c6fad268e4}</ProjectGuid>
-    <avrdevice>ATSAMC21E18A</avrdevice>
+    <avrdevice>ATSAMC21J18A</avrdevice>
     <avrdeviceseries>none</avrdeviceseries>
     <OutputType>Executable</OutputType>
     <Language>C</Language>
@@ -30,19 +30,19 @@
     <EraseKey />
     <AsfFrameworkConfig>
       <framework-data>
-  <options />
-  <configurations />
-  <files />
-  <documentation help="" />
-  <offline-documentation help="" />
-  <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.39.0" />
-  </dependencies>
-</framework-data>
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.39.0" />
+        </dependencies>
+      </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
     <avrtoolserialnumber>J41800104067</avrtoolserialnumber>
-    <avrdeviceexpectedsignature>0x1101040A</avrdeviceexpectedsignature>
+    <avrdeviceexpectedsignature>0x11010500</avrdeviceexpectedsignature>
     <custom>
       <ToolOptions>
         <InterfaceProperties>
@@ -111,7 +111,7 @@
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
   <armgcc.linker.memorysettings.ExternalRAM>False</armgcc.linker.memorysettings.ExternalRAM>
-  <armgcc.linker.miscellaneous.LinkerFlags>-Tsamc21e18a_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
+  <armgcc.linker.miscellaneous.LinkerFlags>-Tsamc21j18a_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
   <armgcc.assembler.general.IncludePaths>
     <ListValues>
       <Value>%24(PackRepoDir)\arm\CMSIS\5.4.0\CMSIS\Core\Include\</Value>
@@ -171,7 +171,7 @@
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
   <armgcc.linker.memorysettings.ExternalRAM />
-  <armgcc.linker.miscellaneous.LinkerFlags>-Tsamc21e18a_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
+  <armgcc.linker.miscellaneous.LinkerFlags>-Tsamc21j18a_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
   <armgcc.assembler.general.IncludePaths>
     <ListValues>
       <Value>%24(PackRepoDir)\arm\CMSIS\5.4.0\CMSIS\Core\Include\</Value>
@@ -391,6 +391,9 @@ set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
     <Compile Include="Drivers\drv_main.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="Drivers\drv_ws2812.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="RTOS\FreeRTOSConfig.h">
       <SubType>compile</SubType>
     </Compile>
@@ -410,10 +413,10 @@ set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
       <SubType>compile</SubType>
       <Link>RTOS\readme.txt</Link>
     </None>
-    <None Include="Device_Startup\samc21e18a_flash.ld">
+    <None Include="Device_Startup\samc21j18a_flash.ld">
       <SubType>compile</SubType>
     </None>
-    <None Include="Device_Startup\samc21e18a_sram.ld">
+    <None Include="Device_Startup\samc21j18a_sram.ld">
       <SubType>compile</SubType>
     </None>
   </ItemGroup>
