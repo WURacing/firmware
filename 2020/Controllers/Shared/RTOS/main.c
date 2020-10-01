@@ -12,6 +12,7 @@
 #include "task.h"
 #include "drv_main.h"
 #include "app_main.h"
+#include "system_samc21.h"
 
 #define DELAY_PERIOD 1U
 

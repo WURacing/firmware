@@ -19,13 +19,13 @@ static TickType_t lastTransmission = 0;
 
 void app_statusLight_init(void)
 {	
-	PORT->Group[1].DIRSET.reg = PORT_PB16 | PORT_PB17;
+	PORT_REGS->GROUP[1].PORT_DIRSET = PORT_PB16 | PORT_PB17;
 }
 
 void app_statusLight_periodic(void)
 {
 	TickType_t time = xTaskGetTickCount();
-	int error = CAN1->PSR.bit.LEC;
+	int error = CAN1_REGS->CAN_PSR & CAN_PSR_LEC_Msk;
 	if (error == 7) //  no change
 	{
 		error = lastError;
@@ -43,27 +43,27 @@ void app_statusLight_periodic(void)
 			{
 				nextFlash = time + 2000;
 				
-				PORT->Group[1].OUTCLR.reg = PORT_PB17;
+				PORT_REGS->GROUP[1].PORT_OUTCLR = PORT_PB17;
 			}
 			else
 			{
 				nextFlash = time + 200;
 				
-				PORT->Group[1].OUTTGL.reg = PORT_PB17;
+				PORT_REGS->GROUP[1].PORT_OUTTGL = PORT_PB17;
 			}
 		}
 		else if (error != 0)
 		{
 			flashesRemaining = error * 2 + 1;
-			PORT->Group[1].OUTCLR.reg = PORT_PB16;
+			PORT_REGS->GROUP[1].PORT_OUTCLR = PORT_PB16;
 		}
 		else
 		{
-			PORT->Group[1].OUTTGL.reg = PORT_PB16;
+			PORT_REGS->GROUP[1].PORT_OUTTGL = PORT_PB16;
 		}
 	}
 	
-	int txbto = CAN1->TXBTO.reg;
+	int txbto = CAN1_REGS->CAN_TXBTO;
 	if (txbto)
 	{
 		lastTransmission = time;

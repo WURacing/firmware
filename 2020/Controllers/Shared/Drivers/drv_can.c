@@ -18,57 +18,40 @@ static struct drv_can_tx_buffer_element can_tx_buffers[DRV_CAN_TX_BUFFER_COUNT];
 
 void drv_can_init(void)
 {
-	{ // set up CAN supplying clock generator at 8MHz
-		GCLK_GENCTRL_Type clock = {
-			.bit = {
-				.GENEN = 1,
-				.SRC = GCLK_GENCTRL_SRC_OSC48M_Val,
-				.DIV = 6,
-				.DIVSEL = 0,
-				.RUNSTDBY = 1
-			}
-		};
-		GCLK->GENCTRL[8] = clock;
-	}
-	
+	// set up CAN supplying clock generator at 8MHz
+	GCLK_REGS->GCLK_GENCTRL[8] =
+			GCLK_GENCTRL_GENEN(1) | GCLK_GENCTRL_SRC_OSC48M | GCLK_GENCTRL_DIV(6) |
+			GCLK_GENCTRL_DIVSEL(0) | GCLK_GENCTRL_RUNSTDBY(1);
 	// sync
-	while (GCLK->SYNCBUSY.bit.GENCTRL8) {};
+	while (GCLK_REGS->GCLK_SYNCBUSY) {}
 	
-	{ // set up CAN peripheral clocks
-		GCLK_PCHCTRL_Type pclock = {
-			.bit = {
-				.CHEN = 1,
-				.GEN = 8
-			}
-		};
 #if ENABLE_CAN0
-		GCLK->PCHCTRL[CAN0_GCLK_ID] = pclock;
+	GCLK_REGS->GCLK_PCHCTRL[26] = GCLK_PCHCTRL_CHEN(1) | GCLK_PCHCTRL_GEN_GCLK8;
 #endif
 #if ENABLE_CAN1
-		GCLK->PCHCTRL[CAN1_GCLK_ID] = pclock;
+	GCLK_REGS->GCLK_PCHCTRL[27] = GCLK_PCHCTRL_CHEN(1) | GCLK_PCHCTRL_GEN_GCLK8;
 #endif
-	}
 	
 	// set up MCLK AHB for CAN (synchronized peripheral clock)
 #if ENABLE_CAN0
-	MCLK->AHBMASK.bit.CAN0_ = 1;
+	MCLK_REGS->MCLK_AHBMASK |= MCLK_AHBMASK_CAN0(1);
 #endif
 #if ENABLE_CAN1
-	MCLK->AHBMASK.bit.CAN1_ = 1;
+	MCLK_REGS->MCLK_AHBMASK |= MCLK_AHBMASK_CAN1(1);
 #endif
 	
 	// set up pin mux for CAN pins
 #if ENABLE_CAN0
-	PORT->Group[0].PMUX[CAN0_TX_PIN/2].bit.PMUXE = CAN0_TX_MUX;
-	PORT->Group[0].PMUX[CAN0_RX_PIN/2].bit.PMUXO = CAN0_RX_MUX;
-	PORT->Group[0].PINCFG[CAN0_TX_PIN].bit.PMUXEN = 1;
-	PORT->Group[0].PINCFG[CAN0_RX_PIN].bit.PMUXEN = 1;
+	PORT_REGS->GROUP[0].PORT_PMUX[(CAN0_TX_PIN-32)/2] |= PORT_PMUX_PMUXE(CAN0_TX_MUX);
+	PORT_REGS->GROUP[0].PORT_PMUX[(CAN0_RX_PIN-32)/2] |= PORT_PMUX_PMUXO(CAN0_RX_MUX);
+	PORT_REGS->GROUP[0].PORT_PINCFG[CAN0_TX_PIN-32] |= PORT_PINCFG_PMUXEN(1);
+	PORT_REGS->GROUP[0].PORT_PINCFG[CAN0_RX_PIN-32] |= PORT_PINCFG_PMUXEN(1);
 #endif
 #if ENABLE_CAN1
-	PORT->Group[1].PMUX[(CAN1_TX_PIN-32)/2].bit.PMUXE = CAN1_TX_MUX;
-	PORT->Group[1].PMUX[(CAN1_RX_PIN-32)/2].bit.PMUXO = CAN1_RX_MUX;
-	PORT->Group[1].PINCFG[CAN1_TX_PIN-32].bit.PMUXEN = 1;
-	PORT->Group[1].PINCFG[CAN1_RX_PIN-32].bit.PMUXEN = 1;
+	PORT_REGS->GROUP[1].PORT_PMUX[(CAN1_TX_PIN-32)/2] |= PORT_PMUX_PMUXE(CAN1_TX_MUX);
+	PORT_REGS->GROUP[1].PORT_PMUX[(CAN1_RX_PIN-32)/2] |= PORT_PMUX_PMUXO(CAN1_RX_MUX);
+	PORT_REGS->GROUP[1].PORT_PINCFG[CAN1_TX_PIN-32] |= PORT_PINCFG_PMUXEN(1);
+	PORT_REGS->GROUP[1].PORT_PINCFG[CAN1_RX_PIN-32] |= PORT_PINCFG_PMUXEN(1);
 #endif
 	
 	// Enable interrupt
@@ -81,16 +64,16 @@ void drv_can_init(void)
 		
 	// put CAN module into configuration mode
 #if ENABLE_CAN0
-	CAN0->CCCR.bit.INIT = 1;
-	while (CAN0->CCCR.bit.INIT != 1) {}; // wait
-	CAN0->CCCR.bit.CCE = 1;
-	while (CAN0->CCCR.bit.CCE != 1) {}; // wait
+	CAN0_REGS->CAN_CCCR = CAN_CCCR_INIT(1);
+	while ((CAN0_REGS->CAN_CCCR & CAN_CCCR_INIT_Msk) == 0) {} // wait
+	CAN0_REGS->CAN_CCCR = CAN_CCCR_INIT(1) | CAN_CCCR_CCE(1);
+	while ((CAN0_REGS->CAN_CCCR & CAN_CCCR_CCE_Msk) == 0) {}
 #endif
 #if ENABLE_CAN1
-	CAN1->CCCR.bit.INIT = 1;
-	while (CAN1->CCCR.bit.INIT != 1) {}; // wait
-	CAN1->CCCR.bit.CCE = 1;
-	while (CAN1->CCCR.bit.CCE != 1) {}; // wait
+	CAN1_REGS->CAN_CCCR = CAN_CCCR_INIT(1);
+	while ((CAN1_REGS->CAN_CCCR & CAN_CCCR_INIT_Msk) == 0) {} // wait
+	CAN1_REGS->CAN_CCCR = CAN_CCCR_INIT(1) | CAN_CCCR_CCE(1);
+	while ((CAN1_REGS->CAN_CCCR & CAN_CCCR_CCE_Msk) == 0) {}
 #endif
 		
 	// copy TX buffer config
@@ -129,246 +112,121 @@ void drv_can_init(void)
 #endif
 
 #if ENABLE_CAN0
-	{ // Standard filters storage
-		CAN_SIDFC_Type sidfc = {
-			.bit = {
-				.FLSSA = (uint32_t) can0_standard_filters,
-				.LSS = CAN0_STANDARD_FILTERS_NUM,
-			}
-		};
-		CAN0->SIDFC = sidfc;
-	}
-	{ // Extended filters storage
-		CAN_XIDFC_Type xidfc = {
-			.bit = {
-				.FLESA = (uint32_t) can0_extended_filters,
-				.LSE = CAN0_EXTENDED_FILTERS_NUM,
-			}
-		};
-		CAN0->XIDFC.reg = xidfc.reg;
-	}
-	{ // RX FIFO 0 storage
-		CAN_RXF0C_Type rxf0c = {
-			.bit = {
-				.F0SA = (uint32_t) can0_rx_fifo_0,
-				.F0S = CAN0_RX_FIFO_0_NUM,
-				.F0OM = CAN0_RX_FIFO_0_OPERATION_MODE,
-				.F0WM = CAN0_RX_FIFO_0_HIGH_WATER_INT_LEVEL,
-			}
-		};
-		CAN0->RXF0C.reg = rxf0c.reg;
-	}
-	{ // RX FIFO 1 storage
-		CAN_RXF1C_Type rxf1c = {
-			.bit = {
-				.F1SA = (uint32_t) can0_rx_fifo_1,
-				.F1S = CAN0_RX_FIFO_1_NUM,
-				.F1OM = CAN0_RX_FIFO_1_OPERATION_MODE,
-				.F1WM = CAN0_RX_FIFO_1_HIGH_WATER_INT_LEVEL,
-			}
-		};
-		CAN0->RXF1C.reg = rxf1c.reg;
-	}
-
+	// Standard filters storage
+	CAN0_REGS->CAN_SIDFC = CAN_SIDFC_FLSSA((uint32_t) can0_standard_filters) | CAN_SIDFC_LSS(CAN0_STANDARD_FILTERS_NUM);
+	// Extended filters storage
+	CAN0_REGS->CAN_XIDFC = CAN_XIDFC_FLESA((uint32_t) can0_extended_filters) | CAN_XIDFC_LSE(CAN0_EXTENDED_FILTERS_NUM);
+	// RX FIFO 0 storage
+	CAN0_REGS->CAN_RXF0C = CAN_RXF0C_F0SA((uint32_t) can0_rx_fifo_0) | CAN_RXF0C_F0S(CAN0_RX_FIFO_0_NUM) |
+			CAN_RXF0C_F0OM(CAN0_RX_FIFO_0_OPERATION_MODE) | CAN_RXF0C_F0WM(CAN0_RX_FIFO_0_HIGH_WATER_INT_LEVEL);
+	// RX FIFO 1 storage
+	CAN0_REGS->CAN_RXF1C = CAN_RXF1C_F1SA((uint32_t) can0_rx_fifo_1) | CAN_RXF1C_F1S(CAN0_RX_FIFO_1_NUM) |
+			CAN_RXF1C_F1OM(CAN0_RX_FIFO_1_OPERATION_MODE) | CAN_RXF1C_F1WM(CAN0_RX_FIFO_1_HIGH_WATER_INT_LEVEL);
 #endif
 #if ENABLE_CAN1
-	{ // Standard filters storage
-		CAN_SIDFC_Type sidfc = {
-			.bit = {
-				.FLSSA = (uint32_t) can1_standard_filters,
-				.LSS = CAN1_STANDARD_FILTERS_NUM,
-			}
-		};
-		CAN1->SIDFC = sidfc;
-	}
-	{ // Extended filters storage
-		CAN_XIDFC_Type xidfc = {
-			.bit = {
-				.FLESA = (uint32_t) can1_extended_filters,
-				.LSE = CAN1_EXTENDED_FILTERS_NUM,
-			}
-		};
-		CAN1->XIDFC.reg = xidfc.reg;
-	}
-	{ // RX FIFO 0 storage
-		CAN_RXF0C_Type rxf0c = {
-			.bit = {
-				.F0SA = (uint32_t) can1_rx_fifo_0,
-				.F0S = CAN1_RX_FIFO_0_NUM,
-				.F0OM = CAN1_RX_FIFO_0_OPERATION_MODE,
-				.F0WM = CAN1_RX_FIFO_0_HIGH_WATER_INT_LEVEL,
-			}
-		};
-		CAN1->RXF0C.reg = rxf0c.reg;
-	}
-	{ // RX FIFO 1 storage
-		CAN_RXF1C_Type rxf1c = {
-			.bit = {
-				.F1SA = (uint32_t) can1_rx_fifo_1,
-				.F1S = CAN1_RX_FIFO_1_NUM,
-				.F1OM = CAN1_RX_FIFO_1_OPERATION_MODE,
-				.F1WM = CAN1_RX_FIFO_1_HIGH_WATER_INT_LEVEL,
-			}
-		};
-		CAN1->RXF1C.reg = rxf1c.reg;
-	}
+	// Standard filters storage
+	CAN1_REGS->CAN_SIDFC = CAN_SIDFC_FLSSA((uint32_t) can1_standard_filters) | CAN_SIDFC_LSS(CAN1_STANDARD_FILTERS_NUM);
+	// Extended filters storage
+	CAN1_REGS->CAN_XIDFC = CAN_XIDFC_FLESA((uint32_t) can1_extended_filters) | CAN_XIDFC_LSE(CAN1_EXTENDED_FILTERS_NUM);
+	// RX FIFO 0 storage
+	CAN1_REGS->CAN_RXF0C = CAN_RXF0C_F0SA((uint32_t) can1_rx_fifo_0) | CAN_RXF0C_F0S(CAN1_RX_FIFO_0_NUM) |
+			CAN_RXF0C_F0OM(CAN1_RX_FIFO_0_OPERATION_MODE) | CAN_RXF0C_F0WM(CAN1_RX_FIFO_0_HIGH_WATER_INT_LEVEL);
+	// RX FIFO 1 storage
+	CAN1_REGS->CAN_RXF1C = CAN_RXF1C_F1SA((uint32_t) can1_rx_fifo_1) | CAN_RXF1C_F1S(CAN1_RX_FIFO_1_NUM) |
+			CAN_RXF1C_F1OM(CAN1_RX_FIFO_1_OPERATION_MODE) | CAN_RXF1C_F1WM(CAN1_RX_FIFO_1_HIGH_WATER_INT_LEVEL);
 #endif
-	{ // RX element size (for FD mode) configuration
-		CAN_RXESC_Type rxesc = {
-			.bit = {
-				.F0DS = CAN_RX_FIFO_0_DATA_SIZE,
-				.F1DS = CAN_RX_FIFO_1_DATA_SIZE,
-				.RBDS = CAN_RX_BUFFERS_DATA_SIZE,
-			}
-		};
 #if ENABLE_CAN0
-		CAN0->RXESC.reg = rxesc.reg;
+	// RX element size (for FD mode) configuration
+	CAN0_REGS->CAN_RXESC = CAN_RXESC_F0DS(CAN_RX_FIFO_0_DATA_SIZE) |
+			CAN_RXESC_F1DS(CAN_RX_FIFO_1_DATA_SIZE) | CAN_RXESC_RBDS(CAN_RX_BUFFERS_DATA_SIZE);
 #endif
 #if ENABLE_CAN1
-		CAN1->RXESC.reg = rxesc.reg;
+	// RX element size (for FD mode) configuration
+	CAN1_REGS->CAN_RXESC = CAN_RXESC_F0DS(CAN_RX_FIFO_0_DATA_SIZE) |
+			CAN_RXESC_F1DS(CAN_RX_FIFO_1_DATA_SIZE) | CAN_RXESC_RBDS(CAN_RX_BUFFERS_DATA_SIZE);
 #endif
-	}
-	{ // RX buffers storage
-		CAN_RXBC_Type rxbc = {
-			.bit = {
-				.RBSA = (uint32_t) can_rx_buffers,
-			}
-		};
 #if ENABLE_CAN0
-CAN0->RXBC.reg = rxbc.reg;
+	// RX buffers storage
+	CAN0_REGS->CAN_RXBC = CAN_RXBC_RBSA((uint32_t) can_rx_buffers);
 #endif
 #if ENABLE_CAN1
-CAN1->RXBC.reg = rxbc.reg;
+	// RX buffers storage
+	CAN1_REGS->CAN_RXBC = CAN_RXBC_RBSA((uint32_t) can_rx_buffers);
 #endif
-	}
-	{ // TX buffers storage
-		CAN_TXBC_Type txbc = {
-			.bit = {
-				.TFQM = 0, /* fifo mode */
-				.TFQS = 0, /* but no tx fifos. requires big change to support */
-				.NDTB = DRV_CAN_TX_BUFFER_COUNT,
-				.TBSA = (uint32_t) can_tx_buffers,
-			}
-		};
 #if ENABLE_CAN0
-		CAN0->TXBC.reg = txbc.reg;
+	// TX buffers storage
+	CAN0_REGS->CAN_TXBC = CAN_TXBC_TBSA((uint32_t) can_tx_buffers) | CAN_TXBC_NDTB(DRV_CAN_TX_BUFFER_COUNT);
 #endif
 #if ENABLE_CAN1
-		CAN1->TXBC.reg = txbc.reg;
+	// TX buffers storage
+	CAN1_REGS->CAN_TXBC = CAN_TXBC_TBSA((uint32_t) can_tx_buffers) | CAN_TXBC_NDTB(DRV_CAN_TX_BUFFER_COUNT);
 #endif
-	}
-	{ // TX event FIFO storage. disabled
-		CAN_TXEFC_Type txefc = {
-			.bit = {
-				.EFS = 0,
-				.EFSA = 0,
-				.EFWM = 0,
-			}
-		};
 #if ENABLE_CAN0
-		CAN0->TXEFC.reg = txefc.reg;
+	// TX element size (for FD mode) configuration
+	CAN0_REGS->CAN_TXESC = CAN_TXESC_TBDS(CAN_TX_DATA_SIZE);
 #endif
 #if ENABLE_CAN1
-		CAN1->TXEFC.reg = txefc.reg;
+	// TX element size (for FD mode) configuration
+	CAN1_REGS->CAN_TXESC = CAN_TXESC_TBDS(CAN_TX_DATA_SIZE);
 #endif
-	}
-	{ // TX element size (for FD mode) configuration
-		CAN_TXESC_Type txesc = {
-			.bit = {
-				.TBDS = CAN_TX_DATA_SIZE,
-			}
-		};
-#if ENABLE_CAN0
-		CAN0->TXESC.reg = txesc.reg;
-#endif
-#if ENABLE_CAN1
-		CAN1->TXESC.reg = txesc.reg;
-#endif
-	}
-	{ // bit rate timing (currently unused)
+	// bit rate timing (currently unused)
 		// With a GCLK_CAN of 8MHz, the reset value 0x00000A33 configures the CAN for a fast bit rate of 500 kBits/s.
-		//CAN_DBTP_Type dbtp;
-	}
-	{ // nominal bit rate timing and prescaler
+		//CAN0_REGS->CAN_DBTP = ...;
+	
+	// nominal bit rate timing and prescaler
 		// With a CAN clock (GCLK_CAN) of 8MHz, the reset value 0x06000A03 configures the CAN for a bit rate of 500 kBits/s.
-		//CAN_NBTP_Type nbtp;
-	}
-	{ // timestamping. we should reset TSCV every ms so we know correct microsecond timing or something like that
-		CAN_TSCC_Type tscc = {
-			.bit = {
-				.TCP = 0, /* prescaler = 1 (times the CAN bit time) */
-				.TSS = 1, /* enable tscc counter */
-			}
-		};
+		//CAN0_REGS->CAN_NBTP = ...;
 #if ENABLE_CAN0
-		CAN0->TSCC.reg = tscc.reg;
+	// enable timestamping. we should reset TSCV every ms so we know correct microsecond timing or something like that
+	CAN0_REGS->CAN_TSCC = CAN_TSCC_TSS_INC;
 #endif
 #if ENABLE_CAN1
-		CAN1->TSCC.reg = tscc.reg;
+	// enable timestamping. we should reset TSCV every ms so we know correct microsecond timing or something like that
+	CAN1_REGS->CAN_TSCC = CAN_TSCC_TSS_INC;
 #endif
-	}
-	{ // enable interrupts. probably want to 
-		CAN_IE_Type ie = {
-			.bit = {
-				.RF1NE = 1, /* interrupt on new FIFO message */
-				.RF0NE = 1, /* interrupt on new FIFO message */
-				.DRXE  = 1, /* interrupt on new Rx buffer message */
-			}
-		};
 #if ENABLE_CAN0
-		CAN0->IE.reg = ie.reg;
+	// enable interrupts. for now on all received messages
+	CAN0_REGS->CAN_IE = CAN_IE_RF1NE(1) | CAN_IE_RF0NE(1) | CAN_IE_DRXE(1);
 #endif
 #if ENABLE_CAN1
-		CAN1->IE.reg = ie.reg;
+	// enable interrupts. for now on all received messages
+	CAN1_REGS->CAN_IE = CAN_IE_RF1NE(1) | CAN_IE_RF0NE(1) | CAN_IE_DRXE(1);
 #endif
-	}
-	{ // enable interrupt line 0. this is the default for all interrupts unless changed
-		CAN_ILE_Type ile = {
-			.bit = {
-				.EINT0 = 1,
-			}
-		};
 #if ENABLE_CAN0
-		CAN0->ILE.reg = ile.reg;
+	// enable interrupt line 0. this is the default for all interrupts unless changed
+	CAN0_REGS->CAN_ILE = CAN_ILE_EINT0(1);
 #endif
 #if ENABLE_CAN1
-		CAN1->ILE.reg = ile.reg;
+	// enable interrupt line 0. this is the default for all interrupts unless changed
+	CAN1_REGS->CAN_ILE = CAN_ILE_EINT0(1);
 #endif
-	}
-	{ // general filter configuration
-		CAN_GFC_Type gfc = {
-			.bit = {
-				.ANFS = 0, /* accept nonmatching standard in FIFO 0 */
-				.ANFE = 0, /* accept nonmatching extended in FIFO 0 */
-				.RRFS = 1, /* reject standard remote frames */
-				.RRFE = 1, /* reject extended remote frames */
-			}
-		};
 #if ENABLE_CAN0
-		CAN0->GFC.reg = gfc.reg;
+	// general filter configuration. accept nonmatching into FIFO 0. reject remote.
+	CAN0_REGS->CAN_GFC = CAN_GFC_ANFS_RXF0 | CAN_GFC_ANFE_RXF0 | CAN_GFC_RRFS(1) | CAN_GFC_RRFE(1);
 #endif
 #if ENABLE_CAN1
-		CAN1->GFC.reg = gfc.reg;
+	// general filter configuration. accept nonmatching into FIFO 0. reject remote.
+	CAN1_REGS->CAN_GFC = CAN_GFC_ANFS_RXF0 | CAN_GFC_ANFE_RXF0 | CAN_GFC_RRFS(1) | CAN_GFC_RRFE(1);
 #endif
-	}
 	
 	// drop out of configuration mode and start
 #if ENABLE_CAN0
-	CAN0->CCCR.bit.INIT = 0;
+	CAN0_REGS->CAN_CCCR = 0;
 #endif
 #if ENABLE_CAN1
-	CAN1->CCCR.bit.INIT = 0;
+	CAN1_REGS->CAN_CCCR = 0;
 #endif
 }
 
 void CAN0_Handler()
 {
-	CAN0->IR.reg = 0xFFFFFFFF;
+	// handle no interrupts and just reset the IR
+	CAN0_REGS->CAN_IR = 0xFFFFFFFF;
 }
 
 void CAN1_Handler()
 {
-	CAN1->IR.reg = 0xFFFFFFFF;
+	CAN1_REGS->CAN_IR = 0xFFFFFFFF;
 }
 
 struct drv_can_rx_buffer_element * drv_can_get_rx_buffer(int id)
@@ -395,25 +253,25 @@ struct drv_can_tx_buffer_element * drv_can_get_tx_buffer(int id)
 	}
 }
 
-void drv_can_queue_tx_buffer(Can * bus, int id)
+void drv_can_queue_tx_buffer(can_registers_t * bus, int id)
 {
 	if (id < DRV_CAN_TX_BUFFER_COUNT)
 	{
-		bus->TXBAR.reg = (1 << id);
+		bus->CAN_TXBAR = (1 << id);
 	}
 }
 
-bool drv_can_check_rx_buffer(Can * bus, int id)
+bool drv_can_check_rx_buffer(can_registers_t * bus, int id)
 {
 	if (id < DRV_CAN_RX_BUFFER_COUNT)
 	{
 		if (id < 32)
 		{
-			return (bus->NDAT1.reg >> id) & 1;
+			return (bus->CAN_NDAT1 >> id) & 1;
 		}
 		else
 		{
-			return (bus->NDAT2.reg >> (id - 32)) & 1;
+			return (bus->CAN_NDAT2 >> (id - 32)) & 1;
 		}
 	}
 	else
@@ -422,17 +280,17 @@ bool drv_can_check_rx_buffer(Can * bus, int id)
 	}
 }
 
-void drv_can_clear_rx_buffer(Can * bus, int id)
+void drv_can_clear_rx_buffer(can_registers_t * bus, int id)
 {
 	if (id < DRV_CAN_RX_BUFFER_COUNT)
 	{
 		if (id < 32)
 		{
-			bus->NDAT1.reg = (1 << id);
+			bus->CAN_NDAT1 = (1 << id);
 		}
 		else
 		{
-			bus->NDAT2.reg = (1 << (id - 32));
+			bus->CAN_NDAT2 = (1 << (id - 32));
 		}
 	}
 }

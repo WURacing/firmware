@@ -61,5 +61,5 @@ static void app_cantx_populate_message(TimerHandle_t xTimerHandle)
 			break;
 		}
 	}
-	drv_can_queue_tx_buffer(CAN1, (enum drv_can_tx_buffer_table)0U);
+	drv_can_queue_tx_buffer(CAN1_REGS, (enum drv_can_tx_buffer_table)0U);
 }

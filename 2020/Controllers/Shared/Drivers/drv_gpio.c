@@ -10,11 +10,11 @@ void drv_gpio_init(void)
 		int group = pinConfig->pin / 32; // the compiler will optimize these to shifts unless pigs fly
 		int output = pinConfig->pin % 32;
 		
-		PORT->Group[group].PINCFG[output].reg = 0;
+		PORT_REGS->GROUP[group].PORT_PINCFG[output] = 0;
 		if (pinConfig->input)
-			PORT->Group[group].DIRCLR.reg = (1 << output);
+			PORT_REGS->GROUP[group].PORT_DIRCLR = (1 << output);
 		else
-			PORT->Group[group].DIRSET.reg = (1 << output);
+			PORT_REGS->GROUP[group].PORT_DIRSET = (1 << output);
 	}
 }
 
@@ -26,9 +26,9 @@ void drv_gpio_setOutput(int pin_id, bool value)
 	int port = pinConfig->pin % 32;
 	
 	if (value)
-		PORT->Group[group].OUTSET.reg = (1 << port);
+		PORT_REGS->GROUP[group].PORT_OUTSET = (1 << port);
 	else
-		PORT->Group[group].OUTCLR.reg = (1 << port);
+		PORT_REGS->GROUP[group].PORT_OUTCLR = (1 << port);
 }
 
 void drv_gpio_toggle(int pin_id)
@@ -38,6 +38,6 @@ void drv_gpio_toggle(int pin_id)
 	int group = pinConfig->pin / 32;
 	int port = pinConfig->pin % 32;
 	
-	PORT->Group[group].OUTTGL.reg = (1 << port);
+	PORT_REGS->GROUP[group].PORT_OUTTGL = (1 << port);
 }
 
