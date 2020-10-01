@@ -9,16 +9,15 @@
                      projectFiles="true">
         <itemPath>Applications/app_cantx.h</itemPath>
         <itemPath>Applications/app_main.h</itemPath>
-        <itemPath>Applications/app_sensorRead.h</itemPath>
         <itemPath>Applications/app_statusLight.h</itemPath>
+        <itemPath>Applications/app_telemetry.h</itemPath>
       </logicalFolder>
       <logicalFolder name="Drivers" displayName="Drivers" projectFiles="true">
-        <itemPath>../Shared/Drivers/drv_adc.h</itemPath>
         <itemPath>../Shared/Drivers/drv_can.h</itemPath>
-        <itemPath>../Shared/Drivers/drv_gpio.h</itemPath>
-        <itemPath>Drivers/drv_adc_private.h</itemPath>
+        <itemPath>../Shared/Drivers/drv_uart.h</itemPath>
         <itemPath>Drivers/drv_can_private.h</itemPath>
-        <itemPath>Drivers/drv_gpio_private.h</itemPath>
+        <itemPath>Drivers/drv_divas.h</itemPath>
+        <itemPath>Drivers/drv_lte.h</itemPath>
         <itemPath>Drivers/drv_main.h</itemPath>
       </logicalFolder>
       <logicalFolder name="RTOS" displayName="RTOS" projectFiles="true">
@@ -42,15 +41,12 @@
         <itemPath>../Shared/RTOS/FreeRTOS/Source/include/timers.h</itemPath>
         <itemPath>../Shared/RTOS/FreeRTOS/Source/portable/GCC/ARM_CM0/portmacro.h</itemPath>
       </logicalFolder>
-      <itemPath>config.h</itemPath>
       <itemPath>../Shared/RTOS/FreeRTOSConfig.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
                    projectFiles="true">
-      <logicalFolder name="Device_Startup"
-                     displayName="Device_Startup"
-                     projectFiles="true">
+      <logicalFolder name="f1" displayName="Device_Startup" projectFiles="true">
         <itemPath>../Shared/Device_Startup/samc21j18a_flash.ld</itemPath>
       </logicalFolder>
     </logicalFolder>
@@ -62,8 +58,8 @@
                      projectFiles="true">
         <itemPath>Applications/app_cantx.c</itemPath>
         <itemPath>Applications/app_main.c</itemPath>
-        <itemPath>Applications/app_sensorRead.c</itemPath>
         <itemPath>Applications/app_statusLight.c</itemPath>
+        <itemPath>Applications/app_telemetry.c</itemPath>
       </logicalFolder>
       <logicalFolder name="Device_Startup"
                      displayName="Device_Startup"
@@ -72,12 +68,11 @@
         <itemPath>../Shared/Device_Startup/system_samc21j18a.c</itemPath>
       </logicalFolder>
       <logicalFolder name="Drivers" displayName="Drivers" projectFiles="true">
-        <itemPath>../Shared/Drivers/drv_adc.c</itemPath>
         <itemPath>../Shared/Drivers/drv_can.c</itemPath>
-        <itemPath>../Shared/Drivers/drv_gpio.c</itemPath>
-        <itemPath>Drivers/drv_adc_private.c</itemPath>
+        <itemPath>../Shared/Drivers/drv_uart.c</itemPath>
         <itemPath>Drivers/drv_can_private.c</itemPath>
-        <itemPath>Drivers/drv_gpio_private.c</itemPath>
+        <itemPath>Drivers/drv_divas.c</itemPath>
+        <itemPath>Drivers/drv_lte.c</itemPath>
         <itemPath>Drivers/drv_main.c</itemPath>
       </logicalFolder>
       <logicalFolder name="RTOS" displayName="RTOS" projectFiles="true">
@@ -102,7 +97,6 @@
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
-    <Elem>Device_Startup</Elem>
     <Elem>../Shared/Device_Startup</Elem>
     <Elem>../Shared/RTOS</Elem>
   </sourceRootList>
@@ -142,7 +136,10 @@
       </compileType>
       <makeCustomizationType>
         <makeCustomizationPreStepEnabled>false</makeCustomizationPreStepEnabled>
-        <makeCustomizationPreStep></makeCustomizationPreStep>
+        <makeCustomizationPreStep>set TEMPLATES=$(MSBuildProjectDirectory)\..\Shared\DBC\hsk-libs\scripts\templates.dbc2c
+set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
+"$(DevEnvDir)\shellUtils\make" -C $(MSBuildProjectDirectory)\..\Shared\DBC dbc/2020.1.0.dbc
+</makeCustomizationPreStep>
         <makeCustomizationPostStepEnabled>false</makeCustomizationPostStepEnabled>
         <makeCustomizationPostStep></makeCustomizationPostStep>
         <makeCustomizationPutChecksumInUserID>false</makeCustomizationPutChecksumInUserID>
@@ -234,7 +231,7 @@
         <property key="default-bitfield-type" value="false"/>
         <property key="default-char-type" value="false"/>
         <property key="extra-include-directories"
-                  value="../Applications;../../Shared/RTOS/FreeRTOS/Source/include;../../Shared/RTOS/FreeRTOS/Source/portable/GCC/ARM_CM0;../../Shared/Drivers;../RTOS;../Drivers;../../Shared/DBC/dbc;.."/>
+                  value="../../Shared/RTOS/FreeRTOS/Source/include;../../Shared/RTOS/FreeRTOS/Source/portable/GCC/ARM_CM0;../../Shared/Drivers;../RTOS;../Drivers;../Applications;../../Shared/DBC/dbc"/>
         <property key="extra-warnings" value="false"/>
         <property key="fast-math" value="false"/>
         <property key="garbage-collect-data" value="false"/>
@@ -283,7 +280,7 @@
         <property key="size-optimized-library" value="false"/>
         <property key="sram-segment" value=""/>
         <property key="unsafe-math" value="false"/>
-        <appendMe value="-TDevice_Startup/samc21j18a_flash.ld"/>
+        <appendMe value="-Tsamc21j18a_flash.ld"/>
       </ARM-LD>
       <AtmelIceTool>
         <property key="AutoSelectMemRanges" value="auto"/>
@@ -310,8 +307,6 @@
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-3ffff"/>
         <property key="poweroptions.powerenable" value="false"/>
-        <property key="programmerToGoFilePath"
-                  value="C:/Users/Connor/Documents/Racing/CANControllers/2020/Controllers/Sensor/debug/Release/Release_ptg"/>
         <property key="programoptions.eraseb4program" value="true"/>
         <property key="programoptions.preservedataflash" value="false"/>
         <property key="programoptions.preservedataflash.ranges"
@@ -341,8 +336,8 @@
         <platform>3</platform>
       </toolsSet>
       <packs>
-        <pack name="SAMC21_DFP" vendor="Microchip" version="3.3.72"/>
         <pack name="CMSIS" vendor="ARM" version="5.4.0"/>
+        <pack name="SAMC21_DFP" vendor="Microchip" version="3.3.72"/>
       </packs>
       <ScriptingSettings>
       </ScriptingSettings>
@@ -355,7 +350,7 @@
         </archiverTool>
         <loading>
           <useAlternateLoadableFile>false</useAlternateLoadableFile>
-          <parseOnProdLoad>false</parseOnProdLoad>
+          <parseOnProdLoad>true</parseOnProdLoad>
           <alternateLoadableFile></alternateLoadableFile>
         </loading>
         <subordinates>
@@ -458,7 +453,7 @@ set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
         <property key="default-bitfield-type" value="false"/>
         <property key="default-char-type" value="false"/>
         <property key="extra-include-directories"
-                  value="../Applications;../../Shared/RTOS/FreeRTOS/Source/include;../../Shared/RTOS/FreeRTOS/Source/portable/GCC/ARM_CM0;../../Shared/Drivers;../RTOS;../Drivers;../../Shared/DBC/dbc;.."/>
+                  value="../../Shared/RTOS/FreeRTOS/Source/include;../../Shared/RTOS/FreeRTOS/Source/portable/GCC/ARM_CM0;../../Shared/Drivers;../RTOS;../Drivers;../Applications;../../Shared/DBC/dbc"/>
         <property key="extra-warnings" value="false"/>
         <property key="fast-math" value="false"/>
         <property key="garbage-collect-data" value="false"/>
@@ -468,8 +463,7 @@ set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
         <property key="no-system-directories" value="false"/>
         <property key="optimization-level" value="-O1"/>
         <property key="position-independent" value="false"/>
-        <property key="preprocessor-macros"
-                  value="DEBUG;PCBA_ID=PCBA_ID_SENSOR_BOARD_FRONT"/>
+        <property key="preprocessor-macros" value="DEBUG"/>
         <property key="preprocessor-macros-undefined" value=""/>
         <property key="strict-ansi" value="false"/>
         <property key="strict-ansi-errors" value="false"/>
@@ -513,8 +507,6 @@ set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
       </ARM-LD>
       <AtmelIceTool>
         <property key="AutoSelectMemRanges" value="auto"/>
-        <property key="arm.use_vtor" value="false"/>
-        <property key="arm.vtor_adr" value="exception_table"/>
         <property key="communication.activationmode" value="nohv"/>
         <property key="communication.interface" value="swd"/>
         <property key="communication.speed" value="2.000"/>
@@ -524,7 +516,6 @@ set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
         <property key="firmware.toolpack"
                   value="Press to select which tool pack to use"/>
         <property key="firmware.update.action" value="firmware.update.use.latest"/>
-        <property key="lastid" value=""/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
         <property key="memories.configurationmemory" value="true"/>
@@ -549,9 +540,6 @@ set AWK=C:\Program Files (x86)\GnuWin32\bin\awk.exe
         <property key="programoptions.preserveprogramrange" value="false"/>
         <property key="programoptions.preserveuserid" value="false"/>
         <property key="programoptions.programuserotp" value="false"/>
-        <property key="script.log_level" value="0"/>
-        <property key="script.reset_delay" value="0"/>
-        <property key="script.show_output" value="false"/>
         <property key="toolpack.updateoptions"
                   value="toolpack.updateoptions.uselatestoolpack"/>
         <property key="toolpack.updateoptions.packversion"

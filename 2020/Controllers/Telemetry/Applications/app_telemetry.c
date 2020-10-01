@@ -54,7 +54,7 @@ static void app_telemetry_read_and_queue_messages(void)
 	{
 		for (enum drv_can_rx_buffer_table i = (enum drv_can_rx_buffer_table)0U; i < DRV_CAN_RX_BUFFER_COUNT; ++i)
 		{
-			if (drv_can_check_rx_buffer(CAN0, (int) i))
+			if (drv_can_check_rx_buffer(CAN0_REGS, (int) i))
 			{
 				struct drv_can_rx_buffer_element * can_buf = drv_can_get_rx_buffer((int) i);
 				if (can_buf->RXBE_0.bit.XTD)
@@ -75,7 +75,7 @@ static void app_telemetry_read_and_queue_messages(void)
 				tx_buf->word[0] = 'W';
 				tx_buf->word[1] = 'U';
 				tx_buf->word[2] = '\n';
-				drv_can_clear_rx_buffer(CAN0, (int) i);
+				drv_can_clear_rx_buffer(CAN0_REGS, (int) i);
 				length++;
 				tx_buf++;
 				totalSentMessages++;

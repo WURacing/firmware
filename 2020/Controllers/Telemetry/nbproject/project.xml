@@ -3,8 +3,8 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>Sensor</name>
-            <creation-uuid>8d80e1ad-f0a9-402a-8062-d1f2a55abd6d</creation-uuid>
+            <name>Telemetry</name>
+            <creation-uuid>da2cbf33-d26a-4333-b436-634682add34a</creation-uuid>
             <make-project-type>0</make-project-type>
             <c-extensions>c</c-extensions>
             <cpp-extensions/>
@@ -13,7 +13,6 @@
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList>
-                <sourceRootElem>Device_Startup</sourceRootElem>
                 <sourceRootElem>../Shared/Device_Startup</sourceRootElem>
                 <sourceRootElem>../Shared/RTOS</sourceRootElem>
             </sourceRootList>

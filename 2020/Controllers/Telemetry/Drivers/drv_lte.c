@@ -16,6 +16,7 @@
 #include <time.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <math.h>
 
 #define LTE_POWER_GROUP 0
@@ -110,7 +111,7 @@ static const char * drv_lte_utoa(unsigned i)
 void drv_lte_init()
 {
 	last_location_time = 0;
-	PORT->Group[LTE_POWER_GROUP].DIRSET.reg = LTE_POWER_PORT;
+	PORT_REGS->GROUP[LTE_POWER_GROUP].PORT_DIRSET = LTE_POWER_PORT;
 	
 	transmission_semaphore = xSemaphoreCreateMutex();
 	vQueueAddToRegistry(transmission_semaphore, "LTETX");
@@ -140,12 +141,12 @@ static void drv_lte_state_entry()
 	switch (current_state)
 	{
 		case DRV_LTE_POWER_TOGGLE_1:
-			PORT->Group[LTE_POWER_GROUP].OUTCLR.reg = LTE_POWER_PORT;
+			PORT_REGS->GROUP[LTE_POWER_GROUP].PORT_OUTCLR = LTE_POWER_PORT;
 			timer = xTaskGetTickCount() + 500;
 			break;
 			
 		case DRV_LTE_POWER_TOGGLE_2:
-			PORT->Group[LTE_POWER_GROUP].OUTSET.reg = LTE_POWER_PORT;
+			PORT_REGS->GROUP[LTE_POWER_GROUP].PORT_OUTSET = LTE_POWER_PORT;
 			timer = xTaskGetTickCount() + 1500;
 			break;
 			
@@ -594,7 +595,7 @@ static void drv_lte_parse_creg(const char * s)
 {
 	s = strstr(s, "+CREG: ");
 	if (!s) return;
-	int n, stat;
+	int stat;
 	char src[20];
 	
 	strncpy(src, s + 7, sizeof(src));
@@ -603,7 +604,7 @@ static void drv_lte_parse_creg(const char * s)
 	if (num != 2) return;
 	s = src;
 	
-	n = atoi(s);
+	//n = atoi(s);
 	s += strlen(s) + 1;
 	stat = atoi(s);
 
@@ -623,7 +624,7 @@ static void drv_lte_parse_usost(const char * s)
 	s = strstr(s, "+USOST: ");
 	if (!s) return;
 	
-	int sock, len;
+	int len;
 	char src[20];
 	
 	strncpy(src, s + 8, sizeof(src));
@@ -632,7 +633,7 @@ static void drv_lte_parse_usost(const char * s)
 	if (num != 2) return;
 	s = src;
 	
-	sock = atoi(s);
+	//sock = atoi(s);
 	s += strlen(s) + 1;
 	len = atoi(s);
 	

@@ -33,7 +33,7 @@ static void app_cantx_populate_GPS_time(TimerHandle_t xTimer)
 		SET_GPS_time_HOUR(buffer->DB,	timestamp->hour);
 		SET_GPS_time_MINUTE(buffer->DB, timestamp->minute);
 		SET_GPS_time_SECOND(buffer->DB, timestamp->second);
-		drv_can_queue_tx_buffer(CAN0, DRV_CAN_TX_BUFFER_CAN0_GPS_time);
+		drv_can_queue_tx_buffer(CAN0_REGS, DRV_CAN_TX_BUFFER_CAN0_GPS_time);
 	}
 }
 
@@ -46,7 +46,7 @@ static void app_cantx_populate_GPS_POS(TimerHandle_t xTimer)
 		INIT_GPS_POS(buffer->DB);
 		SET_GPS_POS_GPS_Lat(buffer->DB,		location->latitude);
 		SET_GPS_POS_GPS_Long(buffer->DB,	location->longitude);
-		drv_can_queue_tx_buffer(CAN0, DRV_CAN_TX_BUFFER_CAN0_GPS_POS);
+		drv_can_queue_tx_buffer(CAN0_REGS, DRV_CAN_TX_BUFFER_CAN0_GPS_POS);
 	}
 }
 
@@ -57,7 +57,7 @@ static void app_cantx_populate_Telem_Stat(TimerHandle_t xTimer)
 	SET_Telem_Stat_Telem_OK(buffer->DB,						(globalError == 0) ? Telem_Stat_Telem_OK_OK : Telem_Stat_Telem_OK_ERROR);
 	SET_Telem_Stat_Telem_CAN_Packets_Sent(buffer->DB,		app_telemetry_sent_messages());
 	SET_Telem_Stat_Telem_CAN_Unique_IDs_Sent(buffer->DB,	DRV_CAN_RX_BUFFER_COUNT);
-	drv_can_queue_tx_buffer(CAN0, DRV_CAN_TX_BUFFER_CAN0_Telem_Stat);
+	drv_can_queue_tx_buffer(CAN0_REGS, DRV_CAN_TX_BUFFER_CAN0_Telem_Stat);
 }
 
 void app_cantx_init(void)

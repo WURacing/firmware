@@ -31,8 +31,8 @@ void app_statusLight_init(void)
 	nextLightExpiration = -1;
 	nextLightPeriod = 0;
 	
-	PORT->Group[ERROR_LED_GROUP].DIRSET.reg  = ERROR_LED_PORT;
-	PORT->Group[STATUS_LED_GROUP].DIRSET.reg = STATUS_LED_PORT;
+	PORT_REGS->GROUP[ERROR_LED_GROUP].PORT_DIRSET  = ERROR_LED_PORT;
+	PORT_REGS->GROUP[STATUS_LED_GROUP].PORT_DIRSET = STATUS_LED_PORT;
 }
 
 void app_statusLight_periodic(void)
@@ -48,12 +48,12 @@ void app_statusLight_periodic(void)
 			nextLightExpiration = -1;
 			nextLightPeriod = 0;
 
-			PORT->Group[STATUS_LED_GROUP].OUTSET.reg = STATUS_LED_PORT;
-			PORT->Group[ERROR_LED_GROUP].OUTCLR.reg = ERROR_LED_PORT;
+			PORT_REGS->GROUP[STATUS_LED_GROUP].PORT_OUTSET = STATUS_LED_PORT;
+			PORT_REGS->GROUP[ERROR_LED_GROUP].PORT_OUTCLR = ERROR_LED_PORT;
 		}
 		else
 		{
-			PORT->Group[ERROR_LED_GROUP].OUTSET.reg = ERROR_LED_PORT;
+			PORT_REGS->GROUP[ERROR_LED_GROUP].PORT_OUTSET = ERROR_LED_PORT;
 			
 			nextLightPeriod = 1000 >> (lastError - 1); // period = 1000 / 2^error
 			nextLightExpiration = xTaskGetTickCount() + nextLightPeriod;
@@ -64,6 +64,6 @@ void app_statusLight_periodic(void)
 	{
 		nextLightExpiration = time + nextLightPeriod;
 		
-		PORT->Group[STATUS_LED_GROUP].OUTTGL.reg = STATUS_LED_PORT;
+		PORT_REGS->GROUP[STATUS_LED_GROUP].PORT_OUTTGL = STATUS_LED_PORT;
 	}
 }

@@ -11,16 +11,18 @@
 #include "drv_divas.h"
 #include "drv_lte.h"
 #include "sam.h"
+#include "system_samc21.h"
 
 void drv_init(void)
 {
 	// increase flash wait states from 0 to 1. if this is not done, the
 	// CPU has a seizure trying to run at 48MHz
-	NVMCTRL->CTRLB.bit.RWS = 1;
+	NVMCTRL_REGS->NVMCTRL_CTRLB = NVMCTRL_CTRLB_MANW(1) | NVMCTRL_CTRLB_RWS(1);
 	// up speed to 48MHz
-	OSCCTRL->OSC48MDIV.reg = OSCCTRL_OSC48MDIV_DIV(0b0000);
+	OSCCTRL_REGS->OSCCTRL_OSC48MDIV = OSCCTRL_OSC48MDIV_DIV_DIV1;
 	// wait for synchronization
-	while(OSCCTRL->OSC48MSYNCBUSY.reg) ;
+    while (OSCCTRL_REGS->OSCCTRL_OSC48MSYNCBUSY) {}
+    SystemCoreClock = 48000000;
 
 	drv_divas_init();
 	drv_can_init();
