@@ -54,6 +54,7 @@ RANLIB=ranlib
 build: .build-post
 
 .build-pre:
+	cd ../Shared/DBC/ && $(MAKE) dbc/2020.1.0.h
 # Add your pre 'build' code here...
 
 .build-post: .build-impl
@@ -64,6 +65,7 @@ build: .build-post
 clean: .clean-post
 
 .clean-pre:
+	cd ../Shared/DBC/ && $(MAKE) clean
 # Add your pre 'clean' code here...
 # WARNING: the IDE does not call this target since it takes a long time to
 # simply run make. Instead, the IDE removes the configuration directories
@@ -103,8 +105,6 @@ help: .help-post
 
 .help-post: .help-impl
 # Add your post 'help' code here...
-
-
 
 # include project implementation makefile
 include nbproject/Makefile-impl.mk
