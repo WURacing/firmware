@@ -15,6 +15,7 @@
 
 // to do this accurately we need tRISE to be calculated from bus impedance
 #define I2C_tRISE 0.f
+// inverse of fSCL on SAM C21 datasheet page 563
 #define I2C_BAUD(x) SERCOM_I2CM_BAUD_BAUD((int) ((CLOCK - 10.f*x - CLOCK*I2C_tRISE*x)/(2.f*x)))
 
 struct drv_i2c_channelConfig {

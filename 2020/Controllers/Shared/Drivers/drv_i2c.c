@@ -8,9 +8,6 @@ void drv_i2c_init(void)
 	{
 		const struct drv_i2c_channelConfig * config = &drv_i2c_config.channelConfig[channel];
 
-		//		memset(&channelData[channel], 0, sizeof(struct drv_uart_channelData));
-		//		sercomToChannelMap[config->sercom_id] = channel;
-		//		
 		// Enable the bus clock, peripheral clock, and interrupts for the chosen SERCOM#
 		drv_serial_enable_sercom(config->sercom_id);
 
@@ -48,61 +45,62 @@ int drv_i2c_read_register(enum drv_i2c_channel channel, uint8_t address, uint8_t
 {
 	sercom_i2cm_registers_t * module = drv_i2c_config.channelConfig[channel].module;
 	
-	// start, write mode
+	// send address on bus, write mode
 	module->SERCOM_ADDR = SERCOM_I2CM_ADDR_ADDR((address << 1) | 0);
 	// wait
 	while (!(module->SERCOM_INTFLAG & SERCOM_I2CM_INTFLAG_MB_Msk))
 	{
 	}
-	// can we talk?
+	// check errors
 	if (module->SERCOM_INTFLAG & (SERCOM_I2CM_INTFLAG_ERROR(1)))
 	{
 		module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(3);
 		module->SERCOM_INTFLAG = 0xFF;
 		return 0;
 	}
-	// write
+	// send pointer (to register in device) on bus
 	module->SERCOM_DATA = SERCOM_I2CM_DATA_DATA(pointer);
 	// wait
 	while (!(module->SERCOM_INTFLAG & SERCOM_I2CM_INTFLAG_MB_Msk))
 	{
 	}
-	// can we talk?
+	// check errors
 	if (module->SERCOM_INTFLAG & (SERCOM_I2CM_INTFLAG_ERROR(1)))
 	{
 		module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(3);
 		module->SERCOM_INTFLAG = 0xFF;
 		return 0;
 	}
-	// repeated start, read mode
+	// send a repeated start condition on bus, same address but read mode
 	module->SERCOM_ADDR = SERCOM_I2CM_ADDR_ADDR((address << 1) | 1);
 
+	// read all but the last byte
 	for (int i = 0; i < length - 1; ++i)
 	{
-		//wait
+		// wait
 		while (!(module->SERCOM_INTFLAG & SERCOM_I2CM_INTFLAG_SB_Msk))
 		{
 		}
-		// can we talk?
+		// check errors
 		if (module->SERCOM_INTFLAG & (SERCOM_I2CM_INTFLAG_ERROR(1)))
 		{
 			module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(3);
 			module->SERCOM_INTFLAG = 0xFF;
 			return i;
 		}
-		//read
+		// store received byte
 		results[i] = module->SERCOM_DATA;
-		// ask for more
+		// send ACK on bus (ask for more data)
 		module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(2);
 	}
 
-	//wait
+	// wait
 	while (!(module->SERCOM_INTFLAG & SERCOM_I2CM_INTFLAG_SB_Msk))
 	{
 	}
-	//read
+	// read last byte
 	results[length - 1] = module->SERCOM_DATA;
-	// no more
+	// send NAK / stop condition on bus
 	module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(3) | SERCOM_I2CM_CTRLB_ACKACT(1);
 	return length;
 }
@@ -111,43 +109,45 @@ int drv_i2c_write_register(enum drv_i2c_channel channel, uint8_t address, uint8_
 {
 	sercom_i2cm_registers_t * module = drv_i2c_config.channelConfig[channel].module;
 	
-	// start, write mode
+	// send address on bus, write mode
 	module->SERCOM_ADDR = SERCOM_I2CM_ADDR_ADDR((address << 1) | 0);
 	// wait
 	while (!(module->SERCOM_INTFLAG & SERCOM_I2CM_INTFLAG_MB_Msk))
 	{
 	}
-	// can we talk?
+	// check errors
 	if (module->SERCOM_INTFLAG & (SERCOM_I2CM_INTFLAG_ERROR(1)))
 	{
 		module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(3);
 		module->SERCOM_INTFLAG = 0xFF;
 		return 0;
 	}
-	// write
+	// send pointer (to register in device) on bus
 	module->SERCOM_DATA = SERCOM_I2CM_DATA_DATA(pointer);
 
+	// write all bytes
 	for (int i = 0; i < length; ++i)
 	{
-		//wait
+		// wait
 		while (!(module->SERCOM_INTFLAG & SERCOM_I2CM_INTFLAG_MB_Msk))
 		{
 		}
-		// can we talk?
+		// check errors
 		if (module->SERCOM_INTFLAG & (SERCOM_I2CM_INTFLAG_ERROR(1)))
 		{
 			module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(3);
 			module->SERCOM_INTFLAG = 0xFF;
 			return i;
 		}
-		//write
+		// write
 		module->SERCOM_DATA = SERCOM_I2CM_DATA_DATA(command[i]);
 	}
 
-	//wait
+	// wait
 	while (!(module->SERCOM_INTFLAG & SERCOM_I2CM_INTFLAG_MB_Msk))
 	{
 	}
+	// send stop condition
 	module->SERCOM_CTRLB = SERCOM_I2CM_CTRLB_CMD(3);
 	module->SERCOM_INTFLAG = 0xFF;
 	return length;

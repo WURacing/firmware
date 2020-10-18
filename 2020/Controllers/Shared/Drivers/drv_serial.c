@@ -1,5 +1,10 @@
 #include "drv_serial.h"
 
+/*
+ * Serial handlers route from the appropriate interrupt, to the appropriate function in the higher
+ * level interface (i2c/spi/uart)
+ */
+
 static drv_serial_handler_t handlers[6];
 
 void drv_serial_register_handler(int sercom, drv_serial_handler_t handler)

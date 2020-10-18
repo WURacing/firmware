@@ -82,13 +82,14 @@ void drv_uart_send_message(enum drv_uart_channel channel, const char * msg)
 		module->SERCOM_INTFLAG = SERCOM_USART_INT_INTFLAG_ERROR(1);
 		while (*msg)
 		{
-			// Wait til we good to write more
+			// Wait for data buffer to empty
 			while (!(module->SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_DRE_Msk)) {};
 			module->SERCOM_DATA = *(msg++);
-			// maybe wait until transmit complete
+			// Wait for transmit complete
 			while (!(module->SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_TXC_Msk)) {};
 		}
-		// check errors?
+		// Error checking not included because I can't rationalize what errors we could possibly
+		// have (especially because we're not using CTS/DTS/etc)
 	}
 }
 
@@ -100,10 +101,10 @@ void drv_uart_send_data(enum drv_uart_channel channel, const uint8_t * msg, unsi
 		const uint8_t * target = msg + length;
 		while (msg < target)
 		{
-			// Wait til we good to write more
+			// Wait for data buffer to empty
 			while (!(module->SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_DRE_Msk)) {};
 			module->SERCOM_DATA = *(msg++);
-			// maybe wait until transmit complete
+			// Wait for transmit complete
 			while (!(module->SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_TXC_Msk)) {};
 		}
 	}

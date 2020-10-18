@@ -39,6 +39,7 @@ void app_periodic(void)
 			calenread[5] = 0x10;
 			calenread[6] = 0x20;
 			r = drv_i2c_write_register(DRV_I2C_CHANNEL_RTC, 0x68, 0x00, calenread, 7);
+			
 			if (r == 7)
 				printf("Configuration success!\r\n");
 			else
@@ -55,17 +56,3 @@ void app_periodic(void)
 	}
 }
 
-int _write(int fd, const char *buf, size_t count)
-{
-	int written;
-	if (fd == 1)
-	{
-		drv_uart_send_data(DRV_UART_CHANNEL_DEBUG, (const uint8_t *) buf, count);
-		written = count;
-	}
-	else
-	{
-		written = 0;
-	}
-	return written;
-}

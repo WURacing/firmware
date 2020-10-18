@@ -8,9 +8,6 @@ void drv_spi_init(void)
 	{
 		const struct drv_spi_channelConfig * config = &drv_spi_config.channelConfig[channel];
 		
-//		memset(&channelData[channel], 0, sizeof(struct drv_uart_channelData));
-//		sercomToChannelMap[config->sercom_id] = channel;
-//		
 		// Enable the bus clock, peripheral clock, and interrupts for the chosen SERCOM#
 		drv_serial_enable_sercom(config->sercom_id);
 		
@@ -71,8 +68,8 @@ uint8_t drv_spi_transfer(enum drv_spi_channel channel, uint8_t out)
 		// Read
 		result = config->module->SERCOM_DATA;
 		
+		// We would then pull high to disable the slave again, only if necessary (multiple per bus)
 		//PORT_REGS->GROUP[config->ss_pin / 32].PORT_OUTSET = config->ss_port;
-		
 	}
 	else
 	{
