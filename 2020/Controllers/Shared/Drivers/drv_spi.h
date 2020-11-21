@@ -12,6 +12,8 @@
 #include "drv_spi_private.h"
 #include "drv_serial.h"
 #include <sam.h>
+#include <stdint.h>
+
 
 
 struct drv_spi_channelConfig {

@@ -111,6 +111,7 @@
       </compileType>
       <makeCustomizationType>
         <makeCustomizationPreStepEnabled>false</makeCustomizationPreStepEnabled>
+        <makeUseCleanTarget>false</makeUseCleanTarget>
         <makeCustomizationPreStep></makeCustomizationPreStep>
         <makeCustomizationPostStepEnabled>false</makeCustomizationPostStepEnabled>
         <makeCustomizationPostStep></makeCustomizationPostStep>
@@ -126,13 +127,6 @@
         <property key="include-paths" value=""/>
         <property key="suppress-warnings" value="false"/>
       </ARM-AS>
-      <ARM-AS-PRE>
-        <property key="announce-version" value="false"/>
-        <property key="include-paths" value=""/>
-        <property key="preprocessor-macros" value=""/>
-        <property key="preprocessor-macros-undefined" value=""/>
-        <property key="suppress-warnings" value="false"/>
-      </ARM-AS-PRE>
       <ARM-CPP>
         <property key="additional-warnings" value="true"/>
         <property key="called-functions-located" value="true"/>

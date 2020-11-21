@@ -24,3 +24,6 @@ funclist
 disassembly/
 *.map
 *.swp
+2020/.DS_Store
+.DS_Store
+*.icloud
