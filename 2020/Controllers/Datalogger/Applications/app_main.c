@@ -35,8 +35,8 @@ void app_periodic(void)
 			calenread[1] = ((__TIME__[3] - '0') << 4) | (__TIME__[4] - '0'); //minutes
 			calenread[2] = (0 << 6) | ((__TIME__[0] - '0') << 4) | (__TIME__[1] - '0'); //hours(24-hr)
 			calenread[3] = 7;
-			calenread[4] = 0x04;
-			calenread[5] = 0x10;
+			calenread[4] = 0x20;
+			calenread[5] = 0x12;
 			calenread[6] = 0x20;
 			r = drv_i2c_write_register(DRV_I2C_CHANNEL_RTC, 0x68, 0x00, calenread, 7);
 			
