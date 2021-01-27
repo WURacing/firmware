@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 #include <unistd.h>
-#include "drv_spi_private.h"
+#include "drv_spi.h"
 
 //use drv_spi_transfer function to interact with SD card. It does synchronous in and out reading
 
@@ -20,7 +20,7 @@ HOW THIS WORKS
     * Change drv_spi_private.h and .c to create and set up channel for DRV_SPI_CHANNEL_SD
 */
 
-//#include "ff.h"
+#include "ff.h"
 
 /* Status of Disk Functions */
 //typedef BYTE	DSTATUS;
@@ -51,8 +51,8 @@ enum cmd_ind {
     //ACMD23 = 23,        // For only SDC. Define number of blocks to pre-erase with next multi-block write command
     //CMD24 = 24,         // Write a block
     //CMD25 = 25,         // Write multiple blocks
-    //CMD55 = 55,         // Leading command of ACMD<n> command
-    CMD58 =  58    // Read OCR
+    CMD55 = 55,         // Leading command of ACMD<n> command
+    CMD58 = 58    // Read OCR
 };
 
 

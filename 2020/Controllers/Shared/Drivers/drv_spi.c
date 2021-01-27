@@ -57,7 +57,7 @@ uint8_t drv_spi_transfer(enum drv_spi_channel channel, uint8_t out)
 	{
 		const struct drv_spi_channelConfig * config = &drv_spi_config.channelConfig[channel];
 		// Pull low to enable slave. TODO configurable
-		PORT_REGS->GROUP[config->ss_pin / 32].PORT_OUTCLR = config->ss_port;
+//		PORT_REGS->GROUP[config->ss_pin / 32].PORT_OUTCLR = config->ss_port;
 		
 		// Wait until we can write
 		while (!(config->module->SERCOM_INTFLAG & SERCOM_SPIM_INTFLAG_DRE_Msk)) {}

@@ -10,6 +10,7 @@ void drv_init(void)
 	drv_spi_init();
 	drv_i2c_init();
 	drv_divas_init();
+	disk_initialize(0);
 }
 
 void drv_periodic(void)
