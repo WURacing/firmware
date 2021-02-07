@@ -31,14 +31,11 @@ uint8_t send_cmd(int cmd, int arg, uint8_t crc) {
         resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
         max--;
     } while (resp == 0xff && max);
-
-    if (!max) {
-		return 0x69;
-	}
     
     // Return 1-byte response
     return resp;
 }
+
 
 // pdrv is physical drive number
 int disk_initialize (uint8_t pdrv) {
@@ -83,35 +80,72 @@ int disk_initialize (uint8_t pdrv) {
 		// Send CMD55 - if response is 0x01, good; if response is 0x05, retry w/ CMD1 instead
 		
 		do {
-			resp = send_cmd(CMD55, 0x0, 0x65); // response here is 0x69, so we return a few lines later. what's going on TODO. We're maxing out :(
+			resp = send_cmd(CMD55, 0x0, 0x65);
 		} while ((resp != 0x01) && (resp != 0x05));
 		
 		if (resp == 0x05) {
 			// Old card (ACMD command rejected) - try CMD1
 			resp = send_cmd(CMD1, 0x0, 0xf9);
-		} 
-
-//		if (resp != 0x01) { //we get to here
-//			return -1;
-//		}
+		}
 
 		// Send ACMD41 - if 0x0, we're done; if 0x01 or 0x05, repeat loop; else, return error
 		resp = send_cmd(ACMD41, 0x40000000, 0xff);
 		if (resp == 0x0) {
 			success = 1;
 		} 
-//		else if (!(resp == 0x05 || resp == 0x01)) {
-//			return -1;
-//		}
-	
+
 	}
 
+	//CMD16 will set block size to 512 bytes to work with FatFS
+	
     return resp;
-
 }
 
-int disk_read (uint8_t pdrv, uint8_t* buff, LBA_t sector, uint8_t count) {
+static volatile char buf[1024];
 
+// pdrv: physical drive number (0)
+// buff: [out] pointer to read data buffer
+// sector: start sector number
+// count: number of sectors to read
+int disk_read (uint8_t pdrv, uint8_t* buff, LBA_t sector, uint8_t count) {
+	
+	char crc[2];
+	
+	// Get initial 1-byte response from SD card
+	uint8_t resp = send_cmd(CMD17, 0x00000000, 0x00);
+	
+	if (resp == 0xff) {
+		// heck
+		asm("bkpt #69");
+		return -1;
+	}
+	
+	// Wait a hot minute (until non-ff response received), then read
+	int read_attempts = 0;
+	while (++read_attempts < 2000) {
+		resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+		
+		// If response token is 0xfe, the next byte will contain data!!
+		if (resp == 0xfe) {
+			for (int i = 0; i < 512; i++) {
+				buf[i] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+			}
+			crc[0] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+			crc[1] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+			
+			break;
+		}
+	}
+	
+	if (buf[0] == 0x69)
+	{
+	asm("bkpt #69");
+	}
+	else
+	{
+			asm("bkpt #2");
+
+	}
 }
 
 int disk_write (uint8_t pdrv, const uint8_t* buff, LBA_t sector, uint8_t count) {

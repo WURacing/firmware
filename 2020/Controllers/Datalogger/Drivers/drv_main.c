@@ -11,6 +11,7 @@ void drv_init(void)
 	drv_i2c_init();
 	drv_divas_init();
 	disk_initialize(0);
+	disk_read(0, 0, 0, 0);
 }
 
 void drv_periodic(void)
