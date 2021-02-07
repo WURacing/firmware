@@ -25,14 +25,16 @@ uint8_t send_cmd(int cmd, int arg, uint8_t crc) {
     drv_spi_transfer(DRV_SPI_CHANNEL_SD, crc);
     
     // Keep sending ones to keep clock going until we receive a nonzero 1-byte response, or we exceed attempt limit
-    int max = 20;
+    int max = 1000;
     uint8_t resp = 0xff;
     do {
         resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
         max--;
     } while (resp == 0xff && max);
 
-    if (!max) return -1;
+    if (!max) {
+		return 0x69;
+	}
     
     // Return 1-byte response
     return resp;
@@ -55,9 +57,13 @@ int disk_initialize (uint8_t pdrv) {
         drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
     }
 
-    // Send CMD0 (32 bits of 0) until we receive a nonzero result
+    // Set CS low and send CMD0 (32 bits of 0) until we receive a nonzero result
 	PORT_REGS->GROUP[0].PORT_OUTCLR = PORT_PA20;
-    uint8_t resp = send_cmd(CMD0, 0x0, 0x95);
+    uint8_t resp = 0;
+	
+	do {
+		resp = send_cmd(CMD0, 0x0, 0x95);
+	} while (resp == 0);
 
     // Check if resp is In Idle State bit set (0x01) - if not return error
     if (resp != 0x01) {
@@ -75,23 +81,28 @@ int disk_initialize (uint8_t pdrv) {
 	
 	while (!success) {
 		// Send CMD55 - if response is 0x01, good; if response is 0x05, retry w/ CMD1 instead
-		resp = send_cmd(CMD55, 0x0, 0xff); // response here is 0xff, so we return a few lines later. what's going on TODO
+		
+		do {
+			resp = send_cmd(CMD55, 0x0, 0x65); // response here is 0x69, so we return a few lines later. what's going on TODO. We're maxing out :(
+		} while ((resp != 0x01) && (resp != 0x05));
+		
 		if (resp == 0x05) {
 			// Old card (ACMD command rejected) - try CMD1
 			resp = send_cmd(CMD1, 0x0, 0xf9);
 		} 
 
-		if (resp != 0x01) { //we get to here
-			return -1;
-		}
+//		if (resp != 0x01) { //we get to here
+//			return -1;
+//		}
 
 		// Send ACMD41 - if 0x0, we're done; if 0x01 or 0x05, repeat loop; else, return error
 		resp = send_cmd(ACMD41, 0x40000000, 0xff);
 		if (resp == 0x0) {
 			success = 1;
-		} else if (!(resp == 0x05 || resp == 0x01)) {
-			return -1;
-		}
+		} 
+//		else if (!(resp == 0x05 || resp == 0x01)) {
+//			return -1;
+//		}
 	
 	}
 
