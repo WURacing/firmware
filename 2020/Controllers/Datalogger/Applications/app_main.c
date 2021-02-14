@@ -12,9 +12,9 @@ void app_init(void)
 	// enable pull-ups on disconnected pins
 	const uint8_t paUnused[] = {3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19, 28};
 	const uint8_t pbUnused[] = {0, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 22, 23, 30, 31};
-	for (int i = 0; i < sizeof (paUnused) / sizeof (paUnused[0]); ++i)
+	for (unsigned int i = 0; i < sizeof (paUnused) / sizeof (paUnused[0]); ++i)
 		PORT_REGS->GROUP[0].PORT_PINCFG[paUnused[i]] = PORT_PINCFG_PULLEN(1);
-	for (int i = 0; i < sizeof (pbUnused) / sizeof (pbUnused[0]); ++i)
+	for (unsigned int i = 0; i < sizeof (pbUnused) / sizeof (pbUnused[0]); ++i)
 		PORT_REGS->GROUP[1].PORT_PINCFG[pbUnused[i]] = PORT_PINCFG_PULLEN(1);
 }
 

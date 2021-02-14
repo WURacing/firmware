@@ -21,6 +21,12 @@ HOW THIS WORKS
 */
 
 #include "ff.h"
+#include "diskio.h"
+
+#define SD_SECTOR_SIZE 512
+#define SD_TIMEOUT_BYTES 2000
+#define SD_RECEIVE_START 0xfe
+#define SD_BIGGEST_SECTOR (UINT)(256000000000/SD_SECTOR_SIZE)
 
 /* Status of Disk Functions */
 //typedef BYTE	DSTATUS;
@@ -55,37 +61,5 @@ enum cmd_ind {
     CMD58 = 58    // Read OCR
 };
 
-
-int disk_initialize (
-  uint8_t pdrv           /* [IN] Physical drive number */
-);
-int disk_read (
-  uint8_t pdrv,     /* [IN] Physical drive number */
-  uint8_t* buff,    /* [OUT] Pointer to the read data buffer */
-  LBA_t sector,  /* [IN] Start sector number */
-  uint8_t count     /* [IN] Number of sectors to read */
-);
-int disk_write (
-  uint8_t pdrv,        /* [IN] Physical drive number */
-  const uint8_t* buff, /* [IN] Pointer to the data to be written */
-  LBA_t sector,     /* [IN] Sector number to write from */
-  uint8_t count        /* [IN] Number of sectors to write */
-);
-int disk_ioctl (
-  uint8_t pdrv,     /* [IN] Drive number */
-  uint8_t cmd,      /* [IN] Control command code */
-  void* buff     /* [I/O] Parameter and data buffer */
-);
-int disk_status (
-  uint8_t pdrv     /* [IN] Physical drive number */
-);
-
-int READ_SINGLE_BLOCK (int addr);
-
-int WRITE_BLOCK (int addr);
-
-int READ_MULTIPLE_BLOCK (int addr);
-
-int WRTIE_MULTIPLE_BLOCK (int addr);
 
 #endif
