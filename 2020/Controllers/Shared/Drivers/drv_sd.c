@@ -101,8 +101,6 @@ int disk_initialize (uint8_t pdrv) {
     return resp;
 }
 
-static volatile char buf[1024];
-
 // pdrv: physical drive number (0)
 // buff: [out] pointer to read data buffer
 // sector: start sector number
@@ -110,41 +108,66 @@ static volatile char buf[1024];
 int disk_read (uint8_t pdrv, uint8_t* buff, LBA_t sector, uint8_t count) {
 	
 	char crc[2];
-	
-	// Get initial 1-byte response from SD card
-	uint8_t resp = send_cmd(CMD17, 0x00000000, 0x00);
-	
-	if (resp == 0xff) {
-		// heck
-		asm("bkpt #69");
-		return -1;
-	}
-	
-	// Wait a hot minute (until non-ff response received), then read
+	uint8_t resp;
 	int read_attempts = 0;
-	while (++read_attempts < 2000) {
-		resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
-		
-		// If response token is 0xfe, the next byte will contain data!!
-		if (resp == 0xfe) {
-			for (int i = 0; i < 512; i++) {
-				buf[i] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
-			}
-			crc[0] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
-			crc[1] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
-			
-			break;
-		}
-	}
 	
-	if (buf[0] == 0x69)
-	{
-	asm("bkpt #69");
-	}
-	else
-	{
-			asm("bkpt #2");
+	if (count == 1) {
+		// Get initial 1-byte response from SD card
+		resp = send_cmd(CMD17, sector, 0x00);
 
+		if (resp == 0xff) {
+			// heck
+			asm("bkpt #69");
+			return -1;
+		}
+
+		// Wait a hot minute (until non-ff response received), then read
+		while (++read_attempts < 2000) {
+			resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+
+			// If response token is 0xfe, the next byte will contain data!!
+			if (resp == 0xfe) {
+				for (int i = 0; i < 512; i++) {
+					buff[i] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+				}
+
+//				crc[0] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+//				crc[1] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+
+				break;
+			}
+		}
+	} else if (count > 1) {
+		resp = send_cmd(CMD18, sector, 0x00);
+		
+		if (resp == 0xff) {
+			// heck
+			asm("bkpt #69");
+			return -1;
+		}
+		
+		for (int j = 0; j < count; j++) {
+			read_attempts = 0;
+			while (++read_attempts < 2000) {
+				resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+
+				// If response token is 0xfe, the next byte will contain data!!
+				if (resp == 0xfe) {
+
+						for (int i = 0; i < 512; i++) {
+							buff[i] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+						}
+
+	//				crc[0] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+	//				crc[1] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+
+					break;
+				}
+			}
+		}
+		
+		// Send CMD12 to stop reading data
+		resp = send_cmd(CMD12, 0x00000000, 0x00);
 	}
 }
 

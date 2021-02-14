@@ -43,10 +43,10 @@ enum cmd_ind {
     CMD8 =   8,  // For only SDC V2. Check voltage range
     //CMD9 = 9,           // Read CSD register
     //CMD10 = 10,         // Read CID register
-    //CMD12 = 12,         // Stop to read data
+    CMD12 =  12,         // Stop to read data
     CMD16 =  16,  // Change R/W block size
     CMD17 =  17,         // Read block
-    //CMD18 = 18,         // Read multiple blocks
+    CMD18 =  18,         // Read multiple blocks
     //CMD23 = 23,         // DON'T USE - for MMC only. Define number of blocks for next R/W command
     //ACMD23 = 23,        // For only SDC. Define number of blocks to pre-erase with next multi-block write command
     //CMD24 = 24,         // Write a block
