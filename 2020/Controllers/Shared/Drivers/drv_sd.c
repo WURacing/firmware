@@ -78,7 +78,7 @@ DSTATUS disk_initialize(BYTE pdrv)
 	// Check if resp is In Idle State bit set (0x01) - if not return error
 	if (resp != 0x01)
 	{
-		return -1;
+		return STA_NOINIT;
 	}
 
 	//INITIALIZATION*******************************************************************************
@@ -86,7 +86,7 @@ DSTATUS disk_initialize(BYTE pdrv)
 	resp = send_cmd(CMD8, 0x1aa, 0x87);
 	if (resp != 0x01)
 	{
-		return -1;
+		return STA_NOINIT;
 	}
 
 	int success = 0;
@@ -184,7 +184,50 @@ DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 
 DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 {
+	uint8_t resp;
+	
+	if (pdrv != 0 || count < 1 || count > SD_BIGGEST_SECTOR || sector > SD_BIGGEST_SECTOR || buff == 0)
+	{
+		return RES_PARERR;
+	}
+	
+	// Get initial 1-byte response from SD card
+	if (count == 1)
+	{
+		resp = send_cmd(CMD24, sector, 0);
+	}
+	else
+	{
+		resp = send_cmd(CMD25, sector, 0);
+	}
+	if (resp == 0xff)
+	{
+		return RES_NOTRDY;
+	}
 
+	for (UINT j = 0; j < count; j++)
+	{
+		// Send one 0xff byte to prep for sending data block
+		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+
+		// Send data token (0xfe for CMD24, 0xfc for CMD25)
+		if (count == 1) drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfe);
+		else drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfc);
+
+		for (int i = 0; i < SD_SECTOR_SIZE; i++)
+		{
+			drv_spi_transfer(DRV_SPI_CHANNEL_SD, buff[i + SD_SECTOR_SIZE * j]);
+		}
+	}
+	
+	if (count > 1)
+	{
+		// Send Stop Tran token to stop reading data
+		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfd);
+	}
+	
+	return RES_OK;
+	
 }
 
 DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)

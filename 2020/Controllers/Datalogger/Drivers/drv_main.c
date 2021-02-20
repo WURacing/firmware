@@ -5,18 +5,24 @@
 #include "drv_divas.h"
 #include "drv_sd.h"
 
-static volatile char buff[2048];
+static volatile char buff_write[2048];
+static volatile char buff_read[2048];
 
 void drv_init(void)
 {
+	for (int i = 0; i < 2048; i++) {
+		buff_write[i] = 0x42;
+	}
+	
 	drv_uart_init();
 	drv_spi_init();
 	drv_i2c_init();
 	drv_divas_init();
 	disk_initialize(0);
 	volatile DRESULT result1, result2;
-	result2 = disk_read(0, buff+512, 1, 2);
-	result1 = disk_read(0, buff, 0, 1);
+	disk_write(0, buff_write, 0, 1);
+	//result2 = disk_read(0, buff+512, 1, 2);
+	result1 = disk_read(0, buff_read, 0, 2);
 	asm volatile("nop\r\n");
 }
 

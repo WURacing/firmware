@@ -55,8 +55,8 @@ enum cmd_ind {
     CMD18 =  18,         // Read multiple blocks
     //CMD23 = 23,         // DON'T USE - for MMC only. Define number of blocks for next R/W command
     //ACMD23 = 23,        // For only SDC. Define number of blocks to pre-erase with next multi-block write command
-    //CMD24 = 24,         // Write a block
-    //CMD25 = 25,         // Write multiple blocks
+    CMD24 = 24,         // Write a block
+    CMD25 = 25,         // Write multiple blocks
     CMD55 = 55,         // Leading command of ACMD<n> command
     CMD58 = 58    // Read OCR
 };
