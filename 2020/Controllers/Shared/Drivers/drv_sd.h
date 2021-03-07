@@ -47,7 +47,7 @@ enum cmd_ind {
     CMD1 =   1,  // Initiate initialization process
     ACMD41 = 41,  // For only SDC. Initiate initialization process
     CMD8 =   8,  // For only SDC V2. Check voltage range
-    //CMD9 = 9,           // Read CSD register
+    CMD9 = 9,           // Read CSD register
     //CMD10 = 10,         // Read CID register
     CMD12 =  12,         // Stop to read data
     CMD16 =  16,  // Change R/W block size
@@ -57,9 +57,163 @@ enum cmd_ind {
     //ACMD23 = 23,        // For only SDC. Define number of blocks to pre-erase with next multi-block write command
     CMD24 = 24,         // Write a block
     CMD25 = 25,         // Write multiple blocks
+	CMD32 = 32,		// erase start addr
+	CMD33 = 33,		// erase end addr
+	CMD38 = 38,		// start erase
     CMD55 = 55,         // Leading command of ACMD<n> command
     CMD58 = 58    // Read OCR
 };
 
+struct sd_reg_csd {
+#if 0
+	uint32_t		: 1;
+	uint32_t crc	: 7;
+	uint32_t		: 2;
+	uint32_t file_format	: 2;
+	uint32_t tmp_write_protect	: 1;
+	uint32_t perm_write_protect	: 1;
+	uint32_t copy				: 1;
+	uint32_t file_format_grp	: 1;
+	uint32_t					: 5;
+	uint32_t write_bl_partial	: 1;
+	uint32_t write_bl_len		: 4;
+	uint32_t r2w_factor			: 3;
+	uint32_t					: 2;
+	uint32_t wp_grp_enable		: 1;
+	uint32_t wp_grp_size		: 7;
+	uint32_t sector_size		: 7;
+	uint32_t erase_blk_en		: 1;
+	uint32_t c_size_mult		: 3;
+	uint32_t vdd_w_curr_max		: 3;
+	uint32_t vdd_w_curr_min		: 3;
+	uint32_t vdd_r_curr_max		: 3;
+	uint32_t vdd_r_curr_min		: 3;
+	uint32_t c_size				: 12;
+	uint32_t					: 2;
+	uint32_t dsr_imp			: 1;
+	uint32_t read_blk_misalign	: 1;
+	uint32_t write_blk_misalign	: 1;
+	uint32_t read_bl_partial	: 1;
+	uint32_t read_bl_len		: 4;
+	uint32_t ccc				: 12;
+	uint32_t tran_speed			: 8;
+	uint32_t nsac				: 8;
+	uint32_t taac				: 8;
+	uint32_t					: 6;
+	uint32_t csd_structure		: 2;
+#else
+	uint32_t csd_structure		: 2;
+	uint32_t					: 6;
+	uint32_t taac				: 8;
+	uint32_t nsac				: 8;
+	uint32_t tran_speed			: 8;
+	uint32_t ccc				: 12;
+	uint32_t read_bl_len		: 4;
+	uint32_t read_bl_partial	: 1;
+	uint32_t write_blk_misalign	: 1;
+	uint32_t read_blk_misalign	: 1;
+	uint32_t dsr_imp			: 1;
+	uint32_t					: 6;
+	uint32_t c_size				: 22;
+	uint32_t					: 1;
+	uint32_t erase_blk_en		: 1;
+	uint32_t sector_size		: 7;
+	uint32_t wp_grp_size		: 7;
+	uint32_t wp_grp_enable		: 1;
+	uint32_t					: 2;
+	uint32_t r2w_factor			: 3;
+	uint32_t write_bl_len		: 4;
+	uint32_t write_bl_partial	: 1;
+	uint32_t					: 5;
+	uint32_t file_format_grp	: 1;
+	uint32_t copy				: 1;
+	uint32_t perm_write_protect	: 1;
+	uint32_t tmp_write_protect	: 1;
+	uint32_t file_format		: 2;
+	uint32_t					: 2;
+	uint32_t crc				: 7;
+	uint32_t alwaysone			: 1;
+#endif
+};
 
+union sd_csd {
+	uint8_t bytes[16];
+	struct {
+		uint32_t csd_structure		: 2;
+		uint32_t					: 6;
+		uint32_t taac				: 8;
+		uint32_t nsac				: 8;
+		uint32_t tran_speed			: 8;
+		uint32_t ccc				: 12;
+		uint32_t read_bl_len		: 4;
+		uint32_t read_bl_partial	: 1;
+		uint32_t write_blk_misalign	: 1;
+		uint32_t read_blk_misalign	: 1;
+		uint32_t dsr_imp			: 1;
+		uint32_t					: 2;
+		uint32_t c_size				: 12;
+		uint32_t vdd_r_curr_min		: 3;
+		uint32_t vdd_r_curr_max		: 3;
+		uint32_t vdd_w_curr_min		: 3;
+		uint32_t vdd_w_curr_max		: 3;
+		uint32_t c_size_mult		: 3;
+		uint32_t erase_blk_en		: 1;
+		uint32_t sector_size		: 7;
+		uint32_t wp_grp_size		: 7;
+		uint32_t wp_grp_enable		: 1;
+		uint32_t					: 2;
+		uint32_t r2w_factor			: 3;
+		uint32_t write_bl_len		: 4;
+		uint32_t write_bl_partial	: 1;
+		uint32_t					: 5;
+		uint32_t file_format_grp	: 1;
+		uint32_t copy				: 1;
+		uint32_t perm_write_protect	: 1;
+		uint32_t tmp_write_protect	: 1;
+		uint32_t file_format		: 2;
+		uint32_t					: 2;
+		uint32_t crc				: 7;
+		uint32_t					: 1;
+	} v1;
+	struct {
+		uint32_t					: 30;
+		uint32_t csd_structure		: 2;
+		
+	} v2;
+};
+
+#if 0
+		uint32_t csd_structure		: 2;
+		uint32_t					: 6;
+		uint32_t taac				: 8;
+		uint32_t nsac				: 8;
+		uint32_t tran_speed			: 8;
+		uint32_t ccc				: 12;
+		uint32_t read_bl_len		: 4;
+		uint32_t read_bl_partial	: 1;
+		uint32_t write_blk_misalign	: 1;
+		uint32_t read_blk_misalign	: 1;
+		uint32_t dsr_imp			: 1;
+		uint32_t					: 6;
+		uint32_t c_size				: 22;
+		uint32_t					: 1;
+		uint32_t erase_blk_en		: 1;
+		uint32_t sector_size		: 7;
+		uint32_t wp_grp_size		: 7;
+		uint32_t wp_grp_enable		: 1;
+		uint32_t					: 2;
+		uint32_t r2w_factor			: 3;
+		uint32_t write_bl_len		: 4;
+		uint32_t write_bl_partial	: 1;
+		uint32_t					: 5;
+		uint32_t file_format_grp	: 1;
+		uint32_t copy				: 1;
+		uint32_t perm_write_protect	: 1;
+		uint32_t tmp_write_protect	: 1;
+		uint32_t file_format		: 2;
+		uint32_t					: 2;
+		uint32_t crc				: 7;
+		uint32_t alwaysone			: 1;
+
+#endif
 #endif

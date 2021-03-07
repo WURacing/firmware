@@ -178,7 +178,6 @@ DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 {
 	uint8_t resp;
-	volatile int n = 0;
 	
 	if (pdrv != 0 || count < 1 || count > SD_BIGGEST_SECTOR || sector > SD_BIGGEST_SECTOR || buff == 0)
 	{
@@ -225,10 +224,7 @@ DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 		}
 		
 		// Wait for busy flag to go low before continuing
-		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {
-			n++;
-		}
-		asm volatile("nop\r\n");
+		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {}
 		
 	}
 	
@@ -241,22 +237,107 @@ DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
 		
 		// Wait for busy flag to go low before continuing
-		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {
-			n++;
-		}
-		n = n - 1 + 1;
+		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {}
 	}
 	
 	return RES_OK;
 	
 }
 
+#define CSD_STRUCTURE_V2 1
+static inline int read_csd_structure(uint8_t *csd)
+{
+	return (int)csd[0] >> 6 & 0x3;
+}
+
+static inline int read_csd_v2_ccc(uint8_t *csd)
+{
+	return ((int)csd[4] << 4 & 0xFF0) | ((int)csd[5] >> 4 & 0xF);
+}
+
+static inline int read_csd_v2_csize(uint8_t *csd)
+{
+	return ((int)csd[7] << 16 & 0x3F0000) | ((int)csd[8] << 8) | ((int)csd[9]);
+}
+
 DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
 {
+	uint8_t resp;
+	int read_attempts;
+	uint8_t csd[16];
+	
+	if (cmd == CTRL_SYNC)
+	{
+		// Wait for busy flag to go low before continuing
+		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {}
+		return RES_OK;
+	}
+	if (cmd == GET_SECTOR_COUNT)
+	{
+		// Read CSD register
+		resp = send_cmd(CMD9, 0, 0);
+		if (resp == 0xff)
+		{
+			return RES_NOTRDY;
+		}
 
+		read_attempts = resp = 0;
+		while (resp != SD_RECEIVE_START && read_attempts < SD_TIMEOUT_BYTES)
+		{
+			resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+			read_attempts++;
+		}
+		// If response token is 0xfe, the next byte will contain data!!
+		if (resp == SD_RECEIVE_START)
+		{
+			for (int i = 0; i < 16; i++)
+			{
+				csd[i] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+			}
+			int structure = read_csd_structure(csd);
+			if (structure == CSD_STRUCTURE_V2)
+			{
+				int csize = read_csd_v2_csize(csd);
+				*(LBA_t *)buff = (csize + 1) * 1024;
+				return RES_OK;
+			}
+			else
+			{
+				return RES_ERROR;
+			}
+		}
+		else
+		{
+			return RES_ERROR;
+		}
+	}
+	if (cmd == GET_SECTOR_SIZE)
+	{
+		*(WORD *)buff = 512;
+		return RES_OK;
+	}
+	if (cmd == GET_BLOCK_SIZE)
+	{
+		*(DWORD *)buff = 512;
+		return RES_OK;
+	}
+	if (cmd == CTRL_TRIM)
+	{
+		LBA_t start = ((LBA_t *)buff)[0];
+		LBA_t end = ((LBA_t *)buff)[1];
+		resp = send_cmd(CMD32, start, 0);
+		resp = send_cmd(CMD33, end, 0);
+		resp = send_cmd(CMD38, 0, 0);
+		// Wait for busy flag to go low before continuing
+		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {}
+		return RES_OK;
+	}
+	
+	return RES_PARERR;
 }
 
 DSTATUS disk_status(BYTE pdrv)
 {
-
+	(void)pdrv;
+	return RES_ERROR;
 }
