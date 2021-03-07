@@ -2,17 +2,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-
-// QUESTIONS
-// What will the SD card be producing as a result of drv_spi_transfer() when it hasn't produced data yet?
-// What byte should we send to the SD card while anticipating data, to keep the clock running?
-// Why is ACMD two different things in init flowchart?
-
-
-// Idea: send a command given an enum number, wait for a response, and return the response (1 byte)
-// TODO: if we don't get a response in a given number of calls to drv_spi_transfer(), return error, receive response differently 
-// based on command (e.g. cmd58 receives 4 bytes) - maybe I don't need to worry about that though?
-
 uint8_t send_cmd(int cmd, int arg, uint8_t crc)
 {
 
@@ -182,9 +171,14 @@ DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 	return RES_OK;
 }
 
+// Send CMD24 if 1 sector, else CMD25
+// For each sector:
+	// Send 0xff to prep for sending data block
+	// 
 DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 {
 	uint8_t resp;
+	volatile int n = 0;
 	
 	if (pdrv != 0 || count < 1 || count > SD_BIGGEST_SECTOR || sector > SD_BIGGEST_SECTOR || buff == 0)
 	{
@@ -207,23 +201,50 @@ DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 
 	for (UINT j = 0; j < count; j++)
 	{
-		// Send one 0xff byte to prep for sending data block
-		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+//		// Send one 0xff byte to prep for sending data block
+//		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
 
 		// Send data token (0xfe for CMD24, 0xfc for CMD25)
 		if (count == 1) drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfe);
 		else drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfc);
 
+		// Send data block
 		for (int i = 0; i < SD_SECTOR_SIZE; i++)
 		{
 			drv_spi_transfer(DRV_SPI_CHANNEL_SD, buff[i + SD_SECTOR_SIZE * j]);
 		}
+		
+		// Send dummy CRC
+		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+		
+		// Data resp indicates data accepted, rejected due CRC error, or rejected due to write error
+		resp = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+		if ((resp & 0x1f) != 0x05) {
+			return RES_ERROR;
+		}
+		
+		// Wait for busy flag to go low before continuing
+		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {
+			n++;
+		}
+		asm volatile("nop\r\n");
+		
 	}
 	
 	if (count > 1)
 	{
 		// Send Stop Tran token to stop reading data
 		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfd);
+		
+		// Keep clock going for 1 byte
+		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
+		
+		// Wait for busy flag to go low before continuing
+		while (drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff) == 0) {
+			n++;
+		}
+		n = n - 1 + 1;
 	}
 	
 	return RES_OK;
