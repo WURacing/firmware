@@ -1,6 +1,34 @@
 #include "drv_sd.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include <stdbool.h>
+
+#define SD_CD_PORT PORT_PA27
+#define SD_CD_PIN PIN_PA27
+
+static struct drv_sd_data {
+	bool initialized;
+	bool connected;
+} drv_sd_data;
+
+void drv_sd_init(void)
+{
+	drv_sd_data.initialized = false;
+	drv_sd_data.connected = false;
+	
+	PORT_REGS->GROUP[0].PORT_DIRCLR = SD_CD_PORT;
+	PORT_REGS->GROUP[0].PORT_PINCFG[SD_CD_PIN] = PORT_PINCFG_INEN(1);
+}
+
+void drv_sd_periodic(void)
+{
+	// Check for changes in card connection status
+	drv_sd_data.connected = !(PORT_REGS->GROUP[0].PORT_IN >> SD_CD_PIN & 1);
+	if (!drv_sd_data.connected)
+	{
+		drv_sd_data.initialized = false;
+	}
+}
 
 uint8_t send_cmd(int cmd, int arg, uint8_t crc)
 {
@@ -24,6 +52,8 @@ uint8_t send_cmd(int cmd, int arg, uint8_t crc)
 		max--;
 	}
 	while (resp == 0xff && max);
+	
+	drv_sd_data.initialized = true;
 
 	// Return 1-byte response
 	return resp;
@@ -266,6 +296,8 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
 	int read_attempts;
 	uint8_t csd[16];
 	
+	if (pdrv != 0) return RES_PARERR;
+	
 	if (cmd == CTRL_SYNC)
 	{
 		// Wait for busy flag to go low before continuing
@@ -338,6 +370,12 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
 
 DSTATUS disk_status(BYTE pdrv)
 {
-	(void)pdrv;
-	return RES_ERROR;
+	if (pdrv != 0) return RES_PARERR;
+	
+	DSTATUS result = 0;
+	if (!drv_sd_data.connected)
+		result |= STA_NODISK;
+	if (!drv_sd_data.initialized)
+		result |= STA_NOINIT;
+	return result;
 }
