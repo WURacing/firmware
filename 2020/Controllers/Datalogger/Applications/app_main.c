@@ -6,6 +6,11 @@
 #include "task.h"
 #include <sam.h>
 #include <stdio.h>
+#include <time.h>
+#include "ff.h"
+
+static FATFS fs;
+static FIL fp;
 
 void app_init(void)
 {
@@ -16,43 +21,44 @@ void app_init(void)
 		PORT_REGS->GROUP[0].PORT_PINCFG[paUnused[i]] = PORT_PINCFG_PULLEN(1);
 	for (unsigned int i = 0; i < sizeof (pbUnused) / sizeof (pbUnused[0]); ++i)
 		PORT_REGS->GROUP[1].PORT_PINCFG[pbUnused[i]] = PORT_PINCFG_PULLEN(1);
+	
+	f_mount(&fs, "", 0);
 }
-
-static uint8_t calenread[7];
 
 void app_periodic(void)
 {
 	if (xTaskGetTickCount() % 1000) return;
-
-	int r = drv_i2c_read_register(DRV_I2C_CHANNEL_RTC, 0x68, 0x00, calenread, 7);
-
-	if (r == 7)
+	
+	struct tm * time = localtime(NULL);
+	char timestr[100];
+	strftime(timestr, 100, "%Y-%m-%d %H:%M:%S", time);
+	puts(timestr);
+	
+	FRESULT result;
+	result = f_open(&fp, "hello.txt", FA_READ);
+	if (result == FR_OK)
 	{
-		if (calenread[0] & 0x80)
-		{
-			printf("RTC is unconfigured, configuring...\r\n");
-			calenread[0] = (0 << 7) | ((__TIME__[6] - '0') << 4) | (__TIME__[7] - '0'); //seconds
-			calenread[1] = ((__TIME__[3] - '0') << 4) | (__TIME__[4] - '0'); //minutes
-			calenread[2] = (0 << 6) | ((__TIME__[0] - '0') << 4) | (__TIME__[1] - '0'); //hours(24-hr)
-			calenread[3] = 7;
-			calenread[4] = 0x20;
-			calenread[5] = 0x12;
-			calenread[6] = 0x20;
-			r = drv_i2c_write_register(DRV_I2C_CHANNEL_RTC, 0x68, 0x00, calenread, 7);
-			
-			if (r == 7)
-				printf("Configuration success!\r\n");
-			else
-				printf("configuration fail...\r\n");
+		puts("Opened file for reading");
+		while (f_gets(timestr, sizeof timestr, &fp)) {
+			printf(timestr);
 		}
-		else
-		{
-			printf("20%02x-%02x-%02x %02x:%02x:%02x\r\n", calenread[6], calenread[5], calenread[4], calenread[2], calenread[1], calenread[0]);
-		}
+		f_close(&fp);
 	}
 	else
 	{
-		printf("RTC READ ERROR\r\n");
+		puts("Failed to open file for reading");
+	}
+	
+	result = f_open(&fp, "output.txt", FA_CREATE_ALWAYS | FA_WRITE);
+	if (result == FR_OK)
+	{
+		puts("Opened file for writing");
+		f_puts("Hey guys from uC!", &fp);
+		f_close(&fp);
+	}
+	else
+	{
+		puts("Failed to open file for writing");
 	}
 }
 

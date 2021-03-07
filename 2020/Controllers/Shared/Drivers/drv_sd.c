@@ -9,7 +9,10 @@
 static struct drv_sd_data {
 	bool initialized;
 	bool connected;
-} drv_sd_data;
+} drv_sd_data = {
+	.initialized = false,
+	.connected = false,
+};
 
 void drv_sd_init(void)
 {

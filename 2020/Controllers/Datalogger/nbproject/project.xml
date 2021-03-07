@@ -19,6 +19,7 @@
                 <sourceRootElem>../Shared/RTOS</sourceRootElem>
                 <sourceRootElem>../Shared/Drivers</sourceRootElem>
                 <sourceRootElem>../Shared/Device_Startup</sourceRootElem>
+                <sourceRootElem>../Shared/fatfs/source</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>

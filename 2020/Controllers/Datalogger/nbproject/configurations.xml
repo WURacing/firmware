@@ -18,6 +18,7 @@
         <itemPath>Drivers/drv_i2c_private.h</itemPath>
         <itemPath>../Shared/Drivers/drv_divas.h</itemPath>
         <itemPath>../Shared/Drivers/drv_sd.h</itemPath>
+        <itemPath>../Shared/Drivers/drv_rtc.h</itemPath>
       </logicalFolder>
       <logicalFolder name="f1" displayName="RTOS" projectFiles="true">
         <itemPath>../Shared/RTOS/FreeRTOSConfig.h</itemPath>
@@ -49,6 +50,12 @@
         <itemPath>Drivers/drv_i2c_private.c</itemPath>
         <itemPath>../Shared/Drivers/drv_divas.c</itemPath>
         <itemPath>../Shared/Drivers/drv_sd.c</itemPath>
+        <itemPath>../Shared/Drivers/drv_rtc.c</itemPath>
+      </logicalFolder>
+      <logicalFolder name="source" displayName="FatFs" projectFiles="true">
+        <itemPath>../Shared/fatfs/source/ff.c</itemPath>
+        <itemPath>../Shared/fatfs/source/ffsystem.c</itemPath>
+        <itemPath>../Shared/fatfs/source/ffunicode.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f1" displayName="RTOS" projectFiles="true">
         <itemPath>../Shared/RTOS/main.c</itemPath>
@@ -76,6 +83,7 @@
     <Elem>../Shared/RTOS</Elem>
     <Elem>../Shared/Drivers</Elem>
     <Elem>../Shared/Device_Startup</Elem>
+    <Elem>../Shared/fatfs/source</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
