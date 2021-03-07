@@ -17,7 +17,6 @@ static const struct drv_spi_channelConfig channels[DRV_SPI_CHANNEL_COUNT] =
 	}
 #endif
 
-//TODO CHANGE VALUES
 [DRV_SPI_CHANNEL_SD] = {
 	.sercom_id = 5,
 	.module = &SERCOM5_REGS->SPIM, //spi master mode
@@ -28,7 +27,7 @@ static const struct drv_spi_channelConfig channels[DRV_SPI_CHANNEL_COUNT] =
 	.sck_pinmux = PINMUX_PA21C_SERCOM5_PAD3,
 	.do_po = 3, // use table in drv_spi.h
 	.di_po = 1, // use table in drv_spi.h
-	.baud = SERIAL_BAUD_SYNC(1000000), //I'll need to set from research probably
+	.baud = SERIAL_BAUD_SYNC(10000000),
 }
 };
 
