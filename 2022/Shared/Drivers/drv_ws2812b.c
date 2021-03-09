@@ -1,16 +1,24 @@
 #include "drv_ws2812b.h"
 #include <sam.h>
-
+#include "FreeRTOSConfig.h"
 
 
 static inline void blit0(__IO uint32_t * outset, __IO uint32_t * outclr, uint32_t port)
 {
-	// Critical timing, depends on 16MHz CPU clock
+	// Critical timing
 	asm(
 	"str %[port], [%[outset], #0]\n\t"
 	"nop\n\t"
 	"nop\n\t"
 	"nop\n\t"
+#if (configCPU_CLOCK_HZ == 48000000)
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+#endif
 	"str %[port], [%[outclr], #0]\n\t"
 	"nop\n\t"
 	"nop\n\t"
@@ -26,6 +34,36 @@ static inline void blit0(__IO uint32_t * outset, __IO uint32_t * outclr, uint32_
 	"nop\n\t"
 	"nop\n\t"
 	"nop\n\t"
+#if (configCPU_CLOCK_HZ == 48000000)
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+#endif
 	:: [port] "r" (port), [outset] "r" (outset), [outclr] "r" (outclr));
 }
 
@@ -43,6 +81,26 @@ static inline void blit1(__IO uint32_t * outset, __IO uint32_t * outclr, uint32_
 	"nop\n\t"
 	"nop\n\t"
 	"nop\n\t"
+#if (configCPU_CLOCK_HZ == 48000000)
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+#endif
 	"str %[port], [%[outclr], #0]\n\t"
 	"nop\n\t"
 	"nop\n\t"
@@ -53,6 +111,26 @@ static inline void blit1(__IO uint32_t * outset, __IO uint32_t * outclr, uint32_
 	"nop\n\t"
 	"nop\n\t"
 	"nop\n\t"
+#if (configCPU_CLOCK_HZ == 48000000)
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+	"nop\n\t"
+#endif
 	:: [port] "r" (port), [outset] "r" (outset), [outclr] "r" (outclr));
 }
 

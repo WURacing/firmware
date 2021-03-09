@@ -23,13 +23,12 @@ void drv_hsd_init(void)
 // Takes ~50uS to change on the external device
 void drv_hsd_setChannel(enum drv_hsd_channel channel)
 {
-	int id = (int)channel;
-	uint8_t set = 0, clr = 0;
-	if (id & 1)
+	uint32_t set = 0, clr = 0;
+	if (channel & 1)
 		set |= HSD_SEL_PORT;
 	else
 		clr |= HSD_SEL_PORT;
-	if (id & 2)
+	if (channel & 2)
 		set |= HSD_SEH_PORT;
 	else
 		clr |= HSD_SEH_PORT;
