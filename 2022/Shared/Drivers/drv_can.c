@@ -218,16 +218,20 @@ void drv_can_init(void)
 #endif
 }
 
+#if ENABLE_CAN0
 void CAN0_Handler()
 {
 	// handle no interrupts and just reset the IR
 	CAN0_REGS->CAN_IR = 0xFFFFFFFF;
 }
+#endif
 
+#if ENABLE_CAN1
 void CAN1_Handler()
 {
 	CAN1_REGS->CAN_IR = 0xFFFFFFFF;
 }
+#endif
 
 struct drv_can_rx_buffer_element * drv_can_get_rx_buffer(enum drv_can_rx_buffer_table id)
 {
