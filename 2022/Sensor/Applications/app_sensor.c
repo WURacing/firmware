@@ -29,10 +29,12 @@ static void MeasurementTask()
 	struct signals1_layout * signals1;
 	struct signals2_layout * signals2;
 	xLastWakeTime = xTaskGetTickCount();
+	currentChannel = (enum drv_hsd_channel)0U;
 	
 	while (1)
 	{
 		// Kick off ADC measurement and block
+		// This takes 3.4ms to return with ADC_AVGCTRL at 512.
 		drv_adc_read_sequence_sync(&results);
 		
 		// Copy results for analog sensors
@@ -86,7 +88,7 @@ static void MeasurementTask()
 			signals2->totalCurrent = measurements.totalCurrent;
 			drv_can_queue_tx_buffer(CAN0_REGS, DRV_CAN_TX_BUFFER_CAN0_signals2);
 		}
-		
+
 		// Wait until next scheduled measurement time
 		vTaskDelayUntil(&xLastWakeTime, DELAY_PERIOD);
 	}

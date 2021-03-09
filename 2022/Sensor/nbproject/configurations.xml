@@ -205,7 +205,7 @@
         <property key="inhibit-all" value="false"/>
         <property key="make-warnings-into-errors" value="false"/>
         <property key="no-system-directories" value="false"/>
-        <property key="optimization-level" value=""/>
+        <property key="optimization-level" value="-Os"/>
         <property key="position-independent" value="false"/>
         <property key="preprocessor-macros"
                   value="BOARD_ID=EL_04002_22;BOARD_USAGE=SBFront1"/>

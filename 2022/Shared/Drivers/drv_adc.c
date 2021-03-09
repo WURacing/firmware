@@ -34,8 +34,8 @@ void drv_adc_init(void)
     ADC1_REGS->ADC_REFCTRL = ADC0_REGS->ADC_REFCTRL = ADC_REFCTRL_REFSEL_INTVCC2;
     ADC1_REGS->ADC_INPUTCTRL = ADC0_REGS->ADC_INPUTCTRL = ADC_INPUTCTRL_MUXPOS_AIN0 | ADC_INPUTCTRL_MUXNEG_GND;
 	
-    // average four samples then divide by 4. see datasheet page 875
-    ADC1_REGS->ADC_AVGCTRL = ADC0_REGS->ADC_AVGCTRL = ADC_AVGCTRL_SAMPLENUM_4 | ADC_AVGCTRL_ADJRES(2);
+    // accumulate 512 samples to fill 16-bit precision. see datasheet page 875
+    ADC1_REGS->ADC_AVGCTRL = ADC0_REGS->ADC_AVGCTRL = ADC_AVGCTRL_SAMPLENUM_512;
 	
 	// add additional sampling time. significantly increases precision
 	ADC1_REGS->ADC_SAMPCTRL = ADC0_REGS->ADC_SAMPCTRL = ADC_SAMPCTRL_SAMPLEN(3); // sample for 3 cycles
