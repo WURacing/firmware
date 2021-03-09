@@ -52,9 +52,9 @@ enum drv_can_tx_buffer_table {
 #define ID_signals2 0x00A
 #endif
 
-#define EXT_signals1 0
+#define EXT_signals1 1
 #define DLC_signals1 8
-#define EXT_signals2 0
+#define EXT_signals2 1
 #define DLC_signals2 8
 
 #define CAN0_STANDARD_FILTERS_NUM 0
