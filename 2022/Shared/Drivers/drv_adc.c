@@ -57,6 +57,16 @@ void drv_adc_init(void)
 			adc1_seqctrl |= seqmask;
 			reverse_adc1[mux] = i;
 		}
+		// set up PINMUX (only works for PA)
+		int pin = channelConfig->pinmux >> 16;
+		int pmux = channelConfig->pinmux & 0xF;
+		int pin_eo = (pin % 32) / 2;
+		int group = pin / 32;
+		if ((pin % 2) == 0)
+			PORT_REGS->GROUP[group].PORT_PMUX[pin_eo] |= PORT_PMUX_PMUXE(pmux);
+		else
+			PORT_REGS->GROUP[group].PORT_PMUX[pin_eo] |= PORT_PMUX_PMUXO(pmux);
+		PORT_REGS->GROUP[group].PORT_PINCFG[pin % 32] = PORT_PINCFG_PMUXEN(1);
 	}
 	ADC0_REGS->ADC_SEQCTRL = adc0_seqctrl;
 	ADC1_REGS->ADC_SEQCTRL = adc1_seqctrl;

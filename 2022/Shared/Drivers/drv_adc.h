@@ -6,6 +6,7 @@
 struct drv_adc_channelConfig {
 	uint16_t adc_id:1;
 	uint16_t mux:5;
+	uint32_t pinmux;
 };
 
 struct drv_adc_config {
