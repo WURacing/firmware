@@ -1,4 +1,10 @@
-
+/* 
+ * File:   drv_sd.h
+ * Author: Shannon
+ *
+ * Purpose: Implements SD card communication over SPI interface.  Used by FatFs.
+ */
+ 
 #ifndef DRV_SD_H
 #define	DRV_SD_H
 
@@ -6,19 +12,6 @@
 #include <unistd.h>
 #include "drv_spi.h"
 
-//use drv_spi_transfer function to interact with SD card. It does synchronous in and out reading
-
-//drv_spi_channel enum at: datalogger/drivers/drv_spi_private.h and .c
-//add SD card channel, edit C file to set pins
-//change some pins on drv_spi_private per PDM page 3
-//DRV_SPI_CHANNEL_SD is value from drv_spi_channel enum for use in calls to drv_spi_transfer()
-
-/* 
-HOW THIS WORKS
-    * Five FatFs functions integrate SPI implementation with the rest of the code
-    * Use command indices and drv_spi_transfer() to actually accomplish moving around of data based on those FatFs functions
-    * Change drv_spi_private.h and .c to create and set up channel for DRV_SPI_CHANNEL_SD
-*/
 
 #include "ff.h"
 #include "diskio.h"
@@ -27,18 +20,6 @@ HOW THIS WORKS
 #define SD_TIMEOUT_BYTES 4000
 #define SD_RECEIVE_START 0xfe
 #define SD_BIGGEST_SECTOR (UINT)(256000000000/SD_SECTOR_SIZE)
-
-/* Status of Disk Functions */
-//typedef BYTE	DSTATUS;
-
-/* Results of Disk Functions */
-// typedef enum {
-// 	RES_OK = 0,		/* 0: Successful */
-// 	RES_ERROR,		/* 1: R/W Error */
-// 	RES_WRPRT,		/* 2: Write Protected */
-// 	RES_NOTRDY,		/* 3: Not Ready */
-// 	RES_PARERR		/* 4: Invalid Parameter */
-// } DRESULT;
 
 
 // Tying command indices to numbers 

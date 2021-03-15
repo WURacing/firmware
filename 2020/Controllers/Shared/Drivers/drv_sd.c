@@ -1,3 +1,10 @@
+/* 
+ * File:   drv_sd.c
+ * Author: Shannon
+ *
+ * Purpose: Implements SD card communication over SPI interface.  Used by FatFs.
+ */
+ 
 #include "drv_sd.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -61,9 +68,6 @@ uint8_t send_cmd(int cmd, int arg, uint8_t crc)
 	// Return 1-byte response
 	return resp;
 }
-
-
-// pdrv is physical drive number
 
 DSTATUS disk_initialize(BYTE pdrv)
 {
@@ -139,14 +143,10 @@ DSTATUS disk_initialize(BYTE pdrv)
 	}
 
 	//CMD16 will set block size to 512 bytes to work with FatFS
+	// However, 512 bytes is the default and only supported option on SDHC/SDXC cards, so we're chilling
 
 	return resp;
 }
-
-// pdrv: physical drive number (0)
-// buff: [out] pointer to read data buffer
-// sector: start sector number
-// count: number of sectors to read
 
 DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 {
@@ -204,10 +204,6 @@ DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 	return RES_OK;
 }
 
-// Send CMD24 if 1 sector, else CMD25
-// For each sector:
-	// Send 0xff to prep for sending data block
-	// 
 DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 {
 	uint8_t resp;
@@ -233,9 +229,6 @@ DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 
 	for (UINT j = 0; j < count; j++)
 	{
-//		// Send one 0xff byte to prep for sending data block
-//		drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
-
 		// Send data token (0xfe for CMD24, 0xfc for CMD25)
 		if (count == 1) drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfe);
 		else drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xfc);
@@ -278,16 +271,20 @@ DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 }
 
 #define CSD_STRUCTURE_V2 1
+
+// Extracts version identifier from the CSD register
 static inline int read_csd_structure(uint8_t *csd)
 {
 	return (int)csd[0] >> 6 & 0x3;
 }
 
+// Extracts capability flags from the CSD register
 static inline int read_csd_v2_ccc(uint8_t *csd)
 {
 	return ((int)csd[4] << 4 & 0xFF0) | ((int)csd[5] >> 4 & 0xF);
 }
 
+// Extracts csize or total capacity from the CSD register
 static inline int read_csd_v2_csize(uint8_t *csd)
 {
 	return ((int)csd[7] << 16 & 0x3F0000) | ((int)csd[8] << 8) | ((int)csd[9]);
@@ -309,7 +306,8 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
 	}
 	if (cmd == GET_SECTOR_COUNT)
 	{
-		// Read CSD register
+		// Read CSD register from the SD card.
+		// This contains many details including total size of the card.
 		resp = send_cmd(CMD9, 0, 0);
 		if (resp == 0xff)
 		{
@@ -329,10 +327,13 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
 			{
 				csd[i] = drv_spi_transfer(DRV_SPI_CHANNEL_SD, 0xff);
 			}
+			// The location of the total card capacity depends on the card version
 			int structure = read_csd_structure(csd);
+			// Limits us to SDHC/SDXC support, but we're chilling (4 GB - 2 TB cards)
 			if (structure == CSD_STRUCTURE_V2)
 			{
 				int csize = read_csd_v2_csize(csd);
+				// convert from capacity units to number of sectors.
 				*(LBA_t *)buff = (csize + 1) * 1024;
 				return RES_OK;
 			}
@@ -358,6 +359,7 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
 	}
 	if (cmd == CTRL_TRIM)
 	{
+		// Command to erase sectors
 		LBA_t start = ((LBA_t *)buff)[0];
 		LBA_t end = ((LBA_t *)buff)[1];
 		resp = send_cmd(CMD32, start, 0);
