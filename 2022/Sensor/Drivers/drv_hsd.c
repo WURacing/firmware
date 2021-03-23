@@ -23,12 +23,13 @@ void drv_hsd_init(void)
 // Takes ~50uS to change on the external device
 void drv_hsd_setChannel(enum drv_hsd_channel channel)
 {
+	// Calculate the 2-bit signal for this channel
 	uint32_t set = 0, clr = 0;
-	if (channel & 1)
+	if (channel & 1) // least significant bit
 		set |= HSD_SEL_PORT;
 	else
 		clr |= HSD_SEL_PORT;
-	if (channel & 2)
+	if (channel & 2) // most significant bit
 		set |= HSD_SEH_PORT;
 	else
 		clr |= HSD_SEH_PORT;
@@ -38,5 +39,6 @@ void drv_hsd_setChannel(enum drv_hsd_channel channel)
 
 bool drv_hsd_isFaulted(void)
 {
+	// return true if fault_l is low
 	return !((PORT_REGS->GROUP[0].PORT_IN >> HSD_FAULT_L_PIN) & 1);
 }

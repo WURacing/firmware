@@ -24,10 +24,12 @@
 #define CAN_RX_BUFFERS_DATA_SIZE CAN_RXESC_F1DS_DATA8_Val /* >8 if CAN_FD */
 #define CAN_TX_DATA_SIZE CAN_TXESC_TBDS_DATA8_Val
 
+// No CAN messages to receive for now
 enum drv_can_rx_buffer_table {		
 	DRV_CAN_RX_BUFFER_COUNT
 };
 
+// Send two messages with sensor signal information
 enum drv_can_tx_buffer_table {
 	DRV_CAN_TX_BUFFER_CAN0_signals1,
 	DRV_CAN_TX_BUFFER_CAN0_signals2,
@@ -35,6 +37,7 @@ enum drv_can_tx_buffer_table {
 	DRV_CAN_TX_BUFFER_COUNT
 };
 
+// Set CAN message IDs based on sensor board usage ID
 #if BOARD_USAGE == SBFront1
 #define ID_signals1 0x001
 #define ID_signals2 0x002
