@@ -19,7 +19,7 @@ Our goal is to get a clean start, revisiting previous design decisions and ensur
 ### Leaning on hardware, rather than software
  - Using a faster/multi-core CPU you can do more, or alternatively **do the same amount much easier**
    - This one's a no-brainer, but it may have taken a non-CS person to step back and realize it
-   - Ignoring the performance gains, as faster CPU can easily accommodate C++/MicroPython rather than C, and much more readable OOP-style programming
+   - Even ignoring potential performance gains, a faster CPU can easily accommodate C++/MicroPython rather than C, and much more readable OOP-style programming
  - Using a CAN controller, any CPU with SPI communications can easily send/receive CAN messages
    - don't have to worry about the low-level timing of CAN communication, buffering/filtering messages efficiently, etc
    - can filter CAN messages for you in real time, and only relay specific desired messages to the CPU
