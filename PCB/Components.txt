@@ -1,4 +1,8 @@
-Currently looking at designs components with the RPi Pico/RP2040 chip
+### Currently looking at designs components with the RPi Pico/RP2040 chip
+
+General redesign help:
+ - https://www.reddit.com/r/raspberry_pi/comments/oox4cn/i_designed_a_rp2040_based_raspberry_pi_pico_clone/
+ - https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html
 
 RP2040 Chip:
  - https://www.pishop.us/product/raspberry-pi-rp2040/?src=raspberrypi
