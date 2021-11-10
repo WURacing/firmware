@@ -7,6 +7,6 @@ def sendCanFrame():
     uart = UART(0, 9600) 
     c = CAN()
     while(c.recv_pending() > 0):
-        frame = c.recv(as_bytes=True)
+        frame = c.recv(1, as_bytes=True)
         frame = frame + b'\n'
         uart.write(frame)

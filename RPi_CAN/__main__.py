@@ -21,7 +21,7 @@ import pprint from pprint
 import canRecorder
 
 
-usb_connection = serial.Serial(
+uart_connection = serial.Serial(
     port='/dev/serial0', 
     baudrate = 9600, 
 )
@@ -30,11 +30,14 @@ pe3_db = cantools.database.load_file("PE3.dbc")
 recorder = canRecorder.CanRecorder()
 
 def receiveMessages():
-    if(usb_connection.is_open == False):
+    if(uart_connection.is_open == False):
         print("Connection failed")
         return
     time = 0
     while True:
-        frame = usb_connection.readline()
+        frame = uart_connection.readline()
         time = time + 1
         recorder.writeCanFrame(frame, time)
+
+if __name__ == "__main__":
+    receiveMessages()

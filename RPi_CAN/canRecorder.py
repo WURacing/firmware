@@ -1,6 +1,6 @@
 import time
 import os
-from zlib import compress
+from zlib import compress:
 class CanRecorder():
     log_path = './LOGS'
     def __init__(self):
