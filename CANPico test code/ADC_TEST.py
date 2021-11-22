@@ -12,8 +12,9 @@ def testSPI():
         i = 0
         results = bytearray(2)
         while(i < 100 ):
-            chip_select.high()
-            spi_con.write_readinto(buffer, results)
             chip_select.low()
-            print(results)
+            spi_con.write_readinto(buffer, results)
+            chip_select.high()
+            print(bin(int.from_bytes(results,'little')))
             i = i+1
+        
