@@ -1,3 +1,4 @@
+# uPy compatible
 from machine import Pin, SPI
 from rp2 import *
 

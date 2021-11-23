@@ -1,3 +1,4 @@
+# uPy compatible
 """
 Example code from SumoBot competition
 Written by Chris Donnell prior to project start, not for use on DAQ system

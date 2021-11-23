@@ -1,3 +1,5 @@
+# uPy w/ CANPico SDK compatible
+
 from rp2 import CAN, CANID, CANFrame
 
 c = CAN()

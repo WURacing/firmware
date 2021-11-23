@@ -1,3 +1,4 @@
+# uPy w/ CANPico SDK compatible
 """
 
 Example and utility functions for CANPico board
