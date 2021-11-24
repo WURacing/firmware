@@ -8,35 +8,15 @@ _VREF_BIT = 6
 _POWER_BIT = 5
 _GPIO_BIT = 0
 
-class ads79_message():
+class ads79_SDI(bytearray):
     def __init__(self,mode=1,prog=True,chan=0,vref=True,power=False,GPIO=0):
+        super().__init__(2)
         self._mode=mode
         self._prog=prog
         self._chan=chan
         self._vref=vref
         self._power=power
         self._GPIO=GPIO
-        self.message = 0
-        self.bit_message = ''
-        self.update()
-
-    def __repr__(self):
-        return bin(self.message)
-
-    def __str__(self):
-        return self.bit_message
-
-    def __int__(self):
-        return self.message
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__dict__ == other.__dict__
-        else:
-            return self.__int__ == other
-
-    def to_bytes(self):
-        return self.message.to_bytes(2, 'little')
 
     @classmethod
     def from_bytes(cls, byte_message):
@@ -53,7 +33,7 @@ class ads79_message():
     
     # sets the message to 
     def update(self):
-        self.message = (
+        message = (
             (self._mode << _MODE_BIT)
             + (self._prog << _PROG_BIT)
             + (self._chan << _CHAN_BIT)
@@ -63,40 +43,31 @@ class ads79_message():
         self.bit_message = format(self.message,"016b")
 
     def cont(self):
-        self.message = 0
-        self.bit_message = format(self.message,"016b")
+        pass
 
     def manual(self):
-        self._mode = 1
-        self.update()
+        pass
 
     def auto1(self):
-        self._mode = 2
-        self.update()
+        pass
 
     def auto2(self):
-        self._mode = 3
-        self.update()
+        pass
 
     def prog_en(self,bool):
-        self._prog = bool
-        self.update()
+        pass
 
     def manual_chan(self,chan):
-        self._chan = chan
-        self.update()
+        pass
 
     def auto_reset(self,bool):
-        self._chan = bool << 3
-        self.update()
+        pass
 
     def power_saving(self,bool):
-        self._power = bool
-        self.update()
+        pass
 
     def GPIO_set(self,GPIO):
-        self._GPIO = GPIO
-        self.update()
+        pass
 
 
 adc = ads79_message()
