@@ -41,25 +41,32 @@ _POWER_BIT = 5
 _GPIO_BIT = 0
 # input bit shifts
 _CHAN_IN_BIT = 12
-_DATA_IN_BIT = 0
+_DATA_IN_BIT = 12
 
 class ads79_SDI(bytearray):
-    def __init__(self,mode=1,prog=True,chan=0,vref=True,power=False,GPIO=0):
+    def __init__(self,mode=0,prog=False,chan=0,vref=False,power=False,GPIO=0):
         message = (
-            (self._mode << _MODE_BIT)
-            + (self._prog << _PROG_BIT)
-            + (self._chan << _CHAN_BIT)
-            + (self._vref << _VREF_BIT)
-            + (self._power << _POWER_BIT)
-            + (self._GPIO << _GPIO_BIT))
+            (mode << _MODE_BIT)
+            + (prog << _PROG_BIT)
+            + (chan << _CHAN_BIT)
+            + (vref << _VREF_BIT)
+            + (power << _POWER_BIT)
+            + (GPIO << _GPIO_BIT))
         super().__init__([message >> 8, message & 0b11111111])
 
+    def __repr__(self):
+        return self.__class__.__name__ + '(0b' + self.to_bin() + ')'
+
+    def __str__(self):
+        return self.__repr__()
+
+    def to_bin(self):
+        return "{:016b}".format(int.from_bytes(self, "big"))
+        #return bin(int.from_bytes(self, "big"))
 
     @classmethod
-    def from_bytes(cls, byte_message):
-        message = int.from_bytes(byte_message, "little")
-        if message == 0:
-            return None
+    def from_bytes(cls, byte_message,byteorder):
+        message = int.from_bytes(byte_message, byteorder)
         mode = message >> _MODE_BIT & 0b1111
         prog = message >> _PROG_BIT & 0b1
         chan = message >> _CHAN_BIT & 0b1111
@@ -68,42 +75,24 @@ class ads79_SDI(bytearray):
         GPIO = message >> _GPIO_BIT & 0b11111
         return cls(mode=mode,prog=prog,chan=chan,vref=vref,power=power,GPIO=GPIO)
 
-    @classmethod
-    def cont(cls):
-        pass
+class ads79_SDO(bytearray):
+    def __init__(self,bit_resolution):
+        super().__init__(2)
+        self.bit_resolution = bit_resolution
+        self.data_mask=int('1'*bit_resolution,2)
 
-    def manual(self):
-        pass
+    def __repr__(self):
+        return self.__class__.__name__ + '(0b' + self.to_bin() + ')'
 
-    def auto1(self):
-        pass
+    def __str__(self):
+        return self.__repr__()
 
-    def auto2(self):
-        pass
+    def to_bin(self):
+        return "{:016b}".format(int.from_bytes(self, "big"))
+        #return bin(int.from_bytes(self, "big"))
 
-    def prog_en(self,bool):
-        pass
-
-    def manual_chan(self,chan):
-        pass
-
-    def auto_reset(self,bool):
-        pass
-
-    def power_saving(self,bool):
-        pass
-
-    def GPIO_set(self,GPIO):
-        pass
-
-
-adc = ads79_message()
-print(adc)
-
-adc.auto1()
-print('>>> adc.auto1()')
-print(adc)
-
-adc.prog_en(False)
-print('>>> adc.prog_en(False)')
-print(adc)
+    def ADC_val(self):
+        message = int.from_bytes(self, "big")
+        chan = message >> _CHAN_IN_BIT & 0b1111
+        data = message >> (_DATA_IN_BIT-self.bit_resolution) & self.data_mask
+        return [chan,data]

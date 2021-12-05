@@ -1,12 +1,7 @@
 # uPy compatible
-
+import time
 from machine import Pin, SPI, SoftSPI
-from .ads79_bitcode import ads79_message
-#from rp2 import ADC
-
-# TODO:
-#   __init__ to create own SPI dynamically
-
+from ads79_buffer import ads79_SDO, ads79_SDI
 
 class ads79():
     # Initialize SPI_ADC with 4 wire SPI, SoftSPI or hard SPI are acceptable
@@ -16,64 +11,42 @@ class ads79():
     #   hard - bool for whether hard or soft SPI is being used
     #   channels - number of channels to iterate through
     #   bit_resolution - size of ADC samples
-    def __init__(self):
-        self.hard = None
-        self.SPI_obj = None
-        self.CSn = None
-        self.channels = None
-        self.bit_resolution = None
-
-        self.TX_buffer = bytearray(2)
-        self.RX_buffer = bytearray(2)
+    def __init__(self,SPI_obj=None,CSn=None,channels=4, bit_resolution=12):
+        self.SPI_obj = SPI_obj
+        self.CSn = CSn
+        self.channels = channels
+        self.prog_sequence = []
+        self.run_sequence = []
+        self.input = ads79_SDO(bit_resolution)
     
     @classmethod
     def default_init(cls):
-        adc = SPI_ADC()
-        adc.ADC_conf(16,12)
-        adc.SPI_conf(SPI(0, 10000000, sck=Pin(18), mosi=Pin(19), miso=Pin(16)), Pin(17, Pin.OUT))
-        return adc
+        return cls(SPI_obj=SPI(0, 10000000, sck=Pin(18), mosi=Pin(19), miso=Pin(16)), CSn=Pin(17, Pin.OUT))
 
-    # Configure ADC settings
-    def ADC_conf(self, channels, bit_resolution):
-        self.channels = channels
-        self.bitbit_resolution = bit_resolution
+    def manual_cycle(self,cycle=None):
+        self.prog_sequence = [ads79_SDI(mode=1,prog=True,chan=0,vref=True,power=False,GPIO=0)]
+        self.run_sequence = []
+        if cycle == None:
+            cycle = range(self.channels)
+        for i in cycle:
+            self.run_sequence.append(ads79_SDI(mode=1,chan=i))
+    
+    def auto1(self):
+        pass
 
-    # Configure SPI settings
-    def SPI_conf(self, SPI_obj, CSn):
-        if isinstance(SPI_obj, SPI):
-            self.hard=True
-        elif isinstance(SPI_obj, SoftSPI):
-            self.hard=False
-        self.SPI_obj = SPI_obj
+    def auto2(self):
+        pass
 
-        if isinstance(CSn, Pin):
-            self.CSn = CSn
-        else:
-            self.CSn = Pin(CSn, Pin.OUT)
-
-    def read(self):
-        out_buffer = bytearray(2)
+    def write_readinto(self,command, results):
         self.CSn.low()
-        self.SPI_obj.readinto(out_buffer)
-        chip_select.high()
-        return out_buffer
+        self.SPI_obj.write_readinto(command, results)
+        self.CSn.high()
 
-    def out_buffer_set(self, mode, ):
-        return
-
-    @staticmethod
-    def TEST():
-        spi_con = SPI(0, 10000000, sck=Pin(18), mosi=Pin(19), miso=Pin(16))
-        #read manuel mode from channel 7 at 2x Vref
-        chip_select = Pin(17, Pin.OUT)
-        #b'0010100011000000'
-        buffer=bytearray((0x28, 0xc0))
-        print(buffer)
-        i = 0
-        results = bytearray(2)
-        while(i < 100 ):
-            chip_select.low()
-            spi_con.write_readinto(buffer, results)
-            chip_select.high()
-            print(bin(int.from_bytes(results,'little')))
-            i = i+1
+    def run(self):
+        for sdi in self.prog_sequence:
+            self.write_readinto(sdi, self.input)
+        while True:
+            time.sleep(1)
+            for sdi in self.run_sequence:
+                self.write_readinto(sdi, self.input)
+                print(self.input.ADC_val())
