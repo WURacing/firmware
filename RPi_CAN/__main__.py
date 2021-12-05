@@ -18,26 +18,70 @@
 import cantools
 import serial
 import pprint from pprint
-import canRecorder
+import can
 
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+from awscrt import io, mqtt, auth, http
+from awsiot import mqtt_connection_builder
+import time as t
+import json
 
-uart_connection = serial.Serial(
-    port='/dev/serial0', 
-    baudrate = 9600, 
-)
+# Define ENDPOINT, CLIENT_ID, PATH_TO_CERTIFICATE, PATH_TO_PRIVATE_KEY, PATH_TO_AMAZON_ROOT_CA_1, MESSAGE, TOPIC, and RANGE
+ENDPOINT = "agimxrztttugm-ats.iot.us-west-2.amazonaws.com"
+CLIENT_ID = "RaspberryPi-LTE"
+PATH_TO_CERTIFICATE = "certs/85057e83aaead5808eef972402f04be730d6c0b0e163e180f8db1c7d58703cb7-certificate.pem.crt"
+PATH_TO_PRIVATE_KEY = "certs/85057e83aaead5808eef972402f04be730d6c0b0e163e180f8db1c7d58703cb7-private.pem.key"
+PATH_TO_AMAZON_ROOT_CA_1 = "certs/AmazonRootCA1.crt"
+TOPIC = "Telemetry"
+
+#create logging folder and file
 vehicle_db = cantools.database.load_file("VEHICLE.dbc")
 pe3_db = cantools.database.load_file("PE3.dbc")
-recorder = canRecorder.CanRecorder()
+log_path = './LOGS'
+if(os.path.isdir(self.log_path) == False):
+    os.mkdir('LOGS')
+moment=time.strftime("%Y-%b-%d__%H_%M",time.localtime())
+log_file_path = self.log_path +'/CAN_'+moment+'.log'
 
-def receiveMessages():
-    if(uart_connection.is_open == False):
-        print("Connection failed")
-        return
-    time = 0
-    while True:
-        frame = uart_connection.readline()
-        time = time + 1
-        recorder.writeCanFrame(frame, time)
 
-if __name__ == "__main__":
-    receiveMessages()
+#set up CAN connections
+
+bus0 = can.interface.Bus(channel='can0', bustype='socketcan_native',fd = True)
+#bus1 = can.interface.Bus(channel='can1', bustype='socketcan_native',fd = True)
+logger = can.Logger(log_file_path, 'a')
+notifier = can.Notifier(bus0, [can.Printer(), logger])
+
+# Spin up resources
+event_loop_group = io.EventLoopGroup(1)
+host_resolver = io.DefaultHostResolver(event_loop_group)
+client_bootstrap = io.ClientBootstrap(event_loop_group, host_resolver)
+mqtt_connection = mqtt_connection_builder.mtls_from_path(
+            endpoint=ENDPOINT,
+            cert_filepath=PATH_TO_CERTIFICATE,
+            pri_key_filepath=PATH_TO_PRIVATE_KEY,
+            client_bootstrap=client_bootstrap,
+            ca_filepath=PATH_TO_AMAZON_ROOT_CA_1,
+            client_id=CLIENT_ID,
+            clean_session=False,
+            keep_alive_secs=6
+            )
+print("Connecting to {} with client ID '{}'...".format(
+        ENDPOINT, CLIENT_ID))
+# Make the connect() call
+connect_future = mqtt_connection.connect()
+# Future.result() waits until a result is available
+connect_future.result()
+print("Connected!")
+
+# Publish message to server desired number of times.
+print('Begin Publish')
+for i in range (RANGE):
+    data = "{} [{}]".format(MESSAGE, i+1)
+    message = {"message" : data}
+    mqtt_connection.publish(topic=TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
+    print("Published: '" + json.dumps(message) + "' to the topic: " + "'test/testing'")
+    t.sleep(0.1)
+print('Publish End')
+disconnect_future = mqtt_connection.disconnect()
+disconnect_future.result()
