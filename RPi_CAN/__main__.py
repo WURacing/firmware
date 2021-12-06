@@ -18,6 +18,7 @@
 import cantools
 import can
 import os
+import sys
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 from awscrt import io, mqtt, auth, http
@@ -28,19 +29,6 @@ import json
 # Define ENDPOINT, CLIENT_ID, PATH_TO_CERTIFICATE, PATH_TO_PRIVATE_KEY, PATH_TO_AMAZON_ROOT_CA_1, MESSAGE, TOPIC, and RANGE
 
 #create logging folder and file
-vehicle_db = cantools.database.load_file("VEHICLE.dbc")
-pe3_db = cantools.database.load_file("PE3.dbc")
-log_path = './LOGS'
-if(os.path.isdir(log_path) == False):
-    os.mkdir('LOGS')
-moment=t.strftime("%Y-%b-%d__%H_%M",t.localtime())
-log_file_path_pe3 = log_path +'/CAN_'+moment+"_PE3"+'.log'
-log_file_path_vehicle = log_path +'/CAN_'+moment+"_VEHICLE"+'.log'
-
-
-#set up CAN connections
-bus0 = can.interface.Bus(channel='can0', bustype='socketcan_native',fd = True)
-bus1 = can.interface.Bus(channel='can1', bustype='socketcan_native',fd = True)
 
 # Publish message to server desired number of times.
 class LTE_Listener():
@@ -78,11 +66,37 @@ class LTE_Listener():
         print(message)
         self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
 
-lte0 = LTE_Listener(0, "P21")
-lte1 = LTE_Listener(1, "V21")
-logger_vehicle = can.Logger(log_file_path_vehicle, 'a')
-logger_pe3 = can.Logger(log_file_path_pe3, 'a')
-notifier0 = can.Notifier(bus0, [logger_pe3, lte0])
-notifier1 = can.Notifier(bus1, [logger_vehicle, lte1])
-while(notifier0 or notifier1):
-    t.sleep(0)
+
+
+if __name__ == "__main__":
+    vehicle_db = cantools.database.load_file("VEHICLE.dbc")
+    pe3_db = cantools.database.load_file("PE3.dbc")
+    log_path = './LOGS'
+    if(os.path.isdir(log_path) == False):
+        os.mkdir('LOGS')
+    moment=t.strftime("%Y-%b-%d__%H_%M",t.localtime())
+    log_file_path_pe3 = log_path +'/CAN_'+moment+"_PE3"+'.log'
+    log_file_path_vehicle = log_path +'/CAN_'+moment+"_VEHICLE"+'.log'
+    #set up CAN connections
+    bus0 = can.interface.Bus(channel='can0', bustype='socketcan_native',fd = True)
+    bus1 = can.interface.Bus(channel='can1', bustype='socketcan_native',fd = True)
+    #set lte listeners
+    lte0 = LTE_Listener(0, "P21")
+    lte1 = LTE_Listener(1, "V21")
+    logger_vehicle = can.Logger(log_file_path_vehicle, 'a')
+    logger_pe3 = can.Logger(log_file_path_pe3, 'a')
+    notifier0 = can.Notifier(bus0, [logger_pe3, lte0])
+    notifier1 = can.Notifier(bus1, [logger_vehicle, lte1])
+    try:
+        t.sleep(0)
+    except KeyboardInterrupt:
+        print('Interrupted')
+        notifier0.stop()
+        notifier1.stop()
+        bus0.shutdown()
+        bus1.shutdown()
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
+
