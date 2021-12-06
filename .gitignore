@@ -5,3 +5,4 @@
 .*
 !/.gitignore
 /LOGS
+/CANPico test code/__pycache__

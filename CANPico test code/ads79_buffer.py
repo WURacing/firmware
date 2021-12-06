@@ -2,9 +2,8 @@
 # see page 33, 36, 40 of ads79 datasheet
 
 '''
-How the ads79 ADCs send and recieve data over SPI:
-When a call to SPI.write_readinto(output_buffer, input_buffer) is made, the SPI hardware will send all the data in output_buffer while simultaneously storing all the recieved data in input_buffer. Both buffers must be the same length since they are being sent and recieved syncronously. 
-Both the input and output are expected to be 16 bit messages (we call these frames). SPI buffers are encoded with byte objects (bytes() or bytearray()), which can be unintuitive with respect to the actual meaning of the inidivdual bits. This module attempts to abstract the bit/byte manipulation and allow simple functional calls to create and decode messages for the ads79. 
+When a call to SPI.write_readinto(output_buffer, input_buffer) is made to the ads79 chip, the SPI hardware will send all the data in output_buffer while simultaneously storing all the recieved data in input_buffer. Both buffers must be the same length since they are being sent and recieved syncronously. Both the input and output are expected to be 16 bit messages (we call these frames). 
+The buffers are encoded with byte objects (bytes() or bytearray()), which can be unintuitive with respect to the actual meaning of the inidivdual bits. This module attempts to abstract the bit/byte manipulation and allow simple functional calls to create and decode messages for the ads79. 
 
 The output message, (ie the Pico's Tx, the ads79's SDI) tells the adc which channel to sample and how, while the input message (ie the Pico's Rx, the ads79's SDO) shows the channel selected and the 12 bit reading. The formatting is fully documented in the datasheet, but a quick summary is shown below. Note that there is a 2 frame delay between sending new commands and recieving the corresponding values:
 
@@ -29,7 +28,6 @@ Example input messages (dashes added for readability):
  "0000-011001100001"
  - reading from channel 1 with data=4095 (with 5V range corresponds to 5V)
  "0001-111111111111"
-
 '''
 
 # output bit shifts
@@ -44,6 +42,7 @@ _CHAN_IN_BIT = 12
 _DATA_IN_BIT = 12
 
 class ads79_SDI(bytearray):
+
     def __init__(self,mode=0,prog=False,chan=0,vref=False,power=False,GPIO=0):
         message = (
             (mode << _MODE_BIT)
@@ -61,8 +60,8 @@ class ads79_SDI(bytearray):
         return self.__repr__()
 
     def to_bin(self):
+        '''Returns sequence of bits for underlying bytearray.'''
         return "{:016b}".format(int.from_bytes(self, "big"))
-        #return bin(int.from_bytes(self, "big"))
 
     @classmethod
     def from_bytes(cls, byte_message,byteorder):
@@ -76,7 +75,8 @@ class ads79_SDI(bytearray):
         return cls(mode=mode,prog=prog,chan=chan,vref=vref,power=power,GPIO=GPIO)
 
 class ads79_SDO(bytearray):
-    def __init__(self,bit_resolution):
+
+    def __init__(self,bit_resolution=12):
         super().__init__(2)
         self.bit_resolution = bit_resolution
         self.data_mask=int('1'*bit_resolution,2)
@@ -88,10 +88,13 @@ class ads79_SDO(bytearray):
         return self.__repr__()
 
     def to_bin(self):
+        '''Returns sequence of bits for underlying bytearray.'''
         return "{:016b}".format(int.from_bytes(self, "big"))
-        #return bin(int.from_bytes(self, "big"))
 
     def ADC_val(self):
+        '''Returns tuple of (channel, data).
+       
+        Channel is a 4 bit number, while data is 8 to 12 bits specified by self.bit_resolution.'''
         message = int.from_bytes(self, "big")
         chan = message >> _CHAN_IN_BIT & 0b1111
         data = message >> (_DATA_IN_BIT-self.bit_resolution) & self.data_mask
