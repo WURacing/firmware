@@ -43,7 +43,7 @@ bus0 = can.interface.Bus(channel='can0', bustype='socketcan_native',fd = True)
 bus1 = can.interface.Bus(channel='can1', bustype='socketcan_native',fd = True)
 
 # Publish message to server desired number of times.
-class LTE_Listner():
+class LTE_Listener():
     def __init__(self, id, target):
         self.target = target
         self.TOPIC = "telemetry/{}/data".format(id)
@@ -75,10 +75,11 @@ class LTE_Listner():
 
     def __call__(self, message):
         message = {"timestamp":message.timestamp,"arbitration_id":message.arbitration_id,"dlc": message.dlc,"data":int.from_bytes(message.data, "little") ,"dbc_target": self.target}
-	self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
+        print(message)
+        self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
 
-lte0 = LTE_Listner(0, "P21")
-lte1 = LTE_Listner(1, "V21")
+lte0 = LTE_Listener(0, "P21")
+lte1 = LTE_Listener(1, "V21")
 logger_vehicle = can.Logger(log_file_path_vehicle, 'a')
 logger_pe3 = can.Logger(log_file_path_pe3, 'a')
 notifier0 = can.Notifier(bus0, [logger_pe3, lte0])
