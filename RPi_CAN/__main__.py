@@ -16,10 +16,8 @@
 #     -Cantools needs a reference to a DBC file or multiple files with multiple cantool objects
  
 import cantools
-import serial
-import pprint from pprint
 import can
-
+import os
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 from awscrt import io, mqtt, auth, http
@@ -28,60 +26,62 @@ import time as t
 import json
 
 # Define ENDPOINT, CLIENT_ID, PATH_TO_CERTIFICATE, PATH_TO_PRIVATE_KEY, PATH_TO_AMAZON_ROOT_CA_1, MESSAGE, TOPIC, and RANGE
-ENDPOINT = "agimxrztttugm-ats.iot.us-west-2.amazonaws.com"
-CLIENT_ID = "RaspberryPi-LTE"
-PATH_TO_CERTIFICATE = "certs/85057e83aaead5808eef972402f04be730d6c0b0e163e180f8db1c7d58703cb7-certificate.pem.crt"
-PATH_TO_PRIVATE_KEY = "certs/85057e83aaead5808eef972402f04be730d6c0b0e163e180f8db1c7d58703cb7-private.pem.key"
-PATH_TO_AMAZON_ROOT_CA_1 = "certs/AmazonRootCA1.crt"
-TOPIC = "Telemetry"
 
 #create logging folder and file
 vehicle_db = cantools.database.load_file("VEHICLE.dbc")
 pe3_db = cantools.database.load_file("PE3.dbc")
 log_path = './LOGS'
-if(os.path.isdir(self.log_path) == False):
+if(os.path.isdir(log_path) == False):
     os.mkdir('LOGS')
-moment=time.strftime("%Y-%b-%d__%H_%M",time.localtime())
-log_file_path = self.log_path +'/CAN_'+moment+'.log'
+moment=t.strftime("%Y-%b-%d__%H_%M",t.localtime())
+log_file_path_pe3 = log_path +'/CAN_'+moment+"_PE3"+'.log'
+log_file_path_vehicle = log_path +'/CAN_'+moment+"_VEHICLE"+'.log'
 
 
 #set up CAN connections
-
 bus0 = can.interface.Bus(channel='can0', bustype='socketcan_native',fd = True)
-#bus1 = can.interface.Bus(channel='can1', bustype='socketcan_native',fd = True)
-logger = can.Logger(log_file_path, 'a')
-notifier = can.Notifier(bus0, [can.Printer(), logger])
-
-# Spin up resources
-event_loop_group = io.EventLoopGroup(1)
-host_resolver = io.DefaultHostResolver(event_loop_group)
-client_bootstrap = io.ClientBootstrap(event_loop_group, host_resolver)
-mqtt_connection = mqtt_connection_builder.mtls_from_path(
-            endpoint=ENDPOINT,
-            cert_filepath=PATH_TO_CERTIFICATE,
-            pri_key_filepath=PATH_TO_PRIVATE_KEY,
-            client_bootstrap=client_bootstrap,
-            ca_filepath=PATH_TO_AMAZON_ROOT_CA_1,
-            client_id=CLIENT_ID,
-            clean_session=False,
-            keep_alive_secs=6
-            )
-print("Connecting to {} with client ID '{}'...".format(
-        ENDPOINT, CLIENT_ID))
-# Make the connect() call
-connect_future = mqtt_connection.connect()
-# Future.result() waits until a result is available
-connect_future.result()
-print("Connected!")
+bus1 = can.interface.Bus(channel='can1', bustype='socketcan_native',fd = True)
 
 # Publish message to server desired number of times.
-print('Begin Publish')
-for i in range (RANGE):
-    data = "{} [{}]".format(MESSAGE, i+1)
-    message = {"message" : data}
-    mqtt_connection.publish(topic=TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
-    print("Published: '" + json.dumps(message) + "' to the topic: " + "'test/testing'")
-    t.sleep(0.1)
-print('Publish End')
-disconnect_future = mqtt_connection.disconnect()
-disconnect_future.result()
+class LTE_Listner():
+    def __init__(self, id, target):
+        self.target = target
+        self.TOPIC = "telemetry/{}/data".format(id)
+        self.ENDPOINT = "agimxrztttugm-ats.iot.us-west-2.amazonaws.com"
+        self.CLIENT_ID = "RaspberryPi-LTE"
+        self.PATH_TO_CERTIFICATE = "certs/85057e83aaead5808eef972402f04be730d6c0b0e163e180f8db1c7d58703cb7-certificate.pem.crt"
+        self.PATH_TO_PRIVATE_KEY = "certs/85057e83aaead5808eef972402f04be730d6c0b0e163e180f8db1c7d58703cb7-private.pem.key"
+        self.PATH_TO_AMAZON_ROOT_CA_1 = "certs/AmazonRootCA1.crt"
+        self.event_loop_group = io.EventLoopGroup(1)
+        self.host_resolver = io.DefaultHostResolver(self.event_loop_group)
+        self.client_bootstrap = io.ClientBootstrap(self.event_loop_group, self.host_resolver)
+        self.mqtt_connection = mqtt_connection_builder.mtls_from_path(
+                    endpoint=self.ENDPOINT,
+                    cert_filepath=self.PATH_TO_CERTIFICATE,
+                    pri_key_filepath=self.PATH_TO_PRIVATE_KEY,
+                    client_bootstrap=self.client_bootstrap,
+                    ca_filepath=self.PATH_TO_AMAZON_ROOT_CA_1,
+                    client_id=self.CLIENT_ID,
+                    clean_session=False,
+                    keep_alive_secs=6
+                    )
+        print("Connecting to {} with client ID '{}'...".format(
+                self.ENDPOINT, self.CLIENT_ID))
+        # Make the connect() call
+        self.connect_future = self.mqtt_connection.connect()
+        # Future.result() waits until a result is available
+        self.connect_future.result()
+        print("Connected!")
+
+    def __call__(self, message):
+        message = {"timestamp":message.timestamp,"arbitration_id":message.arbitration_id,"dlc": message.dlc,"data":int.from_bytes(message.data, "little") ,"dbc_target": self.target}
+	self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
+
+lte0 = LTE_Listner(0, "P21")
+lte1 = LTE_Listner(1, "V21")
+logger_vehicle = can.Logger(log_file_path_vehicle, 'a')
+logger_pe3 = can.Logger(log_file_path_pe3, 'a')
+notifier0 = can.Notifier(bus0, [logger_pe3, lte0])
+notifier1 = can.Notifier(bus1, [logger_vehicle, lte1])
+while(notifier0 or notifier1):
+    t.sleep(0)
