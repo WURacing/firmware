@@ -88,7 +88,8 @@ if __name__ == "__main__":
     notifier0 = can.Notifier(bus0, [logger_pe3, lte0])
     notifier1 = can.Notifier(bus1, [logger_vehicle, lte1])
     try:
-        t.sleep(0)
+        while(True):
+            t.sleep(0)
     except KeyboardInterrupt:
         print('Interrupted')
         notifier0.stop()
