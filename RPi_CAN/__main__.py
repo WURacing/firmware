@@ -89,6 +89,13 @@ if __name__ == "__main__":
     notifier1 = can.Notifier(bus1, [logger_vehicle, lte1])
     try:
         while(True):
+            time  = t.time()
+            if (t.time() >= time + 1):
+                logger_pe3.file.close()
+                logger_vehicle.file.close()
+                logger_pe3.file.open()
+                logger_vehicle.file.open()
+                time = t.time()    
             t.sleep(0)
     except KeyboardInterrupt:
         print('Interrupted')
