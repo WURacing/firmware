@@ -76,7 +76,7 @@ class ads79_SDI(bytearray):
         return cls(mode=mode,prog=prog,chan=chan,vref=vref,power=power,GPIO=GPIO)
 
 class ads79_SDO(bytearray):
-    def __init__(self,bit_resolution):
+    def __init__(self,bit_resolution=12):
         super().__init__(2)
         self.bit_resolution = bit_resolution
         self.data_mask=int('1'*bit_resolution,2)

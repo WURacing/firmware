@@ -1,5 +1,4 @@
 # uPy compatible
-import time
 from machine import Pin, SPI, SoftSPI
 from ads79_buffer import ads79_SDO, ads79_SDI
 
@@ -11,7 +10,7 @@ class ads79():
     #   hard - bool for whether hard or soft SPI is being used
     #   channels - number of channels to iterate through
     #   bit_resolution - size of ADC samples
-    def __init__(self,SPI_obj=None,CSn=None,channels=4, bit_resolution=12):
+    def __init__(self,SPI_obj=None,CSn=None,channels=16, bit_resolution=12):
         self.SPI_obj = SPI_obj
         self.CSn = CSn
         self.channels = channels
@@ -37,16 +36,22 @@ class ads79():
     def auto2(self):
         pass
 
-    def write_readinto(self,command, results):
+    def send_recv(self,command):
         self.CSn.low()
-        self.SPI_obj.write_readinto(command, results)
+        self.SPI_obj.write_readinto(command, self.input)
         self.CSn.high()
 
-    def run(self):
+    def ADC_val():
+        return self.input.ADC_val()
+
+    def prog(self):
         for sdi in self.prog_sequence:
-            self.write_readinto(sdi, self.input)
-        while True:
-            time.sleep(1)
-            for sdi in self.run_sequence:
-                self.write_readinto(sdi, self.input)
-                print(self.input.ADC_val())
+            self.send_recv(sdi)
+
+    def run(self):
+        frame_data = 0
+        for sdi in self.run_sequence:
+            self.send_recv(sdi)
+            ch,data = self.ADC_val()
+            frame_data = (frame_data << (self.bit_resolution)) + data
+        return frame_data
