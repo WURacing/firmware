@@ -50,10 +50,11 @@ BO_ 1 SBFront1_signals1: 8 SBFront1
  SG_ SBFront1_FLaccelX : 48|16@1+ (1,0) [0|0] ""  DAQ
 
 BO_ 2 SBFront1_signals2: 8 SBFront1
- SG_ SBFront1_FLaccelZ : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront1_FLaccelY : 0|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront1_faults : 32|4@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront1_totalCurrent : 48|16@1+ (6E-006,0) [0|0.39321] "A"  DAQ
+ SG_ SBFront1_FLaccelX : 0|12@1+ (0.00219,-5) [-5|5] "G" DAQ
+ SG_ SBFront1_FLaccelZ : 12|12@1+ (0.00219,-5) [-5|5] "G"  DAQ
+ SG_ SBFront1_FLaccelY : 24|12@1+ (0.00219,-5) [-5|5] "G"  DAQ
+ SG_ SBFront1_faults : 36|12@1+ (1,0) [0|0] ""  DAQ
+ SG_ SBFront1_totalCurrent : 48|12@1+ (6E-006,0) [0|0.39321] "A"  DAQ
 
 BO_ 3 SBFront2_signals1: 8 SBFront2
  SG_ SBFront2_FRaccelX : 48|16@1+ (1,0) [0|0] ""  DAQ
