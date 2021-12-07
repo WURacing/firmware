@@ -89,8 +89,10 @@ if __name__ == "__main__":
     lte1 = LTE_Listener(1, "V21")
     logger_vehicle = can.Logger(log_file_path_vehicle, 'a')
     logger_pe3 = can.Logger(log_file_path_pe3, 'a')
-    notifier0 = can.Notifier(bus0, [logger_pe3, lte0])
-    notifier1 = can.Notifier(bus1, [logger_vehicle, lte1])
+    notifier0 = can.Notifier(bus0, [logger_pe3])
+    notifier1 = can.Notifier(bus1, [logger_vehicle])
+    notifier0_lan = can.Notifier(bus0, [lte0])
+    notifier1_lan = can.Notifier(bus1, [lte1])
     try:
         while(True):
             time  = t.time()
