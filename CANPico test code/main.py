@@ -192,6 +192,6 @@ while True:
         adc.send_recv(sdi) # sends channel select frame and recieves previous channel reading in adc.input
         ch,data = adc.input.ADC_val()
         frame_data = (frame_data << (12)) + data
-        sleep_ms(250)
+        sleep_ms(50)
     x = frame_data.to_bytes(8,'little')
     c.send_frame(CANFrame(CANID(2),data=x))
