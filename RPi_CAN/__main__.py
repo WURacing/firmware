@@ -64,11 +64,13 @@ class LTE_Listener():
         print("Connected!")
 
     def __call__(self, message):
+        if(self.lock.locked()):
+            print("locked, passing")
         self.lock.acquire()
+        t.sleep(1)
         message = {"timestamp":message.timestamp,"arbitration_id":message.arbitration_id,"dlc": message.dlc,"data":int.from_bytes(message.data, "little") ,"dbc_target": self.target}
         self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
         self.lock.release()
-
 
 if __name__ == "__main__":
     vehicle_db = cantools.database.load_file("VEHICLE.dbc")
