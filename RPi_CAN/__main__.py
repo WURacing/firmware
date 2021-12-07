@@ -68,9 +68,7 @@ class LTE_Listener():
             print("locked, passing")
             return
         self.lock.acquire()
-        t.sleep(1)
         message = {"timestamp":message.timestamp,"arbitration_id":message.arbitration_id,"dlc": message.dlc,"data":int.from_bytes(message.data, "little") ,"dbc_target": self.target}
-        print(message)
         self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
         self.lock.release()
 
@@ -101,8 +99,7 @@ if __name__ == "__main__":
                 logger_vehicle.file.close()
                 logger_pe3.file.open()
                 logger_vehicle.file.open()
-                time = t.time()    
-            t.sleep(0)
+                time = t.time()
     except KeyboardInterrupt:
         print('Interrupted')
         notifier0.stop()
