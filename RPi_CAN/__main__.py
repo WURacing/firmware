@@ -19,6 +19,7 @@ import cantools
 import can
 import os
 import sys
+import threading
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 from awscrt import io, mqtt, auth, http
@@ -34,6 +35,7 @@ import json
 class LTE_Listener():
     def __init__(self, id, target):
         self.target = target
+        self.lock = threading.Lock()
         self.TOPIC = "telemetry/{}/data".format(id)
         self.ENDPOINT = "agimxrztttugm-ats.iot.us-west-2.amazonaws.com"
         self.CLIENT_ID = "RaspberryPi-LTE"
@@ -62,9 +64,10 @@ class LTE_Listener():
         print("Connected!")
 
     def __call__(self, message):
+        self.lock.acquire()
         message = {"timestamp":message.timestamp,"arbitration_id":message.arbitration_id,"dlc": message.dlc,"data":int.from_bytes(message.data, "little") ,"dbc_target": self.target}
         self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
-        t.sleep(0.1)
+        self.lock.release()
 
 
 if __name__ == "__main__":
