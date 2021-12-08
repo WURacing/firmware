@@ -68,9 +68,9 @@ class LTE_Listener():
             print("locked, passing")
             return
         self.lock.acquire()
-        #t.sleep(0.5)
         message = {"timestamp":message.timestamp,"arbitration_id":message.arbitration_id,"dlc": message.dlc,"data":int.from_bytes(message.data, "little") ,"dbc_target": self.target}
         self.mqtt_connection.publish(topic=self.TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
+        print(message)
         t.sleep(0.3)
         self.lock.release()
 
