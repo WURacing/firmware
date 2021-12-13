@@ -1,5 +1,6 @@
 from ads79_SPI import ads79
 from rp2 import CAN, CANFrame, CANID
+from machine import Pin
 from utime import sleep_ms
 
 adc = ads79()
@@ -27,7 +28,7 @@ while True:
     LED.low()
     try:
         c.send_frame(CANFrame(CANID(2),data=x))
-        print(x)
+        #print(x)
     except:
         print("CAN Bus buffer full")
         sleep_ms(1000)
