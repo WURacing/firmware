@@ -2,9 +2,9 @@
 
 ### Firmware and Software
 
-Our sensor boards are programmed using primarily Micropython. In order to set up a sensor board you'll need some way of programming and uploading Micropython code to a microcontroller (my recommendation is using the [Thonny IDE], but you can view the full [MicroPython for Pico Software Guide] I've written for a full survey of options).
+Our sensor boards are programmed using primarily Micropython. In order to set up a sensor board you'll need some way of programming and uploading Micropython code to a microcontroller (my recommendation is using the [Thonny IDE](https://thonny.org/), but you can view the full [MicroPython for Pico Software Guide](https://github.com/WURacing/DAQ-Project/blob/main/RPi%20Pico/MicroPython%20for%20Pico%20Software%20Guide.md) I've written for a full survey of options).
 
-Now, the majority of the CANPico code is included in a modified Micropython firmware, found in the [CANPico Github]. This firmware is already flashed on the Pico if you purchased the CANPico, so nothing more needs to be done (unless you wish to alter the firmware further).
+Now, the majority of the CANPico code is included in a modified Micropython firmware, found in the [CANPico documentation/Github](https://kentindell.github.io/canpico). This firmware is already flashed on the Pico if you purchased the CANPico, so nothing more needs to be done (unless you wish to alter the firmware further).
 
 The ADC code is currently just a module, and should be uploaded directly. Using the Thonny IDE (or another program for uploading Micropython code), you should upload both files in ADC folder, "ads79_buffer.py" and "asd79_SPI.py". This module abstracts the ADC communication and makes reading ADC values simple and straighforward.
 
