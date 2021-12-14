@@ -8,7 +8,7 @@ The Data Acquisition system is an essential subsystem of WashU Formula Racing. W
      alt="racecar"
      width="500" />
 
-Here you'll find some essential items:
+This repo is sorted into folders for each section of the project, and you'll find some essential items in each folder:
 
 RPi Pico (sensor board source code and documentation)
 - code for interfacing with the ads79## ADCs by SPI
@@ -26,4 +26,4 @@ client (website and telemetry dashboard source code and documentation)
 - x
 - README.md, INSTALL.md, HOW-TO-RUN.md
 
-See the respective readme's for each section for specific information of each section.
+See the respective folder's readme for specific information of each section.
