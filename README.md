@@ -25,3 +25,5 @@ RPi_CAN (data logger and telemetry source code and documentation)
 client (website and telemetry dashboard source code and documentation)
 - x
 - README.md, INSTALL.md, HOW-TO-RUN.md
+
+See the respective readme's for each section for specific information of each section.
