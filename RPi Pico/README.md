@@ -1,22 +1,7 @@
 ## Raspberry Pi Pico using MicroPython, with CANPico sock and custom ADC expansion hat
 
-The RPi Pico is a low-cost, high-performance microcontroller device with flexible digital interfaces. Key features:
+In order to fulfill the requirements given in section [Goals and Requirements/Sensor Boards], we chose to build on a microcontroller because we want the real-time guarantees and low level hardware access.
 
-- RP2040 CPU: Dual Cortex M0+ processor cores, up to 133 MHz
-- 264 kB of embedded SRAM in 6 banks
-- 30 multifunction GPIO
-- Dedicated hardware for commonly used peripherals
-  - 16 PWM channels
-  - Programmable IO for extended peripheral support
-- 4 channel ADC with internal temperature sensor, 0.5 MSa/s, 12-bit conversion
-- USB 1.1 Host/Device
+We hoped to find a microcontroller with many analog inputs for the numerous sensors we have, but we weren't particularly happy with our options, with most boards going up to only 5 or 6, occasionally even 8 analog inputs. In order to cover the whole car with 8 analog inputs we'd need three or four sensor boards, when ideally we'd keep the total down to only two (one board in the front and one in the back of the car). We discovered that higher channel ADCs could be bought and added on to a microcontroller and decided that would be the best option for us. We elected to add on the ADS7951 ADC which can provide 16 analog channels at up to 12-bit resolution, with SPI serial communication is very fast.
 
-The CANPico is a sock for the Raspberry Pi Pico which supplies a CAN controller (MCP2518FD) and CAN transceiver (MCP2562FD), as well as a Micropython SDK that allows for communication with said CAN controller. 
- - CAN-FD and CAN standard compatible
- - triggers can be set for certain CAN IDs or message expressions
- - SPI serial communication (very fast, synchronous communication))
-
-The custom ADC hat is a board which contains an SPI controlled stand alone ADC (ADS7951). A custom Micropython module was written to control the ADC easily and effectively.
- - 12-Bit, 16-Channel input (supports our need for many sensors)
- - 1-MSPS sampling 
- - SPI serial communication (very fast, synchronous communication)
+We chose to build our sensor boards on the Raspberry Pi Pico, a low-cost, high-performance microcontroller device with flexible digital interfaces. We program them primarily in Micropython, which allows for rapid prototyping and quick changes in software. In addition to fulfilling the requirements of the sensor board, it also keeps our code simple and clean, and allows for useful programming techniques like object-oriented programming and Python-like threading. We add on the CANPico sock to enable sending data via CAN messages, which will be received by the datalogger and telemetry board for saving.
