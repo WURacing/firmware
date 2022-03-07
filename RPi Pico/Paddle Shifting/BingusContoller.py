@@ -37,6 +37,6 @@ can = CAN(id_filters=filter)
 while True:
     frames = recv_wait(can)
     for frame in frames:
-        data = unpack('>I', frame.get_data())[0]
+        data = unpack('>HHHH', frame.get_data())[0]
         if 
 
