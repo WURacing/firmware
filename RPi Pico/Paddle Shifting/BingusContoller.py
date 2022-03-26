@@ -33,7 +33,7 @@ def recv_wait(can):
 # The filter is a character string that defines the ID matching to take place. It is composed
 # of only ‘X’, ‘1’ or ‘0’ and must be 11 or 29 characters long. A ‘X’ character means “don’t
 # care”, a ‘1’ means “Must be 1” and ‘0’ means “Must be 0”.
-# This needs to be fixed, current filter is 32 characters long (remove trailing zeroes?)
+# TODO: This needs to be fixed, current filter is 32 characters long (remove trailing zeroes?)
 id_filters = {0: CANIDFilter(filter="10001100011000000000100000000000")}
 can = CAN(id_filters)
 
