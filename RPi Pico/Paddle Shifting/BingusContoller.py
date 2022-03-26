@@ -40,9 +40,8 @@ can = CAN(id_filters)
 while True:
     frames = recv_wait(can)
     for frame in frames:
-        # Indicies and format string here might need to change
-        data = unpack('>HHHH', frame.get_data())
-        if data[2] == 255:
+        data = unpack('>bbbb', frame.get_data())
+        if data[0] == 2:
             print("upshift")
-        if data[3] == 255:
+        if data[0] == 1:
             print("downshift")
