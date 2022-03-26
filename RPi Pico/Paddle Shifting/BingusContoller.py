@@ -1,7 +1,7 @@
 from machine import Pin
 from time import sleep_ms
 from rp2 import CAN, CANFrame, CANID, CANHack, MIN, CANIDFilter
-from utime import sleep, sleep_ms
+import utime
 import machine
 import time
 from struct import pack, unpack
@@ -30,12 +30,8 @@ def recv_wait(can):
         if len(frames) > 0:
             return frames
 
-# The filter is a character string that defines the ID matching to take place. It is composed
-# of only ‘X’, ‘1’ or ‘0’ and must be 11 or 29 characters long. A ‘X’ character means “don’t
-# care”, a ‘1’ means “Must be 1” and ‘0’ means “Must be 0”.
-# TODO: This needs to be fixed, current filter is 32 characters long (remove trailing zeroes?)
 id_filters = {0: CANIDFilter(filter="00000001011")}
-can = CAN(id_filters)
+can = CAN(id_filters=id_filters)
 
 while True:
     frames = recv_wait(can)
@@ -43,5 +39,8 @@ while True:
         data = unpack('>bbbb', frame.get_data())
         if data[0] == 2:
             print("upshift")
-        if data[0] == 1:
+        elif data[0] == 1:
             print("downshift")
+        else:
+            print(frame.get_canid(), end ='\t')
+            print(data)    
