@@ -6,7 +6,6 @@ import machine
 import time
 from struct import pack, unpack
 
-led = machine.Pin(25, machine.Pin.OUT, value=1)
 shift_up_pin = machine.Pin(2, machine.Pin.OUT)
 shift_down_pin = machine.Pin(1, machine.Pin.OUT)
 shift_up_pin.low()
