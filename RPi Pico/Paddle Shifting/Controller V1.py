@@ -6,7 +6,7 @@
 # This is a first try at implementing a full controller in
 # uPython. This has the full suite of CAN control, and should
 # more or less replicate the functionality of the existing
-# controller board.
+# controller board, minus shifting.
 #
 # This is V1, the least optimized. I worry a bit about RAM
 # because of the number and length of global variables.

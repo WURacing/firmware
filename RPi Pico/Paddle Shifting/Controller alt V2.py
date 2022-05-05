@@ -4,8 +4,9 @@
 # **This is run in uPython**
 #
 # This is the furthest shorted program - the only code is for
-# the Bingus controller. There's 4 IO, 2 for paddle inputs and
-# 2 for shifter outputs
+# the Bingus controller (still using uasyncio, somewhat
+# unnessesary at this point. There's 4 IO, 2 for paddle inputs
+# and 2 for shifter outputs.
 
 from machine import Pin, PWM, const
 from gc import collect
