@@ -3,30 +3,12 @@
 # 
 # **This is run in uPython**
 #
-# This is a first try at implementing a full controller in
-# uPython. This has the full suite of CAN control, and should
-# more or less replicate the functionality of the existing
-# controller board, minus shifting.
-#
-# This is V3, the most optimized. My fear with this program is
-# that it's very difficult to read, and I'm not sure to what
-# degree the optimizations are necessary. Nevertheless, I've 
-# included it for the full spectrum of optimality. This might 
-# be how a final deployment version looks, or similar.
+# Controller alt V4 but no CAN.
 
 from machine import Pin, PWM, const
 from gc import collect
-from rp2 import CAN, CANIDFilter
 from utime import sleep_ms as t_sleep
 from uasyncio import sleep_ms as a_sleep, get_event_loop as a_loop
-from ustruct import unpack
-
-# CAN data
-
-data = ()
-_FARB_data = const(1)
-_RARB_data = const(2)
-_DRS_data = const(3)
 
 # outputs
 
@@ -39,12 +21,17 @@ _button_red_pin = const('button_red_pin')
 _button_green_pin = const('button_green_pin')
 _button_blue_pin = const('button_blue_pin')
 
+_FARB_val = const(0) # deg
+_RARB_val = const(0) # deg
+_DRS_low = const(0) # deg
+_DRS_high = const(30) # deg
 _shift_pulse = const(150) # ms
 
 # inputs
 
 _UI_shift_down_pin = const('UI_shift_down_pin')
 _UI_shift_up_pin = const('UI_shift_up_pin')
+_UI_DRS_pin = const('UI_DRS_pin')
 
 # util functions
         
@@ -78,11 +65,14 @@ async def Bingus():
         else:
             await a_sleep(0)
 
-async def Servo(pin_i,data_i):
-    global data
-    fp = PWM(Pin(pin_i, Pin.OUT))
+async def DRS():
+    servo = PWM(Pin(_DRS_pin, Pin.OUT))
+    button = Pin(_UI_DRS_pin, Pin.IN)
     while True:
-        set_servo(fp, data[data_i])
+        if button.value():
+            set_servo(servo, _DRS_high)
+        else:
+            set_servo(servo, _DRS_low)
         await a_sleep(0)
 
 async def RGB(pin_i, rate):
@@ -95,23 +85,20 @@ async def RGB(pin_i, rate):
             LED.duty_u16(duty)
             await a_sleep(rate)
             
-async def CANin():
-    can = CAN(id_filters={0: CANIDFilter(filter="00000001011")})
+async def gar():
     while True:
         collect()
-        await a_sleep(0)
-        frames = can.recv()
-        global data = unpack('>bbbb', frames[-1])
-        await a_sleep(0)
+        await a_sleep(2000)
+        
+set_servo(fp, _FARB_val)
+set_servo(rp, _RARB_val)
             
 # async program setup
         
 loop=a_loop()
-loop.create_task(CANin()) # variable blocking code
+loop.create_task(gar()) # periodic garbage collection
 loop.create_task(Bingus()) # 150 ms blocking code
-loop.create_task(Servo(_FARB_pin,_FARB_data))
-loop.create_task(Servo(_RARB_pin,_RARB_data))
-loop.create_task(Servo(_DRS_pin,_DRS_data))
+loop.create_task(DRS())
 loop.create_task(RGB(_button_red_pin, 5))
 loop.create_task(RGB(_button_green_pin, 6))
 loop.create_task(RGB(_button_blue_pin, 7))

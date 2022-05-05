@@ -3,16 +3,11 @@
 # 
 # **This is run in uPython**
 #
-# This is a first try at implementing a full controller in
-# uPython. This has the full suite of CAN control, and should
-# more or less replicate the functionality of the existing
-# controller board, minus shifting.
-#
-# This is V3, the most optimized. My fear with this program is
-# that it's very difficult to read, and I'm not sure to what
-# degree the optimizations are necessary. Nevertheless, I've 
-# included it for the full spectrum of optimality. This might 
-# be how a final deployment version looks, or similar.
+# This is a fusion of Controller V3 and Controller alt. We've
+# got CAN control for the ARBs, but the majority of objects
+# have still been moved into the functions. Increased use of
+# constants has dramatically increased readibility compared
+# to Controller V3.
 
 from machine import Pin, PWM, const
 from gc import collect
@@ -26,7 +21,6 @@ from ustruct import unpack
 data = ()
 _FARB_data = const(1)
 _RARB_data = const(2)
-_DRS_data = const(3)
 
 # outputs
 
@@ -39,12 +33,15 @@ _button_red_pin = const('button_red_pin')
 _button_green_pin = const('button_green_pin')
 _button_blue_pin = const('button_blue_pin')
 
+_DRS_low = const(0) # deg
+_DRS_high = const(30) # deg
 _shift_pulse = const(150) # ms
 
 # inputs
 
 _UI_shift_down_pin = const('UI_shift_down_pin')
 _UI_shift_up_pin = const('UI_shift_up_pin')
+_UI_DRS_pin = const('UI_DRS_pin')
 
 # util functions
         
@@ -78,11 +75,21 @@ async def Bingus():
         else:
             await a_sleep(0)
 
-async def Servo(pin_i,data_i):
+async def ServoARB(pin_i,data_i):
     global data
-    fp = PWM(Pin(pin_i, Pin.OUT))
+    servo = PWM(Pin(pin_i, Pin.OUT))
     while True:
-        set_servo(fp, data[data_i])
+        set_servo(servo, data[data_i])
+        await a_sleep(0)
+
+async def ServoDRS(pin_i,pin_UI):
+    servo = PWM(Pin(pin_i, Pin.OUT))
+    button = Pin(pin_UI, Pin.IN)
+    while True:
+        if button.value():
+            set_servo(servo, _DRS_high)
+        else:
+            set_servo(servo, _DRS_low)
         await a_sleep(0)
 
 async def RGB(pin_i, rate):
@@ -109,9 +116,9 @@ async def CANin():
 loop=a_loop()
 loop.create_task(CANin()) # variable blocking code
 loop.create_task(Bingus()) # 150 ms blocking code
-loop.create_task(Servo(_FARB_pin,_FARB_data))
-loop.create_task(Servo(_RARB_pin,_RARB_data))
-loop.create_task(Servo(_DRS_pin,_DRS_data))
+loop.create_task(ServoARB(_FARB_pin,_FARB_data))
+loop.create_task(ServoARB(_RARB_pin,_RARB_data))
+loop.create_task(ServoDRS(_DRS_pin,_UI_DRS_pin))
 loop.create_task(RGB(_button_red_pin, 5))
 loop.create_task(RGB(_button_green_pin, 6))
 loop.create_task(RGB(_button_blue_pin, 7))
