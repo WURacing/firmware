@@ -40,4 +40,3 @@ while True:
     for frame in frames:
         data = unpack('>HHHh', frame.get_data())
         print_rpm(data[0])
-
