@@ -10,7 +10,7 @@ from struct import unpack
 
 # Create the I2C interface.
 #                    (SCL, SDA)
-i2c = busio.I2C(board.GP5, board.GP4)
+i2c = busio.I2C(board.GP15, board.GP14)
 print("I2C created!")
 
 # Create the LED segment class.
@@ -18,9 +18,9 @@ print("I2C created!")
 display = segments.Seg7x4(i2c, auto_write=False)
 print("Display created!")
 
-# id "10001100111111111111000001001000" too big, 33 chars
-id_filters = {0: CANIDFilter(filter="00000001011")}
-can = CAN(id_filters=id_filters)
+# id "10001100111111111111000001001000" too big, 32 chars
+id_filters = {0: CANIDFilter(filter="01100111111111111000001001000")}
+can = CAN(profile=CAN.BITRATE_250K_75, id_filters=id_filters)
 
 # Wait for a frame
 def recv_wait(can):
@@ -40,3 +40,4 @@ while True:
     for frame in frames:
         data = unpack('>HHHh', frame.get_data())
         print_rpm(data[0])
+        print(data[0])
