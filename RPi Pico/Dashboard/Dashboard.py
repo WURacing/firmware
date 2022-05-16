@@ -34,7 +34,7 @@ rpm_canid = CANID(0x0CFFF048, extended=True)
 batt_and_cool_canid = CANID(0x0CFFF548, extended=True)
 gear_canid = CANID(0x0CFFF348, extended=True) #Analog Input 7
 
-id_filters = {0: rpm_canid.get_id_filter(), 1: batt_and_cool_canid.get_id_filter(), 2: =gear_canid.get_id_filter()}
+id_filters = {0: rpm_canid.get_id_filter(), 1: batt_and_cool_canid.get_id_filter(), 2: gear_canid.get_id_filter()}
 can = CAN(profile=CAN.BITRATE_250K_75, id_filters=id_filters)
 
 # Wait for a frame
@@ -52,8 +52,10 @@ def print_to_dash(rpm, gear, temp, voltage):
     left_display[0] = str(gear)
     left_display.show()
     
+    right_display.fill(0)
     text = str(rpm)
-    right_display[0] = text[len(text) - 3]
+    if(len(text) >= 3):
+        right_display[0] = text[len(text) - 3]
     right_display[1] = text[len(text) - 2]
     if temp > COOLANT_THRESHOLD and voltage < BATTERY_THRESHOLD:
         right_display.set_digit_raw(3, BOTH_WARNINGS)
@@ -62,10 +64,10 @@ def print_to_dash(rpm, gear, temp, voltage):
     elif voltage < BATTERY_THRESHOLD:
         right_display.set_digit_raw(3, BATTERY_WARNING)
     else:
-        right_display.set_digit_raw(3, NO_WARNINGS)
+        right_display.set_digit_raw(3, NO_WARNING)
     right_display.show()
 
-def int calculate_gear(analog):
+def calculate_gear(analog):
     if analog > .49 and analog < .88:
         return 1
     elif analog > .98 and analog < 1.37:
