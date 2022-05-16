@@ -11,13 +11,13 @@ from adafruit_ht16k33 import segments
 # Create the I2C interface.
 #                    (SCL, SDA)
 print("Creating I2C.")
-i2c = busio.I2C(board.GP5, board.GP4)
+i2c = busio.I2C(board.GP15, board.GP14)
 print("I2C created!")
 
 # Create the LED segment class.
 # This creates a 7 segment 4 character display:
 print("Creating display.")
-display = segments.Seg7x4(i2c, auto_write=False)
+display = segments.Seg7x4(i2c, auto_write=False, address=0x71)
 print("Display created!")
 
 while True:
