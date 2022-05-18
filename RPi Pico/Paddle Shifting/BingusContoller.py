@@ -1,10 +1,8 @@
 from machine import Pin
-from time import sleep_ms
-from rp2 import CAN, CANFrame, CANID, CANHack, MIN, CANIDFilter
-import utime
-import machine
 import time
-from struct import pack, unpack
+from rp2 import CAN, CANIDFilter
+import machine
+from struct import unpack
 
 shift_up_pin = machine.Pin(2, machine.Pin.OUT)
 shift_down_pin = machine.Pin(1, machine.Pin.OUT)
