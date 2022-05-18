@@ -1,10 +1,10 @@
 from machine import Pin
-from time import sleep_ms
-from rp2 import CAN, CANFrame, CANID, CANHack, MIN, CANIDFilter
-import utime
-import machine
 import time
-from struct import pack, unpack
+from rp2 import CAN, CANIDFilter
+import machine
+from struct import unpack
+
+DEBUG = False
 
 shift_up_pin = machine.Pin(2, machine.Pin.OUT)
 shift_down_pin = machine.Pin(1, machine.Pin.OUT)
@@ -37,9 +37,14 @@ while True:
     for frame in frames:
         data = unpack('>bbbb', frame.get_data())
         if data[0] == 2:
-            print("upshift")
+            shift_up()
+            if DEBUG:
+                print("upshift")
         elif data[0] == 1:
-            print("downshift")
+            shift_down()
+            if DEBUG:
+                print("downshift")
         else:
-            print(frame.get_canid(), end ='\t')
-            print(data)    
+            if DEBUG:
+                print(frame.get_canid(), end ='\t')
+                print(data)
