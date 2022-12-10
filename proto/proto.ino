@@ -13,14 +13,38 @@ byte x_avg = 0;
 byte y_avg = 0;
 byte z_avg = 0;
 
-int CS= 11;
+const int CS = 11;
+const int LED = 13;
 
+int ledState = LOW;
+unsigned long currentMillis = millis();
+unsigned long previousMillis = 0; 
+const long interval = 1000;
 
+void blink()
+{
+  currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) 
+  {
+    previousMillis = currentMillis;
+    if (ledState == LOW) 
+    {
+      ledState = HIGH;
+      // Serial.printf("Led High!\n");
+    } 
+    else 
+    {
+      ledState = LOW;
+      // Serial.printf("Led Low!\n");
+    }
+    digitalWrite(LED, ledState);
+  }
+}
 
+void setup() 
+{
+  pinMode(LED, OUTPUT);
 
-
-
-void setup() {
   Serial.begin(11520);
   pinMode(CS, OUTPUT);
   digitalWrite(CS, HIGH);
@@ -40,14 +64,17 @@ void setup() {
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
   digitalWrite(PIN_CAN_BOOSTEN, true);
 
-  if(!CAN.begin(500000)){
+  if(!CAN.begin(500000))
+  {
     Serial.println("Starting CAN failed!");
     while(1);
   }
 }
 
+void loop() 
+{
+  blink();
 
-void loop() {
   digitalWrite(CS,LOW);
   SPI.transfer(0xA9);
   x_H= SPI.transfer(0x00);
@@ -64,42 +91,24 @@ void loop() {
   digitalWrite(CS,HIGH);
 
 
-  x_avg = (((x_H)*(0.1)) + x_avg)/1.1;
-  y_avg = (((y_H)*(0.1)) + y_avg)/1.1;
-  z_avg = (((z_H)*(0.1)) + z_avg)/1.1;
+  // x_avg = (((x_H)*(0.1)) + x_avg)/1.1;
+  // y_avg = (((y_H)*(0.1)) + y_avg)/1.1;
+  // z_avg = (((z_H)*(0.1)) + z_avg)/1.1;
 
   
 
 
   int averageTime=0;
-  if(millis()-averageTime>10){
+  if(millis()-averageTime>10)
+  {
     averageTime=millis();
     CAN.beginPacket(0x1);
     CAN.write(x_avg);
     CAN.write(y_avg);
     CAN.write(z_avg);
     CAN.endPacket();
-
-
-
-//  Serial.print(x_avg);
-//  Serial.print(',');
-//  Serial.print(y_avg);
-//  Serial.print(',');
-//  Serial.print(z_avg);
-
-//    delay(1);
-    }
-
-  
-
-
-
-
-
-
-
-
-
-  
   }
+
+  Serial.printf("X:%x\tY:%x\tZ:%x\n",x_H,y_H,z_H);
+}
+  
