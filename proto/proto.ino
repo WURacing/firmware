@@ -13,7 +13,7 @@ byte x_avg = 0;
 byte y_avg = 0;
 byte z_avg = 0;
 
-const int CS = 11;
+const int CS = 5;
 const int LED = 13;
 
 int ledState = LOW;
@@ -57,7 +57,6 @@ void setup()
   SPI.transfer(0x3F);
   digitalWrite(CS,HIGH);
 
-  while(!Serial);
 
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
@@ -91,9 +90,9 @@ void loop()
   digitalWrite(CS,HIGH);
 
 
-  // x_avg = (((x_H)*(0.1)) + x_avg)/1.1;
-  // y_avg = (((y_H)*(0.1)) + y_avg)/1.1;
-  // z_avg = (((z_H)*(0.1)) + z_avg)/1.1;
+  x_avg = (((x_H)*(0.1)) + x_avg)/1.1;
+  y_avg = (((y_H)*(0.1)) + y_avg)/1.1;
+  z_avg = (((z_H)*(0.1)) + z_avg)/1.1;
 
   
 
@@ -104,11 +103,11 @@ void loop()
     averageTime=millis();
     CAN.beginPacket(0x1);
     CAN.write(x_avg);
-    CAN.write(y_avg);
-    CAN.write(z_avg);
+    // CAN.write(y_avg);
+    // CAN.write(z_avg);
     CAN.endPacket();
   }
 
-  Serial.printf("X:%x\tY:%x\tZ:%x\n",x_H,y_H,z_H);
+  Serial.printf("X:%d\tY:%d\tZ:%d\n",x_avg,y_avg,z_avg);
 }
   
