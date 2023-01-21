@@ -41,6 +41,7 @@ void blink()
   }
 }
 
+// Configured for + or - 2g
 void setup() 
 {
   pinMode(LED, OUTPUT);
@@ -90,24 +91,25 @@ void loop()
   digitalWrite(CS,HIGH);
 
 
-  x_avg = (((x_H)*(0.1)) + x_avg)/1.1;
-  y_avg = (((y_H)*(0.1)) + y_avg)/1.1;
-  z_avg = (((z_H)*(0.1)) + z_avg)/1.1;
+  // x_avg = (((x_H)*(0.1)) + x_avg)/1.1;
+  // y_avg = (((y_H)*(0.1)) + y_avg)/1.1;
+  // z_avg = (((z_H)*(0.1)) + z_avg)/1.1;
 
   
 
-
+  // Delta time
   int averageTime=0;
   if(millis()-averageTime>10)
   {
     averageTime=millis();
     CAN.beginPacket(0x1);
-    CAN.write(x_avg);
-    // CAN.write(y_avg);
-    // CAN.write(z_avg);
+    Serial.printf("X:%d\tY:%d\tZ:%d\n", x_H, y_H, z_H);
+    CAN.write(x_H);
+    CAN.write(y_H);
+    CAN.write(z_H);
     CAN.endPacket();
   }
 
-  Serial.printf("X:%d\tY:%d\tZ:%d\n",x_avg,y_avg,z_avg);
+  // Serial.printf("X:%d\tY:%d\tZ:%d\n",x_avg,y_avg,z_avg);
 }
   
