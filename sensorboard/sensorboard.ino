@@ -3,17 +3,13 @@
 
 #define BAUD_RATE 1000000
 
-byte x_H;
-byte y_H;
-byte z_H;
+byte x_accel;
+byte y_accel;
+byte z_accel;
 
 int datacount= 0;
 
-byte x_avg = 0;
-byte y_avg = 0;
-byte z_avg = 0;
-
-const int CS = 5;
+const int ACCEL_PIN = 5;
 const int LED = 13;
 
 int ledState = LOW;
@@ -21,6 +17,7 @@ unsigned long currentMillis = millis();
 unsigned long previousMillis = 0; 
 const long interval = 1000;
 
+// Method for status indicator
 void blink()
 {
   currentMillis = millis();
@@ -45,16 +42,16 @@ void setup()
   pinMode(LED, OUTPUT);
 
   Serial.begin(11520);
-  pinMode(CS, OUTPUT);
-  digitalWrite(CS, HIGH);
+  pinMode(ACCEL_PIN, OUTPUT);
+  digitalWrite(ACCEL_PIN, HIGH);
 
   SPI.begin();
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE3));
 
-  digitalWrite(CS,LOW);
+  digitalWrite(ACCEL_PIN,LOW);
   SPI.transfer(0x20);
   SPI.transfer(0x3F);
-  digitalWrite(CS,HIGH);
+  digitalWrite(ACCEL_PIN,HIGH);
 
 
   pinMode(PIN_CAN_STANDBY, OUTPUT);
@@ -73,20 +70,20 @@ void loop()
 {
   blink();
 
-  digitalWrite(CS,LOW);
+  digitalWrite(ACCEL_PIN,LOW);
   SPI.transfer(0xA9);
-  x_H= SPI.transfer(0x00);
-  digitalWrite(CS,HIGH);
+  x_accel= SPI.transfer(0x00);
+  digitalWrite(ACCEL_PIN,HIGH);
 
-  digitalWrite(CS,LOW);
+  digitalWrite(ACCEL_PIN,LOW);
   SPI.transfer(0xAB);
-  y_H= SPI.transfer(0x00);
-  digitalWrite(CS,HIGH);
+  y_accel= SPI.transfer(0x00);
+  digitalWrite(ACCEL_PIN,HIGH);
 
-  digitalWrite(CS,LOW);
+  digitalWrite(ACCEL_PIN,LOW);
   SPI.transfer(0xAD);
-  z_H= SPI.transfer(0x00);
-  digitalWrite(CS,HIGH);
+  z_accel= SPI.transfer(0x00);
+  digitalWrite(ACCEL_PIN,HIGH);
 
   // Delta time
   int averageTime=0;
@@ -94,10 +91,10 @@ void loop()
   {
     averageTime=millis();
     CAN.beginPacket(0x1);
-    Serial.printf("X:%d\tY:%d\tZ:%d\n", x_H, y_H, z_H);
-    CAN.write(x_H);
-    CAN.write(y_H);
-    CAN.write(z_H);
+    Serial.printf("X:%d\tY:%d\tZ:%d\n", x_accel, y_accel, z_accel);
+    CAN.write(x_accel);
+    CAN.write(y_accel);
+    CAN.write(z_accel);
     CAN.endPacket();
   }
 
