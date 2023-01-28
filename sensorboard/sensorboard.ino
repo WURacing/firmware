@@ -14,7 +14,7 @@ byte x_send;
 byte y_send;
 byte z_send;
 
-int datacount = 0;
+unsigned long datacount = 0;
 
 byte x_avgs[ROLLING_AVG];
 byte y_avgs[ROLLING_AVG];
@@ -78,6 +78,7 @@ void setup() {
 void loop() {
   blink();
 
+  // Receive data
   digitalWrite(ACCEL_PIN, LOW);
   SPI.transfer(0xA9);
   x_acc = SPI.transfer(0x00);
@@ -112,6 +113,8 @@ void loop() {
   y_send = (byte)(y_tot / ROLLING_AVG);
   z_send = (byte)(z_tot / ROLLING_AVG);
 
+  datacount += 1;
+
   // Delta time
   unsigned long averageTime = 0;
   if (millis() - averageTime > 10) {
@@ -123,8 +126,7 @@ void loop() {
     CAN.endPacket();
   }
 
-  datacount += 1;
-
+  // Prints :)
   int x = (signed char)x_send;
   int y = (signed char)y_send;
   int z = (signed char)z_send;
