@@ -9,7 +9,6 @@ byte z_H;
 
 int datacount= 0;
 
-
 byte x_avg = 0;
 byte y_avg = 0;
 byte z_avg = 0;
@@ -31,12 +30,10 @@ void blink()
     if (ledState == LOW) 
     {
       ledState = HIGH;
-      // Serial.printf("Led High!\n");
     } 
     else 
     {
       ledState = LOW;
-      // Serial.printf("Led Low!\n");
     }
     digitalWrite(LED, ledState);
   }
@@ -90,13 +87,6 @@ void loop()
   SPI.transfer(0xAD);
   z_H= SPI.transfer(0x00);
   digitalWrite(CS,HIGH);
-
-
-  // x_avg = (((x_H)*(0.1)) + x_avg)/1.1;
-  // y_avg = (((y_H)*(0.1)) + y_avg)/1.1;
-  // z_avg = (((z_H)*(0.1)) + z_avg)/1.1;
-
-  
 
   // Delta time
   int averageTime=0;
