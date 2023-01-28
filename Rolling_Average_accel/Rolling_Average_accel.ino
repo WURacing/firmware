@@ -108,6 +108,9 @@ void loop() {
   
   if(datacount>=(rollingAverage-1)){
 
+    x_tot = 0;
+    y_tot = 0;
+    z_tot = 0;
 
     for (int i=0; i<rollingAverage; i++){
       x_tot+=x_avgs[i];
@@ -134,5 +137,8 @@ void loop() {
     }
   }
   datacount += 1;
-  Serial.printf("X:%d\tY:%d\tZ:%d\n",x_tot,y_tot,z_tot);
+  int x = (signed char) x_send;
+  int y = (signed char) y_send;
+  int z = (signed char) z_send;
+  Serial.printf("X:%d\tY:%d\tZ:%d\n",x,y,z);
 }
