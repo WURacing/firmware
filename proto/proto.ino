@@ -110,6 +110,5 @@ void loop()
     CAN.endPacket();
   }
 
-  // Serial.printf("X:%d\tY:%d\tZ:%d\n",x_avg,y_avg,z_avg);
 }
   
