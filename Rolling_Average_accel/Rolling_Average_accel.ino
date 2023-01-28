@@ -12,7 +12,7 @@ byte y_send;
 byte z_send;
 
 int datacount=0;
-const int rollingAverage=128;
+const int rollingAverage=64;
 
 byte x_avgs[rollingAverage];
 byte y_avgs[rollingAverage];
@@ -100,33 +100,29 @@ void loop() {
   z_acc = SPI.transfer(0x00);
   digitalWrite(CS,HIGH);
 
-  x_avgs[datacount%rollingAverage]=x_acc;
-  y_avgs[datacount%rollingAverage]=y_acc;
-  z_avgs[datacount%rollingAverage]=z_acc;
-
-  x_tot += x_acc;
-  y_tot += y_acc;
-  z_tot += z_acc;
+  x_avgs[datacount % rollingAverage]=x_acc;
+  y_avgs[datacount % rollingAverage]=y_acc;
+  z_avgs[datacount % rollingAverage]=z_acc;
 
   
+  
   if(datacount>=(rollingAverage-1)){
-    //once this condition is met, the array is filled
-    //in order to be more effiecent and not include nested loops,
-    ///the code will always subtract off the 0 value in the array 
-    //thus all values will be eventually subtracted and we maintain a total 
-    //of 128 values
-    //the total is then divided by 127 instead of 128
 
-    //when at 127 --> 128 data points and thus we take off first value
-    //(rollingAverage-1) used to avoid overflow in x_tot
+    x_tot = 0;
+    y_tot = 0;
+    z_tot = 0;
 
-    x_tot -= x_avgs[datacount%(rollingAverage-1)]; //this is 0 when full, 1 on next go, etc
-    y_tot -= y_avgs[datacount%(rollingAverage-1)];
-    z_tot -= z_avgs[datacount%(rollingAverage-1)];
+    for (int i=0; i<rollingAverage; i++){
+      x_tot+=x_avgs[i];
+      y_tot+=y_avgs[i];
+      z_tot+=z_avgs[i];
+    }
 
-    x_send = (byte)(x_tot/127);
-    y_send = (byte)(y_tot/127);
-    z_send = (byte)(z_tot/127);
+    
+
+    x_send = (byte)(x_tot/rollingAverage);
+    y_send = (byte)(y_tot/rollingAverage);
+    z_send = (byte)(z_tot/rollingAverage);
 
     
     unsigned long averageTime=0;
@@ -140,5 +136,9 @@ void loop() {
       CAN.endPacket();
     }
   }
-  Serial.printf("X:%d\tY:%d\tZ:%d\n",x_tot,y_tot,z_tot);
+  datacount += 1;
+  int x = (signed char) x_send;
+  int y = (signed char) y_send;
+  int z = (signed char) z_send;
+  Serial.printf("X:%d\tY:%d\tZ:%d\n",x,y,z);
 }
