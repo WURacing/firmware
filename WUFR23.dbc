@@ -1,131 +1,18 @@
-VERSION "WUFR 22.0"
+VERSION "WUFR 23.1.0"
 
-NS_ : 
-	NS_DESC_
-	CM_
-	BA_DEF_
-	BA_
-	VAL_
-	CAT_DEF_
-	CAT_
-	FILTER
-	BA_DEF_DEF_
-	EV_DATA_
-	ENVVAR_DATA_
-	SGTYPE_
-	SGTYPE_VAL_
-	BA_DEF_SGTYPE_
-	BA_SGTYPE_
-	SIG_TYPE_REF_
-	VAL_TABLE_
-	SIG_GROUP_
-	SIG_VALTYPE_
-	SIGTYPE_VALTYPE_
-	BO_TX_BU_
-	BA_DEF_REL_
-	BA_REL_
-	BA_DEF_DEF_REL_
-	BU_SG_REL_
-	BU_EV_REL_
-	BU_BO_REL_
-	SG_MUL_VAL_
+BS_: 1000000 : 0,0
 
-BS_:
+BU_: FLSB DAQ
 
-BU_: CTRL DAQ SBFront1 SBFront2 SBRear1 SBRear2 SBCG
+BO_ 1 SensorBoardData: 7 FLSB 
+ SG_ XAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ YAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ ZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ XGyro : 24|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ YGyro : 32|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ ZGyro : 40|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ Temp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
 
+CM_ BU_ FLSB "Front left sensor board";
 
-BO_ 11 UI_inputs: 8 DAQ
- SG_ UI_shiftUpCommand : 1|1@1+ (1,0) [0|1] ""  CTRL
- SG_ UI_shiftDownCommand : 0|1@1+ (1,0) [0|1] ""  CTRL
- SG_ UI_eARBRearSetting : 16|8@1- (1,0) [-80|80] "deg"  CTRL
- SG_ UI_eARBFrontSetting : 8|8@1- (1,0) [-80|80] "deg"  CTRL
- SG_ UI_DRSCommand : 24|8@1- (1,0) [-80|80] "deg"  CTRL
-
-BO_ 1 SBFront1_signals1: 8 SBFront1
- SG_ SBFront1_FLshockPots : 32|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront1_pitot : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront1_FbrakePressure : 0|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront1_FLaccelX : 48|16@1+ (1,0) [0|0] ""  DAQ
-
-BO_ 2 SBFront1_signals2: 8 SBFront1
- SG_ SBFront1_FLaccelX : 0|12@1+ (0.00219,-5) [-5|5] "G" DAQ
- SG_ SBFront1_FLaccelZ : 12|12@1+ (0.00219,-5) [-5|5] "G"  DAQ
- SG_ SBFront1_FLaccelY : 24|12@1+ (0.00219,-5) [-5|5] "G"  DAQ
- SG_ SBFront1_faults : 36|12@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront1_totalCurrent : 48|12@1+ (6E-006,0) [0|0.39321] "A"  DAQ
-
-BO_ 3 SBFront2_signals1: 8 SBFront2
- SG_ SBFront2_FRaccelX : 48|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront2_FbrakeTemp : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront2_steeringPosition : 0|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront2_FRshockPots : 32|16@1+ (1,0) [0|0] ""  DAQ
-
-BO_ 4 SBFront2_signals2: 8 SBFront2
- SG_ SBFront2_FRaccelZ : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront2_FRaccelY : 0|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront2_faults : 32|4@1+ (1,0) [0|0] ""  DAQ
- SG_ SBFront2_totalCurrent : 48|16@1+ (6E-006,0) [0|0.39321] "A"  DAQ
-
-BO_ 5 SBRear1_signals1: 8 SBRear1
- SG_ SBRear1_RLaccelY : 32|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear1_accelX : 48|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear1_RLaccelX : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear1_RLshockPots : 0|16@1+ (1,0) [0|0] ""  DAQ
-
-BO_ 6 SBRear1_signals2: 8 SBRear1
- SG_ SBRear1_accelZ : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear1_accelY : 0|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear1_faults : 32|4@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear1_totalCurrent : 48|16@1+ (6E-006,0) [0|0.39321] "A"  DAQ
-
-BO_ 7 SBRear2_signals1: 8 SBRear2
- SG_ SBRear2_RRshockPots : 48|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear2_RRbrakeTemp : 32|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear2_gyro : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear2_RRbrakePressure : 0|16@1+ (1,0) [0|0] ""  DAQ
-
-BO_ 8 SBRear2_signals2: 8 SBRear2
- SG_ SBRear2_RRaccelY : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear2_RRaccelX : 0|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear2_faults : 32|4@1+ (1,0) [0|0] ""  DAQ
- SG_ SBRear2_totalCurrent : 48|16@1+ (6E-006,0) [0|0.39321] "A"  DAQ
-
-BO_ 9 SBCG_signals1: 8 SBCG
- SG_ SBCG_radiatorFlow : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBCG_accelX : 48|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBCG_gyro : 0|16@1+ (1,0) [0|0] ""  DAQ
-
-BO_ 10 SBCG_signals2: 8 SBCG
- SG_ SBCG_accelZ : 16|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBCG_accelY : 0|16@1+ (1,0) [0|0] ""  DAQ
- SG_ SBCG_faults : 32|4@1+ (1,0) [0|0] ""  DAQ
- SG_ SBCG_totalCurrent : 48|16@1+ (6E-006,0) [0|0.39321] "A"  DAQ
-
-
-
-CM_ BU_ CTRL "Servo/shift control board";
-CM_ BU_ DAQ "Dashboard Datalogger and Telemetry";
-CM_ BU_ SBFront1 "Front sensor board 1";
-CM_ BU_ SBFront2 "Front sensor board 2";
-CM_ BU_ SBRear1 "Rear sensor board 1";
-CM_ BU_ SBRear2 "Rear sensor board 2";
-CM_ BU_ SBCG "Center of gravity sensor board";
-BA_DEF_  "BusType" STRING ;
-BA_DEF_ BO_  "GenMsgSendType" ENUM  "Cyclic";
-BA_DEF_ BO_  "GenMsgCycleTime" INT 1 10000;
-BA_DEF_DEF_  "BusType" "CAN";
-BA_DEF_DEF_  "GenMsgSendType" "Cyclic";
-BA_DEF_DEF_  "GenMsgCycleTime" 100;
-BA_ "GenMsgCycleTime" BO_ 11 50;
-BA_ "GenMsgCycleTime" BO_ 1 5;
-BA_ "GenMsgCycleTime" BO_ 2 5;
-BA_ "GenMsgCycleTime" BO_ 3 5;
-BA_ "GenMsgCycleTime" BO_ 4 5;
-BA_ "GenMsgCycleTime" BO_ 5 5;
-BA_ "GenMsgCycleTime" BO_ 6 5;
-BA_ "GenMsgCycleTime" BO_ 7 5;
-BA_ "GenMsgCycleTime" BO_ 8 5;
-BA_ "GenMsgCycleTime" BO_ 9 5;
-BA_ "GenMsgCycleTime" BO_ 10 5;
-
+CM_ "Note: May need to use NS_ at top or other configs here at bottom. Version may need to be empty"
