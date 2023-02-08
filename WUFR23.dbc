@@ -2,17 +2,25 @@ VERSION "WUFR 23.1.0"
 
 BS_: 1000000 : 0,0
 
-BU_: FLSB DAQ
+BU_: FLSB DAQ FRSB
 
-BO_ 1 SensorBoardData: 7 FLSB 
- SG_ XAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
- SG_ YAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
- SG_ ZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
- SG_ XGyro : 24|8@1+ (1,0) [-80|80] "rad/s" DAQ
- SG_ YGyro : 32|8@1+ (1,0) [-80|80] "rad/s" DAQ
- SG_ ZGyro : 40|8@1+ (1,0) [-80|80] "rad/s" DAQ
- SG_ Temp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
+BO_ 1 FLSBData: 7 FLSB 
+ SG_ FLXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FLYAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FLZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FLXGyro : 24|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ FLYGyro : 32|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ FLZGyro : 40|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ FLTemp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
+
+BO_ 2 FRSBData: 7 FRSB 
+ SG_ FRXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FRYAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FRZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FRXGyro : 24|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ FRYGyro : 32|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ FRZGyro : 40|8@1+ (1,0) [-80|80] "rad/s" DAQ
+ SG_ FRTemp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
 
 CM_ BU_ FLSB "Front left sensor board";
-
-CM_ "Note: May need to use NS_ at top or other configs here at bottom. Version may need to be empty"
+CM_ BU_ FRSB "Front right sensor board";
