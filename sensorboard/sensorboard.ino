@@ -6,19 +6,19 @@
 #define BAUD_RATE 1000000
 #define ROLLING_AVG 64
 
-byte x_acc;
-byte y_acc;
-byte z_acc;
+signed char x_acc;
+signed char y_acc;
+signed char z_acc;
 
-byte x_send;
-byte y_send;
-byte z_send;
+signed char x_send;
+signed char y_send;
+signed char z_send;
 
 unsigned long datacount = 0;
 
-byte x_avgs[ROLLING_AVG];
-byte y_avgs[ROLLING_AVG];
-byte z_avgs[ROLLING_AVG];
+signed char x_avgs[ROLLING_AVG];
+signed char y_avgs[ROLLING_AVG];
+signed char z_avgs[ROLLING_AVG];
 
 long x_tot;
 long y_tot;
@@ -46,7 +46,7 @@ void blink() {
   }
 }
 
-// Configured for + or - 2g
+// Configured for + or - 4g
 void setup() {
   pinMode(LED, OUTPUT);
 
@@ -62,6 +62,11 @@ void setup() {
   SPI.transfer(0x3F);
   digitalWrite(ACCEL_PIN, HIGH);
 
+  digitalWrite(ACCEL_PIN, LOW);
+  SPI.transfer(0x23);
+  SPI.transfer(0x10);
+  digitalWrite(ACCEL_PIN, HIGH);
+
 
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
@@ -70,8 +75,6 @@ void setup() {
 
   if (!CAN.begin(BAUD_RATE)) {
     Serial.println("Starting CAN failed!");
-    while (1)
-      ;
   }
 }
 
@@ -109,9 +112,9 @@ void loop() {
     z_tot += z_avgs[i];
   }
 
-  x_send = (byte)(x_tot / ROLLING_AVG);
-  y_send = (byte)(y_tot / ROLLING_AVG);
-  z_send = (byte)(z_tot / ROLLING_AVG);
+  x_send = (x_tot / ROLLING_AVG);
+  y_send = (y_tot / ROLLING_AVG);
+  z_send = (z_tot / ROLLING_AVG);
 
   datacount += 1;
 
@@ -119,7 +122,7 @@ void loop() {
   unsigned long averageTime = 0;
   if (millis() - averageTime > 10) {
     averageTime = millis();
-    CAN.beginPacket(0x1);
+    CAN.beginPacket(0x2);
     CAN.write(x_send);
     CAN.write(y_send);
     CAN.write(z_send);
@@ -127,8 +130,8 @@ void loop() {
   }
 
   // Prints :)
-  int x = (signed char)x_send;
-  int y = (signed char)y_send;
-  int z = (signed char)z_send;
-  Serial.printf("X:%d\tY:%d\tZ:%d\n", x, y, z);
+//  char x = x_send;
+//  char y = y_send;
+//  char z = z_send;
+  Serial.printf("X:%d\tY:%d\tZ:%d\n", x_send, y_send, z_send);
 }
