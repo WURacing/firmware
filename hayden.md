@@ -7,8 +7,8 @@ TODO: Fix Hz issue on import
 | Data     | Status  |
 | -------- | ------- |
 | FLXAccel | Working |
-| FLYAccel | Broken  |
+| FLYAccel | Working |
 | FLZAccel | Working |
 | FRXAccel | Working |
-| FRYAccel | Broken  |
+| FRYAccel | Working |
 | FRZAccel | Working |
