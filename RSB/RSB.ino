@@ -1,3 +1,6 @@
+// Description: Rear Sensor Board code for WUFR23
+// Authors: Jonah Sachs, Hayden Schroeder
+
 #include <CAN.h>
 #include <SPI.h>
 
@@ -122,7 +125,7 @@ void loop() {
   unsigned long averageTime = 0;
   if (millis() - averageTime > 10) {
     averageTime = millis();
-    CAN.beginPacket(0x2);
+    CAN.beginPacket(0x1);
     CAN.write(x_send);
     CAN.write(y_send);
     CAN.write(z_send);
