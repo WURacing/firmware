@@ -31,10 +31,9 @@ NS_ :
 	BU_BO_REL_
 	SG_MUL_VAL_
 
-BS_:
+BS_: 250000 : 0,0
 
 BU_: DAQ PE3
-
 
 BO_ 2365583432 PE01: 8 PE3
  SG_ EngineSpeed : 0|16@1+ (1,0) [0|30000] "rpm"  DAQ
