@@ -24,3 +24,4 @@ BO_ 2 FRSBData: 7 FRSB
 
 CM_ BU_ FLSB "Front left sensor board";
 CM_ BU_ FRSB "Front right sensor board";
+BA_DEF_DEF_  "GenMsgCycleTime" 100;
