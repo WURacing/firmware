@@ -8,6 +8,7 @@
 
 #define BAUD_RATE 1000000
 #define ROLLING_AVG 64
+#define ANLG_RES 4096
 
 signed char x_acc;
 signed char y_acc;
@@ -49,10 +50,21 @@ void blink() {
   }
 }
 
+void readAnalogs(float &anlg1, float &anlg2, float &anlg3, float &anlg4, float &anlg5, float &anlg6) {
+  anlg1 = (float)analogRead(A0) / ANLG_RES;
+  anlg2 = (float)analogRead(A1) / ANLG_RES;
+  anlg3 = (float)analogRead(A2) / ANLG_RES;
+  anlg4 = (float)analogRead(A3) / ANLG_RES;
+  anlg5 = (float)analogRead(A4) / ANLG_RES;
+  anlg6 = (float)analogRead(A5) / ANLG_RES;
+}
+
 // Configured for + or - 4g
 void setup() {
+  // Set up status indicator
   pinMode(LED, OUTPUT);
 
+  // Set up SPI
   Serial.begin(11520);
   pinMode(ACCEL_PIN, OUTPUT);
   digitalWrite(ACCEL_PIN, HIGH);
@@ -70,7 +82,7 @@ void setup() {
   SPI.transfer(0x10);
   digitalWrite(ACCEL_PIN, HIGH);
 
-
+  // Set up CAN
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
@@ -84,7 +96,7 @@ void setup() {
 void loop() {
   blink();
 
-  // Receive data
+  // Receive SPI data
   digitalWrite(ACCEL_PIN, LOW);
   SPI.transfer(0xA9);
   x_acc = SPI.transfer(0x00);
@@ -121,20 +133,37 @@ void loop() {
 
   datacount += 1;
 
+  // Analog data
+  float anlg1, anlg2, anlg3, anlg4, anlg5, anlg6;
+  readAnalogs(anlg1, anlg2, anlg3, anlg4, anlg5, anlg6);
+
   // Delta time
   unsigned long averageTime = 0;
-  if (millis() - averageTime > 10) {
+  if (millis() - averageTime > 1) {
+    // Accelerometer data
     averageTime = millis();
     CAN.beginPacket(0x1);
     CAN.write(x_send);
     CAN.write(y_send);
     CAN.write(z_send);
     CAN.endPacket();
+
+    // Analog data
+    CAN.beginPacket(0x2);
+    CAN.write(anlg1);
+    CAN.write(anlg2);
+    CAN.endPacket();
+
+    CAN.beginPacket(0x3);
+    CAN.write(anlg3);
+    CAN.write(anlg4);
+    CAN.endPacket();
+
+    CAN.beginPacket(0x4);
+    CAN.write(anlg5);
+    CAN.write(anlg6);
+    CAN.endPacket();
   }
 
-  // Prints :)
-//  char x = x_send;
-//  char y = y_send;
-//  char z = z_send;
   Serial.printf("X:%d\tY:%d\tZ:%d\n", x_send, y_send, z_send);
 }
