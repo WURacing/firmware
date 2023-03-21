@@ -51,12 +51,12 @@ void blink() {
 }
 
 void readAnalogs(float &anlg1, float &anlg2, float &anlg3, float &anlg4, float &anlg5, float &anlg6) {
-  anlg1 = (float)analogRead(A0) / ANLG_RES;
-  anlg2 = (float)analogRead(A1) / ANLG_RES;
-  anlg3 = (float)analogRead(A2) / ANLG_RES;
-  anlg4 = (float)analogRead(A3) / ANLG_RES;
-  anlg5 = (float)analogRead(A4) / ANLG_RES;
-  anlg6 = (float)analogRead(A5) / ANLG_RES;
+  anlg1 = (float)analogRead(A0);
+  anlg2 = (float)analogRead(A1);
+  anlg3 = (float)analogRead(A2);
+  anlg4 = (float)analogRead(A3);
+  anlg5 = (float)analogRead(A4);
+  anlg6 = (float)analogRead(A5);
 }
 
 // Configured for + or - 4g
