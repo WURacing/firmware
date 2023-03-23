@@ -4,7 +4,7 @@ BS_: 1000000 : 0,0
 
 BU_: FLSB DAQ FRSB
 
-BO_ 1 FLSBData: 7 FLSB 
+BO_ 1 FLSBSPI: 7 FLSB 
  SG_ FLXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FLYAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FLZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
@@ -13,7 +13,17 @@ BO_ 1 FLSBData: 7 FLSB
  SG_ FLZGyro : 40|8@1+ (1,0) [-80|80] "rad/s" DAQ
  SG_ FLTemp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
 
-BO_ 5 FRSBSPI: 7 FRSB 
+BO_ 2 FLSBAnlg1: 8 FLSB
+ SG_ FLAnlg1 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FLAnlg2 : 16|32@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FLAnlg3 : 32|48@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FLAnlg4 : 48|64@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 3 FLSBAnlg2: 4 FLSB
+ SG_ FLAnlg5 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FLAnlg6 : 16|32@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 11 FRSBSPI: 7 FRSB 
  SG_ FRXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FRYAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FRZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
@@ -22,8 +32,15 @@ BO_ 5 FRSBSPI: 7 FRSB
  SG_ FRZGyro : 40|8@1+ (1,0) [-80|80] "rad/s" DAQ
  SG_ FRTemp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
 
-BO_ 6 FRSBAnlg12: 8 FRSB
- SG_ FRAnlg1 : 0|32
+BO_ 12 FRSBAnlg1: 8 FRSB
+ SG_ FRAnlg1 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FRAnlg2 : 16|32@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FRAnlg3 : 32|48@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FRAnlg4 : 48|64@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 13 FRSBAnlg2: 4 FRSB
+ SG_ FRAnlg5 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FRAnlg6 : 16|32@1+ (0.001,0) [0|5] "V" DAQ
 
 CM_ BU_ FLSB "Front left sensor board";
 CM_ BU_ FRSB "Front right sensor board";
