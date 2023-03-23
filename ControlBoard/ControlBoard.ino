@@ -19,6 +19,7 @@ unsigned long downData = 0;
 const int BIT_NUM = sizeof(upData) * 8; 
 int count = 0;
 
+const int LED = 13;
 int ledState = LOW;
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
