@@ -19,6 +19,10 @@ unsigned long downData = 0;
 const int BIT_NUM = sizeof(upData) * 8; 
 int count = 0;
 
+int ledState = LOW;
+unsigned long blinkCurrentMillis = millis();
+unsigned long blinkPreviousMillis = 0;
+
 /*
 * Blinks the LED on the board to indicate that the board is running.
 */
