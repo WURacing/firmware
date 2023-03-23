@@ -39,7 +39,7 @@ BO_ 12 FRSBAnlg1: 8 FRSB
  SG_ FRAnlg4 : 48|64@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 13 FRSBAnlg2: 4 FRSB
- SG_ FRAnlg5 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ Pitot : 0|16@1+ (0.000045,-0.0225) [-0.0225|2.025] "PSI" DAQ
  SG_ FRAnlg6 : 16|32@1+ (0.001,0) [0|5] "V" DAQ
 
 CM_ BU_ FLSB "Front left sensor board";
