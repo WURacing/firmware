@@ -1,4 +1,5 @@
-// Description: Front Sensor Board code for WUFR23
+// Description: Rear sensor board code for WUFR23. It reads accelerometer, gyro, and temp data over SPI, as well as analog data over analog pins. 
+//              It then sends the data over CAN to the DAQ.
 // Authors: Jonah Sachs, Hayden Schroeder
 
 #include <CAN.h>

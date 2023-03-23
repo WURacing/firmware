@@ -1,5 +1,9 @@
 # Code for sensor boards and AiM Configurations
 
+### Sensor Boards (FLSB, FRSB, RSB)
+
+The code for these boards is identical except for their CAN IDs. They read accelerometer, gyro, and temp data over SPI, as well as analog data over analog pins. They then send this data over CAN to DAQ.
+
 ### [`WUFR23.dbc`](WUFR23.dbc): DBC for custom data system
 
 | CAN ID | Data                       |
