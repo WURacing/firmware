@@ -9,6 +9,7 @@
 #define DOWN_IN_PIN 5
 #define UP_OUT_PIN 10
 #define DOWN_OUT_PIN 11
+#define BLINK_INTERVAL 1000 //ms
 
 int gearPos = 3;
 bool ready = true;
