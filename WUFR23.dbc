@@ -16,7 +16,7 @@ BO_ 1 RSBSPI: 7 RSB
 BO_ 2 RSBAnlg1: 8 RSB
  SG_ RAnlg1 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ RAnlg2 : 16|32@1+ (0.001,0) [0|5] "V" DAQ
- SG_ RAnlg3 : 32|48@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ RBrkPrs : 32|48@1+ (0.25,-125) [0|1000] "PSI" DAQ
  SG_ RAnlg4 : 48|64@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 3 RSBAnlg2: 4 RSB
@@ -55,7 +55,7 @@ BO_ 22 FLSBAnlg1: 8 FLSB
  SG_ FLAnlg1 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FLAnlg2 : 16|32@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FLAnlg3 : 32|48@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FLAnlg4 : 48|64@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FBrkPrs : 48|64@1+ (0.25,-125) [0|1000] "PSI" DAQ
 
 BO_ 23 FLSBAnlg2: 4 FLSB
  SG_ FLAnlg5 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
