@@ -9,6 +9,7 @@
 #define BAUD_RATE 1000000
 #define ROLLING_AVG 64
 #define ANLG_RES 4096
+#define ANLG_LEN 6
 
 signed char x_acc;
 signed char y_acc;
@@ -50,13 +51,13 @@ void blink() {
   }
 }
 
-void readAnalogs(float &anlg1, float &anlg2, float &anlg3, float &anlg4, float &anlg5, float &anlg6) {
-  anlg1 = (float)analogRead(A0);
-  anlg2 = (float)analogRead(A1);
-  anlg3 = (float)analogRead(A2);
-  anlg4 = (float)analogRead(A3);
-  anlg5 = (float)analogRead(A4);
-  anlg6 = (float)analogRead(A5);
+/*
+* Reads the analog values from the analog pins. The values are returned as voltage * 1000.
+*/
+void readAnalogs(short *analogs) {
+  for (int i = 0; i < ANLG_LEN; i++) {
+    analogs[i] = (analogRead(i) / ANLG_RES) * 1000;
+  }
 }
 
 // Configured for + or - 4g
@@ -134,8 +135,8 @@ void loop() {
   datacount += 1;
 
   // Analog data
-  float anlg1, anlg2, anlg3, anlg4, anlg5, anlg6;
-  readAnalogs(anlg1, anlg2, anlg3, anlg4, anlg5, anlg6);
+  short analogs[ANLG_LEN];
+  readAnalogs(analogs);
 
   // Delta time
   unsigned long averageTime = 0;
@@ -150,18 +151,18 @@ void loop() {
 
     // Analog data
     CAN.beginPacket(0x6);
-    CAN.write(anlg1);
-    CAN.write(anlg2);
+    CAN.write(analogs[0]);
+    CAN.write(analogs[1]);
     CAN.endPacket();
 
     CAN.beginPacket(0x7);
-    CAN.write(anlg3);
-    CAN.write(anlg4);
+    CAN.write(analogs[2]);
+    CAN.write(analogs[3]);
     CAN.endPacket();
 
     CAN.beginPacket(0x8);
-    CAN.write(anlg5);
-    CAN.write(anlg6);
+    CAN.write(analogs[4]);
+    CAN.write(analogs[5]);
     CAN.endPacket();
   }
 
