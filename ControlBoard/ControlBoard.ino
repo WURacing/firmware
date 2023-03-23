@@ -19,6 +19,21 @@ unsigned long downData = 0;
 const int BIT_NUM = sizeof(upData) * 8; 
 int count = 0;
 
+/*
+* Blinks the LED on the board to indicate that the board is running.
+*/
+void blink() {
+  blinkCurrentMillis = millis();
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL) {
+    blinkPreviousMillis = blinkCurrentMillis;
+    if (ledState == LOW) {
+      ledState = HIGH;
+    } else {
+      ledState = LOW;
+    }
+    digitalWrite(LED, ledState);
+  }
+}
 
 void setup() {
   pinMode(UP_IN_PIN, INPUT);
@@ -59,6 +74,7 @@ unsigned long modifyBit(unsigned long d, int c, bool v)
 }
 
 void loop() {
+  blink();
   // gearPos = CAN.read or something
 
   upData = modifyBit(upData, count, !digitalRead(UP_IN_PIN));
