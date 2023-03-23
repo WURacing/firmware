@@ -8,6 +8,10 @@
 
 #define BAUD_RATE 1000000
 #define ROLLING_AVG 64
+#define ANLG_RES 4096
+#define ANLG_LEN 6
+#define BLINK_INTERVAL 1000
+#define CAN_INTERVAL 1
 
 signed char x_acc;
 signed char y_acc;
@@ -31,15 +35,18 @@ const int ACCEL_PIN = 5;
 const int LED = 13;
 
 int ledState = LOW;
-unsigned long currentMillis = millis();
-unsigned long previousMillis = 0;
-const long interval = 1000;
+unsigned long blinkCurrentMillis = millis();
+unsigned long blinkPreviousMillis = 0;
+unsigned long canCurrentMillis = millis();
+unsigned long canPreviousMillis = 0;
 
-// Method for status indicator
+/*
+* Blinks the LED on the board to indicate that the board is running.
+*/
 void blink() {
-  currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
+  blinkCurrentMillis = millis();
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL) {
+    blinkPreviousMillis = blinkCurrentMillis;
     if (ledState == LOW) {
       ledState = HIGH;
     } else {
@@ -49,10 +56,21 @@ void blink() {
   }
 }
 
-// Configured for + or - 4g
+/*
+* Reads the analog values from the analog pins. The values are stored as voltage * 1000.
+* @param analogs An array of shorts to store the analog values in
+*/
+void readAnalogs(short *analogs) {
+  for (int i = 0; i < ANLG_LEN; i++) {
+    analogs[i] = (analogRead(i) / ANLG_RES) * 1000;
+  }
+}
+
 void setup() {
+  // Set up status indicator
   pinMode(LED, OUTPUT);
 
+  // Set up SPI. Accelerometer is configure for +/- 4g.
   Serial.begin(11520);
   pinMode(ACCEL_PIN, OUTPUT);
   digitalWrite(ACCEL_PIN, HIGH);
@@ -70,7 +88,7 @@ void setup() {
   SPI.transfer(0x10);
   digitalWrite(ACCEL_PIN, HIGH);
 
-
+  // Set up CAN
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
@@ -84,7 +102,7 @@ void setup() {
 void loop() {
   blink();
 
-  // Receive data
+  // Receive SPI data
   digitalWrite(ACCEL_PIN, LOW);
   SPI.transfer(0xA9);
   x_acc = SPI.transfer(0x00);
@@ -121,20 +139,32 @@ void loop() {
 
   datacount += 1;
 
+  // Analog data
+  short analogs[ANLG_LEN];
+  readAnalogs(analogs);
+
   // Delta time
-  unsigned long averageTime = 0;
-  if (millis() - averageTime > 10) {
-    averageTime = millis();
-    CAN.beginPacket(0x2);
+  canCurrentMillis = millis();
+  if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL) {
+    // Accelerometer data
+    canPreviousMillis = millis();
+    CAN.beginPacket(0x11);
     CAN.write(x_send);
     CAN.write(y_send);
     CAN.write(z_send);
     CAN.endPacket();
-  }
 
-  // Prints :)
-//  char x = x_send;
-//  char y = y_send;
-//  char z = z_send;
-  Serial.printf("X:%d\tY:%d\tZ:%d\n", x_send, y_send, z_send);
+    // Analog data
+    CAN.beginPacket(0x12);
+    CAN.write(analogs[0]);
+    CAN.write(analogs[1]);
+    CAN.write(analogs[2]);
+    CAN.write(analogs[3]);
+    CAN.endPacket();
+
+    CAN.beginPacket(0x13);
+    CAN.write(analogs[4]);
+    CAN.write(analogs[5]);
+    CAN.endPacket();
+  }
 }
