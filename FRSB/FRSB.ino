@@ -10,6 +10,8 @@
 #define ROLLING_AVG 64
 #define ANLG_RES 4096
 #define ANLG_LEN 6
+#define BLINK_INTERVAL 1000
+#define CAN_INTERVAL 1
 
 signed char x_acc;
 signed char y_acc;
@@ -33,15 +35,18 @@ const int ACCEL_PIN = 5;
 const int LED = 13;
 
 int ledState = LOW;
-unsigned long currentMillis = millis();
-unsigned long previousMillis = 0;
-const long interval = 1000;
+unsigned long blinkCurrentMillis = millis();
+unsigned long blinkPreviousMillis = 0;
+unsigned long canCurrentMillis = millis();
+unsigned long canPreviousMillis = 0;
 
-// Method for status indicator
+/*
+* Blinks the LED on the board to indicate that the board is running.
+*/
 void blink() {
-  currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
+  blinkCurrentMillis = millis();
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL) {
+    blinkPreviousMillis = blinkCurrentMillis;
     if (ledState == LOW) {
       ledState = HIGH;
     } else {
@@ -52,7 +57,8 @@ void blink() {
 }
 
 /*
-* Reads the analog values from the analog pins. The values are returned as voltage * 1000.
+* Reads the analog values from the analog pins. The values are stored as voltage * 1000.
+* @param analogs An array of shorts to store the analog values in
 */
 void readAnalogs(short *analogs) {
   for (int i = 0; i < ANLG_LEN; i++) {
@@ -60,12 +66,11 @@ void readAnalogs(short *analogs) {
   }
 }
 
-// Configured for + or - 4g
 void setup() {
   // Set up status indicator
   pinMode(LED, OUTPUT);
 
-  // Set up SPI
+  // Set up SPI. Accelerometer is configure for +/- 4g.
   Serial.begin(11520);
   pinMode(ACCEL_PIN, OUTPUT);
   digitalWrite(ACCEL_PIN, HIGH);
@@ -139,32 +144,27 @@ void loop() {
   readAnalogs(analogs);
 
   // Delta time
-  unsigned long averageTime = 0;
-  if (millis() - averageTime > 1) {
+  canCurrentMillis = millis();
+  if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL) {
     // Accelerometer data
-    averageTime = millis();
-    CAN.beginPacket(0x5);
+    canPreviousMillis = millis();
+    CAN.beginPacket(0x11);
     CAN.write(x_send);
     CAN.write(y_send);
     CAN.write(z_send);
     CAN.endPacket();
 
     // Analog data
-    CAN.beginPacket(0x6);
+    CAN.beginPacket(0x12);
     CAN.write(analogs[0]);
     CAN.write(analogs[1]);
-    CAN.endPacket();
-
-    CAN.beginPacket(0x7);
     CAN.write(analogs[2]);
     CAN.write(analogs[3]);
     CAN.endPacket();
 
-    CAN.beginPacket(0x8);
+    CAN.beginPacket(0x13);
     CAN.write(analogs[4]);
     CAN.write(analogs[5]);
     CAN.endPacket();
   }
-
-  Serial.printf("X:%d\tY:%d\tZ:%d\n", x_send, y_send, z_send);
 }

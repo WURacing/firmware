@@ -1,4 +1,4 @@
-// Description: Rear Sensor Board code for WUFR23
+// Description: Front Sensor Board code for WUFR23
 // Authors: Jonah Sachs, Hayden Schroeder
 
 #include <CAN.h>
@@ -9,6 +9,9 @@
 #define BAUD_RATE 1000000
 #define ROLLING_AVG 64
 #define ANLG_RES 4096
+#define ANLG_LEN 6
+#define BLINK_INTERVAL 1000
+#define CAN_INTERVAL 1
 
 signed char x_acc;
 signed char y_acc;
@@ -32,15 +35,18 @@ const int ACCEL_PIN = 5;
 const int LED = 13;
 
 int ledState = LOW;
-unsigned long currentMillis = millis();
-unsigned long previousMillis = 0;
-const long interval = 1000;
+unsigned long blinkCurrentMillis = millis();
+unsigned long blinkPreviousMillis = 0;
+unsigned long canCurrentMillis = millis();
+unsigned long canPreviousMillis = 0;
 
-// Method for status indicator
+/*
+* Blinks the LED on the board to indicate that the board is running.
+*/
 void blink() {
-  currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
+  blinkCurrentMillis = millis();
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL) {
+    blinkPreviousMillis = blinkCurrentMillis;
     if (ledState == LOW) {
       ledState = HIGH;
     } else {
@@ -50,21 +56,21 @@ void blink() {
   }
 }
 
-void readAnalogs(float &anlg1, float &anlg2, float &anlg3, float &anlg4, float &anlg5, float &anlg6) {
-  anlg1 = (float)analogRead(A0) / ANLG_RES;
-  anlg2 = (float)analogRead(A1) / ANLG_RES;
-  anlg3 = (float)analogRead(A2) / ANLG_RES;
-  anlg4 = (float)analogRead(A3) / ANLG_RES;
-  anlg5 = (float)analogRead(A4) / ANLG_RES;
-  anlg6 = (float)analogRead(A5) / ANLG_RES;
+/*
+* Reads the analog values from the analog pins. The values are stored as voltage * 1000.
+* @param analogs An array of shorts to store the analog values in
+*/
+void readAnalogs(short *analogs) {
+  for (int i = 0; i < ANLG_LEN; i++) {
+    analogs[i] = (analogRead(i) / ANLG_RES) * 1000;
+  }
 }
 
-// Configured for + or - 4g
 void setup() {
   // Set up status indicator
   pinMode(LED, OUTPUT);
 
-  // Set up SPI
+  // Set up SPI. Accelerometer is configure for +/- 4g.
   Serial.begin(11520);
   pinMode(ACCEL_PIN, OUTPUT);
   digitalWrite(ACCEL_PIN, HIGH);
@@ -134,14 +140,14 @@ void loop() {
   datacount += 1;
 
   // Analog data
-  float anlg1, anlg2, anlg3, anlg4, anlg5, anlg6;
-  readAnalogs(anlg1, anlg2, anlg3, anlg4, anlg5, anlg6);
+  short analogs[ANLG_LEN];
+  readAnalogs(analogs);
 
   // Delta time
-  unsigned long averageTime = 0;
-  if (millis() - averageTime > 1) {
+  canCurrentMillis = millis();
+  if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL) {
     // Accelerometer data
-    averageTime = millis();
+    canPreviousMillis = millis();
     CAN.beginPacket(0x1);
     CAN.write(x_send);
     CAN.write(y_send);
@@ -150,20 +156,15 @@ void loop() {
 
     // Analog data
     CAN.beginPacket(0x2);
-    CAN.write(anlg1);
-    CAN.write(anlg2);
+    CAN.write(analogs[0]);
+    CAN.write(analogs[1]);
+    CAN.write(analogs[2]);
+    CAN.write(analogs[3]);
     CAN.endPacket();
 
     CAN.beginPacket(0x3);
-    CAN.write(anlg3);
-    CAN.write(anlg4);
-    CAN.endPacket();
-
-    CAN.beginPacket(0x4);
-    CAN.write(anlg5);
-    CAN.write(anlg6);
+    CAN.write(analogs[4]);
+    CAN.write(analogs[5]);
     CAN.endPacket();
   }
-
-  Serial.printf("X:%d\tY:%d\tZ:%d\n", x_send, y_send, z_send);
 }
