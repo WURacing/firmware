@@ -13,6 +13,7 @@
 #define ANLG_LEN 6
 #define BLINK_INTERVAL 1000
 #define CAN_INTERVAL 1
+#define ANLG_VRANGE 3.3
 
 signed char x_acc;
 signed char y_acc;
@@ -62,13 +63,23 @@ void blink() {
 * @param analogs An array of shorts to store the analog values in
 */
 void readAnalogs(short *analogs) {
-  analogs[0] = (analogRead(A0) / ANLG_RES) * 1000;
-  analogs[1] = (analogRead(A1) / ANLG_RES) * 1000;
-  analogs[2] = (analogRead(A2) / ANLG_RES) * 1000;
-  analogs[3] = (analogRead(A3) / ANLG_RES) * 1000;
-  analogs[4] = (analogRead(A4) / ANLG_RES) * 1000;
-  analogs[5] = (analogRead(A5) / ANLG_RES) * 1000;
-  Serial.printf("1: %d, 2: %d, 3: %d, 4: %d. 5: %d, 6: %d\n", analogs[0], analogs[1], analogs[2], analogs[3], analogs[4], analogs[5]);
+  analogs[0] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[1] = (analogRead(A1) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[2] = (analogRead(A2) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[3] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[4] = (analogRead(A4) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[5] = (analogRead(A5) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  // Serial.printf("1: %d, 2: %d, 3: %d, 4: %d. 5: %d, 6: %d\n", analogs[0], analogs[1], analogs[2], analogs[3], analogs[4], analogs[5]);
+}
+
+/*
+* Writes a short to the CAN bus.
+* @param data The short to write to the CAN bus
+*/
+void canWriteShort(short data)
+{
+  CAN.write(data & 0xFF);
+  CAN.write(data >> 8);
 }
 
 void setup() {
@@ -80,6 +91,7 @@ void setup() {
   pinMode(A3, INPUT);
   pinMode(A4, INPUT);
   pinMode(A5, INPUT);
+  analogReadResolution(12);
 
   Serial.begin(9600);
 
@@ -169,15 +181,15 @@ void loop() {
 
     // Analog data
     CAN.beginPacket(0x12);
-    CAN.write(analogs[0]);
-    CAN.write(analogs[1]);
-    CAN.write(analogs[2]);
-    CAN.write(analogs[3]);
+    canWriteShort(analogs[0]);
+    canWriteShort(analogs[1]);
+    canWriteShort(analogs[2]);
+    canWriteShort(analogs[3]);
     CAN.endPacket();
 
     CAN.beginPacket(0x13);
-    CAN.write(analogs[4]);
-    CAN.write(analogs[5]);
+    canWriteShort(analogs[4]);
+    canWriteShort(analogs[5]);
     CAN.endPacket();
   }
 }
