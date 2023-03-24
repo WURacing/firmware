@@ -62,14 +62,26 @@ void blink() {
 * @param analogs An array of shorts to store the analog values in
 */
 void readAnalogs(short *analogs) {
-  for (int i = 0; i < ANLG_LEN; i++) {
-    analogs[i] = (analogRead(i) / ANLG_RES) * 1000;
-  }
+  analogs[0] = (analogRead(A0) / ANLG_RES) * 1000;
+  analogs[1] = (analogRead(A1) / ANLG_RES) * 1000;
+  analogs[2] = (analogRead(A2) / ANLG_RES) * 1000;
+  analogs[3] = (analogRead(A3) / ANLG_RES) * 1000;
+  analogs[4] = (analogRead(A4) / ANLG_RES) * 1000;
+  analogs[5] = (analogRead(A5) / ANLG_RES) * 1000;
+  Serial.printf("1: %d, 2: %d, 3: %d, 4: %d. 5: %d, 6: %d\n", analogs[0], analogs[1], analogs[2], analogs[3], analogs[4], analogs[5]);
 }
 
 void setup() {
   // Set up status indicator
   pinMode(LED, OUTPUT);
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT);
+  pinMode(A3, INPUT);
+  pinMode(A4, INPUT);
+  pinMode(A5, INPUT);
+
+  Serial.begin(9600);
 
   // Set up SPI. Accelerometer is configure for +/- 4g.
   Serial.begin(11520);
