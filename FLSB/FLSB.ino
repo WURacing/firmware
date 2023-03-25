@@ -173,21 +173,21 @@ void loop() {
   if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL) {
     // Accelerometer data
     canPreviousMillis = millis();
-    CAN.beginPacket(0x11);
+    CAN.beginPacket(0x21);
     CAN.write(x_send);
     CAN.write(y_send);
     CAN.write(z_send);
     CAN.endPacket();
 
     // Analog data
-    CAN.beginPacket(0x12);
+    CAN.beginPacket(0x22);
     canWriteShort(analogs[0]);
     canWriteShort(analogs[1]);
     canWriteShort(analogs[2]);
     canWriteShort(analogs[3]);
     CAN.endPacket();
 
-    CAN.beginPacket(0x13);
+    CAN.beginPacket(0x23);
     canWriteShort(analogs[4]);
     canWriteShort(analogs[5]);
     CAN.endPacket();
