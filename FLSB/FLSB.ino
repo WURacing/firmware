@@ -63,12 +63,12 @@ void blink() {
 * @param analogs An array of shorts to store the analog values in
 */
 void readAnalogs(short *analogs) {
-  analogs[0] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[0] = (analogRead(A2) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
   analogs[1] = (analogRead(A1) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-  analogs[2] = (analogRead(A2) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-  analogs[3] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[2] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[3] = (analogRead(A5) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
   analogs[4] = (analogRead(A4) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-  analogs[5] = (analogRead(A5) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[5] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
   // Serial.printf("1: %d, 2: %d, 3: %d, 4: %d. 5: %d, 6: %d\n", analogs[0], analogs[1], analogs[2], analogs[3], analogs[4], analogs[5]);
 }
 
