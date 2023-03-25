@@ -1,4 +1,4 @@
-// Description: Rear sensor board code for WUFR23. It reads accelerometer, gyro, and temp data over SPI, as well as analog data over analog pins. 
+// Description: Front left sensor board code for WUFR23. It reads accelerometer, gyro, and temp data over SPI, as well as analog data over analog pins. 
 //              It then sends the data over CAN to the DAQ.
 // Authors: Hayden Schroeder, Jonah Sachs
 
@@ -173,21 +173,21 @@ void loop() {
   if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL) {
     // Accelerometer data
     canPreviousMillis = millis();
-    CAN.beginPacket(0x1);
+    CAN.beginPacket(0x21);
     CAN.write(x_send);
     CAN.write(y_send);
     CAN.write(z_send);
     CAN.endPacket();
 
     // Analog data
-    CAN.beginPacket(0x2);
+    CAN.beginPacket(0x22);
     canWriteShort(analogs[0]);
     canWriteShort(analogs[1]);
     canWriteShort(analogs[2]);
     canWriteShort(analogs[3]);
     CAN.endPacket();
 
-    CAN.beginPacket(0x3);
+    CAN.beginPacket(0x23);
     canWriteShort(analogs[4]);
     canWriteShort(analogs[5]);
     CAN.endPacket();

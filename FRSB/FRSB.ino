@@ -1,5 +1,6 @@
-// Description: Front Sensor Board code for WUFR23
-// Authors: Jonah Sachs, Hayden Schroeder
+// Description: Front right sensor board code for WUFR23. It reads accelerometer, gyro, and temp data over SPI, as well as analog data over analog pins. 
+//              It then sends the data over CAN to the DAQ.
+// Authors: Hayden Schroeder, Jonah Sachs
 
 #include <CAN.h>
 #include <SPI.h>
@@ -12,6 +13,7 @@
 #define ANLG_LEN 6
 #define BLINK_INTERVAL 1000
 #define CAN_INTERVAL 1
+#define ANLG_VRANGE 3.3
 
 signed char x_acc;
 signed char y_acc;
@@ -61,14 +63,37 @@ void blink() {
 * @param analogs An array of shorts to store the analog values in
 */
 void readAnalogs(short *analogs) {
-  for (int i = 0; i < ANLG_LEN; i++) {
-    analogs[i] = (analogRead(i) / ANLG_RES) * 1000;
-  }
+  analogs[0] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[1] = (analogRead(A1) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[2] = (analogRead(A2) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[3] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[4] = (analogRead(A4) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[5] = (analogRead(A5) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  // Serial.printf("1: %d, 2: %d, 3: %d, 4: %d. 5: %d, 6: %d\n", analogs[0], analogs[1], analogs[2], analogs[3], analogs[4], analogs[5]);
+}
+
+/*
+* Writes a short to the CAN bus.
+* @param data The short to write to the CAN bus
+*/
+void canWriteShort(short data)
+{
+  CAN.write(data & 0xFF);
+  CAN.write(data >> 8);
 }
 
 void setup() {
   // Set up status indicator
   pinMode(LED, OUTPUT);
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT);
+  pinMode(A3, INPUT);
+  pinMode(A4, INPUT);
+  pinMode(A5, INPUT);
+  analogReadResolution(12);
+
+  Serial.begin(9600);
 
   // Set up SPI. Accelerometer is configure for +/- 4g.
   Serial.begin(11520);
@@ -156,15 +181,15 @@ void loop() {
 
     // Analog data
     CAN.beginPacket(0x12);
-    CAN.write(analogs[0]);
-    CAN.write(analogs[1]);
-    CAN.write(analogs[2]);
-    CAN.write(analogs[3]);
+    canWriteShort(analogs[0]);
+    canWriteShort(analogs[1]);
+    canWriteShort(analogs[2]);
+    canWriteShort(analogs[3]);
     CAN.endPacket();
 
     CAN.beginPacket(0x13);
-    CAN.write(analogs[4]);
-    CAN.write(analogs[5]);
+    canWriteShort(analogs[4]);
+    canWriteShort(analogs[5]);
     CAN.endPacket();
   }
 }
