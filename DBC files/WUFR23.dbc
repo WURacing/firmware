@@ -52,7 +52,7 @@ BO_ 33 FLSBSPI: 7 FLSB
  SG_ FLTemp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
 
 BO_ 34 FLSBAnlg1: 8 FLSB
- SG_ FLShockPot : 0|16@1+ (.0805,-5.5) [10|150] "mm" DAQ
+ SG_ FLShockPot : 0|16@1+ (0.0805,-5.5) [10|150] "mm" DAQ
  SG_ FLAnlg2 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FRShockPot : 32|16@1+ (0.077,-5.5) [10|150] "mm" DAQ
  SG_ FBrkPrs : 48|16@1+ (0.25,-125) [0|1000] "PSI" DAQ
