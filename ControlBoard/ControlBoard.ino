@@ -1,33 +1,46 @@
-
-
 #include <CAN.h>
+#include "ControlBoard.h"
 
 #define BAUD_RATE 1000000
 #define PULSE 100 //ms
-#define DEBOUNCE 10 //ms
+#define BLINK_INTERVAL 1000 //ms
 #define UP_IN_PIN 4
 #define DOWN_IN_PIN 5
 #define UP_OUT_PIN 10
 #define DOWN_OUT_PIN 11
-#define BLINK_INTERVAL 1000 //ms
+// TODO: Figure out pins for clutch
+#define CLUTCH_IN_PIN 100
+#define CLUTCH_OUT_PIN 100
 
-int gearPos = 3;
-bool ready = true;
-bool upIn = LOW;
-bool downIn = LOW;
+
+unsigned short gearPos = 3;
 unsigned long upData = 0;
 unsigned long downData = 0;
+bool upShifting = false;
+bool downShifting = false;
 const int BIT_NUM = sizeof(upData) * 8; 
-int count = 0;
+unsigned short dataCount = 0;
 
 const int LED = 13;
 int ledState = LOW;
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 
-/*
-* Blinks the LED on the board to indicate that the board is running.
-*/
+void setup() {
+  pinMode(UP_IN_PIN, INPUT);
+  pinMode(DOWN_IN_PIN, INPUT);
+  pinMode(CLUTCH_IN_PIN, INPUT);
+  pinMode(UP_OUT_PIN, OUTPUT);
+  pinMode(DOWN_OUT_PIN, OUTPUT);
+  digitalWrite(UP_OUT_PIN, LOW);
+  digitalWrite(DOWN_OUT_PIN, LOW);
+  Serial.begin(9600);
+  if (!CAN.begin(BAUD_RATE)) {
+    Serial.println("Starting CAN failed!");
+  }
+}
+
+/* ----------------------- Methods ----------------------- */
 void blink() {
   blinkCurrentMillis = millis();
   if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL) {
@@ -41,16 +54,14 @@ void blink() {
   }
 }
 
-void setup() {
-  pinMode(UP_IN_PIN, INPUT);
-  pinMode(DOWN_IN_PIN, INPUT);
-  pinMode(UP_OUT_PIN, OUTPUT);
-  pinMode(DOWN_OUT_PIN, OUTPUT);
-  digitalWrite(UP_OUT_PIN, LOW);
-  digitalWrite(DOWN_OUT_PIN, LOW);
-  Serial.begin(9600);
-  if (!CAN.begin(BAUD_RATE)) {
-    Serial.println("Starting CAN failed!");
+void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned short &dataCount)
+{
+  modifyBit(upData, dataCount, !digitalRead(UP_IN_PIN));
+  modifyBit(downData, dataCount, !digitalRead(DOWN_IN_PIN));
+  dataCount++;
+  if (dataCount == BIT_NUM)
+  {
+    dataCount = 0;
   }
 }
 
@@ -70,42 +81,60 @@ void downshift()
   delay(PULSE);
 }
 
-/*
-* Changes the bit at position c in data b to value v
-*/
-unsigned long modifyBit(unsigned long d, int c, bool v)
+void updateGearPosition(unsigned short &gearPos)
 {
-    int mask = 1 << c;
-    return ((d & ~mask) | (v << c));
+  // TODO: gearPos = CAN.read or something
 }
 
+unsigned int getClutchPaddlePosition()
+{
+  int value = analogRead(CLUTCH_IN_PIN);
+  // TODO: Convert value to position
+  return value;
+}
+
+void setClutchPosition(unsigned int position)
+{
+  // TODO: Control clutch servo
+}
+
+void modifyBit(unsigned long &d, unsigned short c, bool v)
+{
+    int mask = 1 << c;
+    d = ((d & ~mask) | (v << c));
+}
+
+/* ----------------------- Main Loop ----------------------- */
 void loop() {
+  // Blink LED
   blink();
-  // gearPos = CAN.read or something
 
-  upData = modifyBit(upData, count, !digitalRead(UP_IN_PIN));
-  downData = modifyBit(downData, count, !digitalRead(DOWN_IN_PIN));
-  count++;
-  if (count == BIT_NUM)
+
+  // Shift Control
+  updateGearPosition(gearPos);
+  checkShiftPaddles(upData, downData, dataCount);
+
+  if (upData == ULONG_MAX && gearPos < 6 && !upShifting && !downShifting)
   {
-    count = 0;
-  }
-
-  // if (upData != 0 || downData != 0)
-  // {
-  //       Serial.printf("upIn: %d downIn: %d\n", upData, downData);
-  // }
-
-  if (upData == ULONG_MAX && downData != ULONG_MAX && gearPos < 6)
-  {
-    Serial.printf("upIn: %d downIn: %d upshift\n", upData, downData);
+    upShifting = true;
     upshift();
-    while(!digitalRead(UP_IN_PIN)){delay(1);} // Wait for release
   }
-  if (downData == ULONG_MAX && upData != ULONG_MAX && gearPos > 1)
+  if (upData == 0)
   {
-    Serial.printf("upIn: %d downIn: %d downshift\n", upData, downData);
-    downshift();
-    while(!digitalRead(DOWN_IN_PIN)){delay(1);} // Wait for release
+    upShifting = false;
   }
+
+  if (downData == ULONG_MAX && gearPos > 1 && !upShifting && !downShifting)
+  {
+    downShifting = true;
+    downshift();
+  }
+  if (downData == 0)
+  {
+    downShifting = false;
+  }
+  
+
+  // Clutch Control
+  setClutchPosition(getClutchPaddlePosition());
 }
