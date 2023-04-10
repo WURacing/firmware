@@ -89,7 +89,7 @@ void updateGearPosition(unsigned short &gearPos)
 unsigned int getClutchPaddlePosition()
 {
   int value = analogRead(CLUTCH_IN_PIN);
-  // TODO: Convert value to position
+  // TODO: Convert value to position (just like sensor boards)
   return value;
 }
 
