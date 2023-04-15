@@ -1,5 +1,7 @@
 #include <CAN.h>
 #include "ControlBoard.h"
+#include <SPI.h>
+#include <CAN2.h>
 
 #define BAUD_RATE 1000000
 #define PULSE 100 //ms
@@ -12,6 +14,7 @@
 #define CLUTCH_IN_PIN 100
 #define CLUTCH_OUT_PIN 100
 
+#define CAN_ID 0xCFFF248
 
 unsigned short gearPos = 3;
 unsigned long upData = 0;
@@ -26,7 +29,14 @@ int ledState = LOW;
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 
+byte CanFrame[8];
+
+
 void setup() {
+
+ 
+
+  // setting up CAN 
   pinMode(UP_IN_PIN, INPUT);
   pinMode(DOWN_IN_PIN, INPUT);
   pinMode(CLUTCH_IN_PIN, INPUT);
@@ -34,6 +44,13 @@ void setup() {
   pinMode(DOWN_OUT_PIN, OUTPUT);
   digitalWrite(UP_OUT_PIN, LOW);
   digitalWrite(DOWN_OUT_PIN, LOW);
+
+
+  pinMode(PIN_CAN_STANDBY, OUTPUT);
+  digitalWrite(PIN_CAN_STANDBY, false);
+  pinMode(PIN_CAN_BOOSTEN, OUTPUT);
+  digitalWrite(PIN_CAN_BOOSTEN, true);
+  
   Serial.begin(9600);
   if (!CAN.begin(BAUD_RATE)) {
     Serial.println("Starting CAN failed!");
@@ -83,8 +100,24 @@ void downshift()
 
 void updateGearPosition(unsigned short &gearPos)
 {
-  // TODO: gearPos = CAN.read or something
-}
+  byte highByte = (byte)(gearPos >> 8);
+  byte lowByte = (byte)(gearPos & 0xFF);
+
+  
+
+  
+  
+
+    
+
+    
+
+    
+    
+
+    
+  }
+
 
 unsigned int getClutchPaddlePosition()
 {
