@@ -8,9 +8,9 @@
 #define DOWN_IN_PIN 5
 #define UP_OUT_PIN 10
 #define DOWN_OUT_PIN 11
-// TODO: Figure out pins for clutch
-#define CLUTCH_IN_PIN 100
-#define CLUTCH_OUT_PIN 100
+#define CLUTCH_IN1_PIN A0
+#define CLUTCH_IN2_PIN A1
+#define CLUTCH_OUT_PIN 13
 
 
 unsigned short gearPos = 3;
