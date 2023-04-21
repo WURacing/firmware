@@ -14,3 +14,10 @@ TODO: Fix Hz issue on import
 | FRXAccel | Working |
 | FRYAccel | Working |
 | FRZAccel | Working |
+
+# 4/16 Pre-Testing Day Data Validation
+
+- Issue with FL analog 6, voltage not reaching A3
+- No power to rear brake pressure sensor
+- Need to check oil pressure
+- Oil pressure is off, looks almost double what it should be
