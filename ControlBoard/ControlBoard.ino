@@ -1,15 +1,20 @@
 #include <CAN.h>
 #include "ControlBoard.h"
 #include <SPI.h>
-#include <CAN2.h>
+#include <CAN.h>
+#include <Servo.h>
 
 #define BAUD_RATE 1000000
 #define PULSE 100 //ms
 #define BLINK_INTERVAL 1000 //ms
+
+#define ANLG_RES 4096
+#define ANLG_VRANGE 3.3
+
 #define UP_IN_PIN 4
 #define DOWN_IN_PIN 5
-#define UP_OUT_PIN 10
-#define DOWN_OUT_PIN 11
+#define UP_OUT_PIN 11
+#define DOWN_OUT_PIN 10
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
 #define CLUTCH_OUT_PIN 13
@@ -31,6 +36,7 @@ unsigned long blinkPreviousMillis = 0;
 
 byte CanFrame[8];
 
+Servo clutchServo;
 
 void setup() {
 
@@ -39,12 +45,15 @@ void setup() {
   // setting up CAN 
   pinMode(UP_IN_PIN, INPUT);
   pinMode(DOWN_IN_PIN, INPUT);
-  pinMode(CLUTCH_IN_PIN, INPUT);
+  pinMode(CLUTCH_IN1_PIN, INPUT);
+  pinMode(CLUTCH_IN2_PIN, INPUT);
   pinMode(UP_OUT_PIN, OUTPUT);
   pinMode(DOWN_OUT_PIN, OUTPUT);
   digitalWrite(UP_OUT_PIN, LOW);
   digitalWrite(DOWN_OUT_PIN, LOW);
+  analogReadResolution(12);
 
+  clutchServo.attach(CLUTCH_OUT_PIN);
 
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
@@ -102,33 +111,20 @@ void updateGearPosition(unsigned short &gearPos)
 {
   byte highByte = (byte)(gearPos >> 8);
   byte lowByte = (byte)(gearPos & 0xFF);
-
-  
-
-  
-  
-
-    
-
-    
-
-    
-    
-
-    
-  }
+}
 
 
-unsigned int getClutchPaddlePosition()
+double getClutchPaddlePosition()
 {
-  int value = analogRead(CLUTCH_IN_PIN);
-  // TODO: Convert value to position (just like sensor boards)
-  return value;
+  int clutch1 = analogRead(CLUTCH_IN1_PIN);
+  int clutch2 = analogRead(CLUTCH_IN2_PIN);
+  int value = max(clutch1, clutch2);
+  return (double)value / 4096;
 }
 
 void setClutchPosition(unsigned int position)
 {
-  // TODO: Control clutch servo
+  clutchServo.write(position);
 }
 
 void modifyBit(unsigned long &d, unsigned short c, bool v)
@@ -144,7 +140,7 @@ void loop() {
 
 
   // Shift Control
-  updateGearPosition(gearPos);
+  // updateGearPosition(gearPos);
   checkShiftPaddles(upData, downData, dataCount);
 
   if (upData == ULONG_MAX && gearPos < 6 && !upShifting && !downShifting)
@@ -169,5 +165,8 @@ void loop() {
   
 
   // Clutch Control
-  setClutchPosition(getClutchPaddlePosition());
+  double position = getClutchPaddlePosition();
+  position = (position * -80) + 100; 
+  Serial.println(position);
+  setClutchPosition(position);
 }

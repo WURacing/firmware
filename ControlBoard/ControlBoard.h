@@ -19,9 +19,9 @@ void upshift();
 void downshift();
 
 /*
-* Returns the position of the clutch paddle.
+* Returns the position of the clutch paddle between 0 and 1.
 */
-unsigned int getClutchPaddlePosition();
+double getClutchPaddlePosition();
 
 /*
 * Sets the position of the clutch.
