@@ -1,7 +1,6 @@
 #include <CAN.h>
 #include "ControlBoard.h"
 #include <SPI.h>
-#include <CAN.h>
 #include <Servo.h>
 
 #define BAUD_RATE 1000000
@@ -18,14 +17,22 @@
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
 #define CLUTCH_OUT_PIN 13
+#define DRS_IN_PIN 6
+#define DRS_OUT_PIN 12
 
 #define CAN_ID 0xCFFF248
+
+#define SERVO_OPEN_POS 90
+#define SERVO_CLOSE_POS 90
 
 unsigned short gearPos = 3;
 unsigned long upData = 0;
 unsigned long downData = 0;
+unsigned long drsData = 0;
+bool drsState = false;
 bool upShifting = false;
 bool downShifting = false;
+bool drsChanging = false;
 const int BIT_NUM = sizeof(upData) * 8; 
 unsigned short dataCount = 0;
 
@@ -37,6 +44,7 @@ unsigned long blinkPreviousMillis = 0;
 byte CanFrame[8];
 
 Servo clutchServo;
+Servo drsServo;
 
 void setup() {
 
@@ -47,6 +55,7 @@ void setup() {
   pinMode(DOWN_IN_PIN, INPUT);
   pinMode(CLUTCH_IN1_PIN, INPUT);
   pinMode(CLUTCH_IN2_PIN, INPUT);
+  pinMode(DRS_IN_PIN, INPUT);
   pinMode(UP_OUT_PIN, OUTPUT);
   pinMode(DOWN_OUT_PIN, OUTPUT);
   digitalWrite(UP_OUT_PIN, LOW);
@@ -54,6 +63,7 @@ void setup() {
   analogReadResolution(12);
 
   clutchServo.attach(CLUTCH_OUT_PIN);
+  drsServo.attach(DRS_OUT_PIN);
 
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
@@ -82,17 +92,16 @@ void blink() {
 
 void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned short &dataCount)
 {
-  modifyBit(upData, dataCount, !digitalRead(UP_IN_PIN));
-  modifyBit(downData, dataCount, !digitalRead(DOWN_IN_PIN));
-  dataCount++;
-  if (dataCount == BIT_NUM)
-  {
-    dataCount = 0;
-  }
+  bool upStatus = !digitalRead(UP_IN_PIN);
+  bool downStatus = !digitalRead(DOWN_IN_PIN);
+  // Serial.printf("%d,%d\n", upStatus, downStatus);
+  modifyBit(upData, dataCount, upStatus);
+  modifyBit(downData, dataCount, downStatus);
 }
 
 void upshift()
 {
+  // Serial.println("Upshift");
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(PULSE);
   digitalWrite(UP_OUT_PIN, LOW);
@@ -101,6 +110,7 @@ void upshift()
 
 void downshift()
 {
+  // Serial.println("Downshift");
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(PULSE);
   digitalWrite(DOWN_OUT_PIN, LOW);
@@ -133,6 +143,12 @@ void modifyBit(unsigned long &d, unsigned short c, bool v)
     d = ((d & ~mask) | (v << c));
 }
 
+void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount)
+{
+  bool drsStatus = !digitalRead(DRS_IN_PIN);
+  modifyBit(drsData, dataCount, drsStatus);
+}
+
 /* ----------------------- Main Loop ----------------------- */
 void loop() {
   // Blink LED
@@ -142,6 +158,8 @@ void loop() {
   // Shift Control
   // updateGearPosition(gearPos);
   checkShiftPaddles(upData, downData, dataCount);
+
+  // Serial.printf("%d,%d\n", upData, downData);
 
   if (upData == ULONG_MAX && gearPos < 6 && !upShifting && !downShifting)
   {
@@ -167,6 +185,26 @@ void loop() {
   // Clutch Control
   double position = getClutchPaddlePosition();
   position = (position * -85) + 100; 
-  Serial.println(position);
+  // Serial.println(position);
   setClutchPosition(position);
+
+  // DRS Control
+  if (drsData == ULONG_MAX && !drsChanging)
+  {
+    drsState = !drsState;
+    drsChanging = true;
+  }
+  if (drsData == 0)
+  {
+    drsChanging = false;
+  }
+  // setDRSState(drsState);
+
+
+  // Data count update
+  dataCount++;
+  if (dataCount == BIT_NUM)
+  {
+    dataCount = 0;
+  }
 }

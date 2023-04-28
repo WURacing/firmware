@@ -37,3 +37,14 @@ void modifyBit(unsigned long &d, unsigned short c, bool v);
 * Updates the gear position from the CAN bus.
 */
 void updateGearPosition(unsigned short &gearPos);
+
+/*
+* Checks the DRS button and updates its rolling data.
+*/
+void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount);
+
+/*
+* Sets the DRS servo to open or close. 
+* true = open, false = close
+*/
+void setDRS(bool state);
