@@ -17,7 +17,8 @@ TODO: Fix Hz issue on import
 
 # 4/16 Pre-Testing Day Data Validation
 
-- Issue with FL analog 6, voltage not reaching A3
-- No power to rear brake pressure sensor
-- Need to check oil pressure
-- Oil pressure is off, looks almost double what it should be
+- Front and rear brake pressure sensors negative (Linearizations probably, wiring seems fine)
+- Temp and gyro bad
+- Check axis on accel
+- Front shock pots negative? (Linearizations probably, wiring seems fine)
+- Fix units
