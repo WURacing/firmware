@@ -20,5 +20,4 @@ TODO: Fix Hz issue on import
 - Front and rear brake pressure sensors negative (Linearizations probably, wiring seems fine)
 - Temp and gyro bad
 - Check axis on accel
-- Front shock pots negative? (Linearizations probably, wiring seems fine)
-- Fix units
+- Fix units (Units should go in name, everything 100Hz)
