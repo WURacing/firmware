@@ -184,7 +184,7 @@ void loop() {
 
   // Clutch Control
   double position = getClutchPaddlePosition();
-  position = (position * -85) + 100; 
+  position = (position * -100) + 135; 
   // Serial.println(position);
   setClutchPosition(position);
 
