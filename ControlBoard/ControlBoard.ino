@@ -181,6 +181,9 @@ void loop() {
     downShifting = false;
   }
   
+  // TODO: Neutral shift, both clutches and downshift
+
+  
 
   // Clutch Control
   double position = getClutchPaddlePosition();
@@ -189,6 +192,8 @@ void loop() {
   setClutchPosition(position);
 
   // DRS Control
+
+  getDRSButtonState(drsData, dataCount)
   if (drsData == ULONG_MAX && !drsChanging)
   {
     drsState = !drsState;
