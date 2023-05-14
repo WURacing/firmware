@@ -32,6 +32,12 @@ This follows the standard PE3 DBC, but analog channels are mapped to the followi
 | 0x0CFFF248 | Analog 1, 2, 3, & 4 |
 | 0x0CFFF348 | Analog 5, 6, 7, & 8 |
 
+## AiM Output
+
+| CAN ID | Data                                          |
+| ------ | --------------------------------------------- |
+| 0x100  | Gear position, engine speed, MAP, wheel speed |
+
 Data from analog inputs is recieved as a value between 0 and 5000, representing 0 and 5 volts respectively. These are linearzed accordingly in the DBC.
 
 ### [RacingLogo.png](RacingLogo.png): Logo for AiM Configurations
