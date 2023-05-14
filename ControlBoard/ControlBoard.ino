@@ -126,10 +126,9 @@ void neutralshift(int gearPos)
   }
 }
 
-void updateGearPosition(unsigned short &gearPos)
+void readCANData(unsigned short &gearPos, unsigned short &rpm, unsigned short &map, unsigned short &wheelSpeed)
 {
-  byte highByte = (byte)(gearPos >> 8);
-  byte lowByte = (byte)(gearPos & 0xFF);
+  // TODO: Read CAN data
 }
 
 double getClutchPaddlePosition()

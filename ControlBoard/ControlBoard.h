@@ -46,9 +46,9 @@ void setClutchPosition(unsigned int position);
 void modifyBit(unsigned long &d, unsigned short c, bool v);
 
 /*
-* Updates the gear position from the CAN bus.
+* Gets data from the CAN bus.
 */
-void updateGearPosition(unsigned short &gearPos);
+void readCANData(unsigned short &gearPos, unsigned short &rpm, unsigned short &map, unsigned short &wheelSpeed);
 
 /*
 * Checks the DRS button and updates its rolling data.
