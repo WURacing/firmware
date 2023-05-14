@@ -22,16 +22,16 @@
 
 #define CAN_ID 0xCFFF248
 
-#define SERVO_OPEN_POS 90
-#define SERVO_CLOSE_POS 90
+#define CLUTCH_PULLED 0.8
 
-unsigned short gearPos = 3;
+unsigned short gearPos = 2;
 unsigned long upData = 0;
 unsigned long downData = 0;
 unsigned long drsData = 0;
 bool drsState = false;
 bool upShifting = false;
 bool downShifting = false;
+bool neutralShifting = false;
 bool drsChanging = false;
 const int BIT_NUM = sizeof(upData) * 8; 
 unsigned short dataCount = 0;
@@ -47,9 +47,6 @@ Servo clutchServo;
 Servo drsServo;
 
 void setup() {
-
- 
-
   // setting up CAN 
   pinMode(UP_IN_PIN, INPUT);
   pinMode(DOWN_IN_PIN, INPUT);
@@ -99,22 +96,34 @@ void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned 
   modifyBit(downData, dataCount, downStatus);
 }
 
-void upshift()
+void upshift(int pulse)
 {
   // Serial.println("Upshift");
   digitalWrite(UP_OUT_PIN, HIGH);
-  delay(PULSE);
+  delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
   delay(PULSE);
 }
 
-void downshift()
+void downshift(int pulse)
 {
   // Serial.println("Downshift");
   digitalWrite(DOWN_OUT_PIN, HIGH);
-  delay(PULSE);
+  delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
   delay(PULSE);
+}
+
+void neutralshift(int gearPos)
+{
+  if (gearPos == 1)
+  {
+    upshift(PULSE * 0.5);
+  }
+  else if (gearPos == 2)
+  {
+    downshift(PULSE * 0.5);
+  }
 }
 
 void updateGearPosition(unsigned short &gearPos)
@@ -123,13 +132,18 @@ void updateGearPosition(unsigned short &gearPos)
   byte lowByte = (byte)(gearPos & 0xFF);
 }
 
-
 double getClutchPaddlePosition()
 {
   int clutch1 = analogRead(CLUTCH_IN1_PIN);
   int clutch2 = analogRead(CLUTCH_IN2_PIN);
   int value = max(clutch1, clutch2);
   return (double)value / 4096;
+}
+
+void getClutchPaddlePositions(double &clutch1, double &clutch2)
+{
+  clutch1 = (double)analogRead(CLUTCH_IN1_PIN) / 4096;
+  clutch2 = (double)analogRead(CLUTCH_IN2_PIN) / 4096;
 }
 
 void setClutchPosition(unsigned int position)
@@ -149,6 +163,11 @@ void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount)
   modifyBit(drsData, dataCount, drsStatus);
 }
 
+bool isNotShifting()
+{
+  return !upShifting && !downShifting && !neutralShifting;
+}
+
 /* ----------------------- Main Loop ----------------------- */
 void loop() {
   // Blink LED
@@ -161,28 +180,38 @@ void loop() {
 
   // Serial.printf("%d,%d\n", upData, downData);
 
-  if (upData == ULONG_MAX && gearPos < 6 && !upShifting && !downShifting)
+  if (upData == ULONG_MAX && gearPos < 6 && isNotShifting())
   {
     upShifting = true;
-    upshift();
+    upshift(PULSE);
   }
   if (upData == 0)
   {
     upShifting = false;
   }
 
-  if (downData == ULONG_MAX && gearPos > 1 && !upShifting && !downShifting)
+  if (downData == ULONG_MAX && gearPos > 1 && isNotShifting())
   {
     downShifting = true;
-    downshift();
+    downshift(PULSE);
   }
   if (downData == 0)
   {
     downShifting = false;
   }
   
-  // TODO: Neutral shift, both clutches and downshift
-
+  double clutch1;
+  double clutch2;
+  getClutchPaddlePositions(clutch1, clutch2);
+  if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && isNotShifting() && (gearPos == 1 || gearPos == 2))
+  {
+    neutralShifting = true;
+    neutralshift(gearPos);
+  }
+  if (clutch1 < CLUTCH_PULLED || clutch2 < CLUTCH_PULLED || downData == 0)
+  {
+    neutralShifting = false;
+  }
   
 
   // Clutch Control
@@ -191,9 +220,9 @@ void loop() {
   // Serial.println(position);
   setClutchPosition(position);
 
-  // DRS Control
 
-  getDRSButtonState(drsData, dataCount)
+  // DRS Control
+  getDRSButtonState(drsData, dataCount);
   if (drsData == ULONG_MAX && !drsChanging)
   {
     drsState = !drsState;

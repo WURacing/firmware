@@ -10,18 +10,30 @@ void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned 
 
 /*
 * Performs an upshift by pulsing the upshift output pin.
+* @param pulse The length of the pulse in microseconds.
 */
-void upshift();
+void upshift(int pulse);
 
 /*
 * Performs a downshift by pulsing the downshift output pin.
+* @param pulse The length of the pulse in microseconds.
 */
-void downshift();
+void downshift(int pulse);
 
 /*
-* Returns the position of the clutch paddle between 0 and 1.
+* Performs a neutral shift by pulsing half of a upshift or downshift.
+*/
+void neutralshift(int gearPos);
+
+/*
+* Returns the maximum position of the clutch paddles between 0 and 1.
 */
 double getClutchPaddlePosition();
+
+/*
+* Gets the positions of the clutch paddles and stores them in the passed variables.
+*/
+void getClutchPaddlePositions(double &clutch1, double &clutch2);
 
 /*
 * Sets the position of the clutch.
@@ -48,3 +60,8 @@ void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount);
 * true = open, false = close
 */
 void setDRS(bool state);
+
+/*
+* Checks if the car is not shifting.
+*/
+bool isNotShifting();
