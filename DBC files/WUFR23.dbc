@@ -14,10 +14,10 @@ BO_ 1 RSBSPI: 7 RSB
  SG_ RTemp : 48|8@1- (1,0) [-80|80] "rad/s" DAQ
 
 BO_ 2 RSBAnlg1: 8 RSB
- SG_ RRShockPot : 0|16@1+ (-0.030303,100) [0|100] "mm" DAQ
+ SG_ RRShockPot : 0|16@1+ (0.0151515,0) [0|50] "mm" DAQ
  SG_ RAnlg2 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ RBrkPrs : 32|16@1+ (0.25,-125) [0|1000] "PSI" DAQ
- SG_ RLShockPot : 48|16@1+ (-0.030303,100) [0|100] "mm" DAQ
+ SG_ RLShockPot : 48|16@1+ (0.0151515,0) [0|50] "mm" DAQ
 
 BO_ 3 RSBAnlg2: 4 RSB
  SG_ RAnlg5 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
