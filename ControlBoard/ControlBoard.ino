@@ -20,7 +20,7 @@
 #define DRS_IN_PIN 6
 #define DRS_OUT_PIN 12
 
-#define CAN_ID 0xCFFF248
+#define CAN_ID 0x100
 
 #define CLUTCH_PULLED 0.8
 
@@ -66,6 +66,8 @@ void setup() {
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
   digitalWrite(PIN_CAN_BOOSTEN, true);
+
+  CAN.filter(CAN_ID);
   
   Serial.begin(9600);
   if (!CAN.begin(BAUD_RATE)) {
@@ -129,6 +131,16 @@ void neutralshift(int gearPos)
 void readCANData(unsigned short &gearPos, unsigned short &rpm, unsigned short &map, unsigned short &wheelSpeed)
 {
   // TODO: Read CAN data
+  if (CAN.available())
+  {
+    int data = CAN.read();
+    gearPos = data & 0xFFFF;
+    data = data >> 16;
+    rpm = data & 0xFFFF;
+    data = data >> 16;
+    map = data & 0xFFFF;
+    wheelSpeed = data >> 16;
+  }
 }
 
 double getClutchPaddlePosition()
@@ -172,9 +184,9 @@ void loop() {
   // Blink LED
   blink();
 
+  // TODO: Get CAN data here
 
   // Shift Control
-  // updateGearPosition(gearPos);
   checkShiftPaddles(upData, downData, dataCount);
 
   // Serial.printf("%d,%d\n", upData, downData);
