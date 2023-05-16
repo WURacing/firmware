@@ -23,13 +23,15 @@
 #define CAN_ID 0x100
 
 #define CLUTCH_PULLED 0.8
+#define DRS_OPEN 30
+#define DRS_CLOSE 105
 
 unsigned short gearPos, rpm, manAP, wheelSpeed; 
 unsigned long upData = 0;
 unsigned long downData = 0;
 unsigned long drsData = 0;
-bool drsState = false;
 bool shifting = false;
+bool drsOpen = false;
 bool drsChanging = false;
 const int BIT_NUM = sizeof(upData) * 8; 
 unsigned short dataCount = 0;
@@ -143,6 +145,18 @@ void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount)
   modifyBit(drsData, dataCount, drsStatus);
 }
 
+void setDRS(bool drsOpen)
+{
+  if (drsOpen)
+  {
+    drsServo.write(DRS_OPEN);
+  }
+  else
+  {
+    drsServo.write(DRS_CLOSE);
+  }
+}
+
 /* ----------------------- Main Loop ----------------------- */
 void loop() {
   // Blink LED
@@ -159,7 +173,7 @@ void loop() {
   if (upData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
-    Serial.println("Upshift!");
+    // Serial.println("Upshift!");
     upshift(PULSE);
   }
   if (upData == 0 && downData == 0)
@@ -170,7 +184,7 @@ void loop() {
   if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
-    Serial.println("Downshift!");
+    // Serial.println("Downshift!");
     downshift(PULSE);
   }
   if (downData == 0 && upData == 0)
@@ -182,13 +196,13 @@ void loop() {
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    Serial.println("Neutral down!");
+    // Serial.println("Neutral down!");
     downshift(PULSE * 0.5);
   }
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    Serial.println("Neutral up!");
+    // Serial.println("Neutral up!");
     upshift(PULSE * 0.5);
   }
   if (downData == 0 && upData == 0)
@@ -208,14 +222,15 @@ void loop() {
   getDRSButtonState(drsData, dataCount);
   if (drsData == ULONG_MAX && !drsChanging)
   {
-    drsState = !drsState;
+    // Serial.println("DRS changing!");
+    drsOpen = !drsOpen;
     drsChanging = true;
   }
   if (drsData == 0)
   {
     drsChanging = false;
   }
-  // setDRSState(drsState);
+  setDRS(drsOpen);
 
 
   // Data count update

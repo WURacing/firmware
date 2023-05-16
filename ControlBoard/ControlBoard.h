@@ -56,12 +56,6 @@ void readCANData(unsigned short &gearPos, unsigned short &rpm, unsigned short &m
 void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount);
 
 /*
-* Sets the DRS servo to open or close. 
-* true = open, false = close
+* Sets the DRS servo to the given state.
 */
-void setDRS(bool state);
-
-/*
-* Checks if the car is not shifting.
-*/
-bool isNotShifting();
+void setDRS(bool drsOpen);
