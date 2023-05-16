@@ -1,7 +1,7 @@
-#include <CAN.h>
 #include "ControlBoard.h"
 #include <SPI.h>
 #include <Servo.h>
+#include <CAN.h>
 
 #define BAUD_RATE 1000000
 #define PULSE 100 //ms
@@ -136,7 +136,7 @@ void modifyBit(unsigned long &d, unsigned short c, bool v)
     d = ((d & ~mask) | (v << c));
 }
 
-void getDRSButtonState(unsigned long &drsOpenData, unsigned short &dataCount)
+void getDRSState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsigned short &dataCount)
 {
   bool drsOpenStatus = !digitalRead(DRS_OPEN_PIN);
   bool drsCloseStatus = !digitalRead(DRS_CLOSE_PIN);
