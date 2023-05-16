@@ -10,8 +10,8 @@
 #define ANLG_RES 4096
 #define ANLG_VRANGE 3.3
 
-#define UP_IN_PIN 4
-#define DOWN_IN_PIN 5
+#define UP_IN_PIN 5
+#define DOWN_IN_PIN 4
 #define UP_OUT_PIN 11
 #define DOWN_OUT_PIN 10
 #define CLUTCH_IN1_PIN A0
@@ -149,13 +149,17 @@ void loop() {
   blink();
 
   // Shift Control
+  double clutch1;
+  double clutch2;
+  getClutchPaddlePositions(clutch1, clutch2);
   checkShiftPaddles(upData, downData, dataCount);
 
   // Serial.printf("%d,%d\n", upData, downData);
 
-  if (upData == ULONG_MAX && !shifting)
+  if (upData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
+    Serial.println("Upshift!");
     upshift(PULSE);
   }
   if (upData == 0 && downData == 0)
@@ -163,9 +167,10 @@ void loop() {
     shifting = false;
   }
 
-  if (downData == ULONG_MAX && !shifting)
+  if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
+    Serial.println("Downshift!");
     downshift(PULSE);
   }
   if (downData == 0 && upData == 0)
@@ -173,19 +178,18 @@ void loop() {
     shifting = false;
   }
   
-  double clutch1;
-  double clutch2;
-  getClutchPaddlePositions(clutch1, clutch2);
-  Serial.printf("Clutch 1:%d\tClutch 2:%d\tshifting:%d\n", clutch1, clutch2, shifting);
+  // Serial.printf("Clutch 1:%f\tClutch 2:%f\tshifting:%d\n", clutch1, clutch2, shifting);
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    upshift(PULSE * 0.5);
+    Serial.println("Neutral down!");
+    downshift(PULSE * 0.5);
   }
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    downshift(PULSE * 0.5);
+    Serial.println("Neutral up!");
+    upshift(PULSE * 0.5);
   }
   if (downData == 0 && upData == 0)
   {
