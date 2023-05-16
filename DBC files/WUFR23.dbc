@@ -2,7 +2,7 @@ VERSION "WUFR 23.1.0"
 
 BS_: 1000000 : 0,0
 
-BU_: FLSB DAQ FRSB RSB
+BU_: FLSB DAQ FRSB RSB CTRLB
 
 BO_ 1 RSBSPI: 7 RSB
  SG_ RXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
@@ -60,6 +60,9 @@ BO_ 34 FLSBAnlg1: 8 FLSB
 BO_ 35 FLSBAnlg2: 4 FLSB
  SG_ FLAnlg5 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FLAnlg6 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 49 CTRLBrd: 1 CTRLB
+ SG_ DRS : 0|1@1+ (1,0) [0|1] "Open:1/Close:0" DAQ
 
 CM_ BU_ FLSB "Front left sensor board";
 CM_ BU_ FRSB "Front right sensor board";
