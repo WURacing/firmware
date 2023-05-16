@@ -204,7 +204,7 @@ void loop() {
   getDRSButtonState(drsData, dataCount);
   if (drsData == ULONG_MAX && !drsChanging)
   {
-    Serial.println("DRS changing!");
+    // Serial.println("DRS changing!");
     drsOpen = !drsOpen;
     drsChanging = true;
   }
