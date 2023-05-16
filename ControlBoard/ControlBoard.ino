@@ -6,6 +6,7 @@
 #define BAUD_RATE 1000000
 #define PULSE 100 //ms
 #define BLINK_INTERVAL 1000 //ms
+#define CAN_INTERVAL 1 //ms
 
 #define ANLG_RES 4096
 #define ANLG_VRANGE 3.3
@@ -42,6 +43,9 @@ const int LED = 13;
 int ledState = LOW;
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
+unsigned long canCurrentMillis = millis();
+unsigned long canPreviousMillis = 0;
+
 
 Servo clutchServo;
 Servo drsServo;
@@ -228,6 +232,16 @@ void loop() {
     drsChanging = false;
   }
   setDRS(drsOpen);
+
+
+  // CAN
+  canCurrentMillis = millis();
+  if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL) 
+  {
+    CAN.beginPacket(0x31);
+    CAN.write(drsOpen);
+    CAN.endPacket();
+  }
 
 
   // Data count update
