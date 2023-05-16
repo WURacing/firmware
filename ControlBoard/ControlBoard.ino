@@ -212,7 +212,7 @@ void loop() {
 
 
   // DRS Control
-  getDRSButtonState(drsOpenData, drsCloseData, dataCount);
+  getDRSState(drsOpenData, drsCloseData, dataCount);
   if (drsOpenData == ULONG_MAX && !drsChanging)
   {
     drsOpen = true;

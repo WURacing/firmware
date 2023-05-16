@@ -21,11 +21,6 @@ void upshift(int pulse);
 void downshift(int pulse);
 
 /*
-* Performs a neutral shift by pulsing half of a upshift or downshift.
-*/
-void neutralshift(int gearPos);
-
-/*
 * Returns the maximum position of the clutch paddles between 0 and 1.
 */
 double getClutchPaddlePosition();
@@ -46,14 +41,9 @@ void setClutchPosition(unsigned int position);
 void modifyBit(unsigned long &d, unsigned short c, bool v);
 
 /*
-* Gets data from the CAN bus.
-*/
-void readCANData(unsigned short &gearPos, unsigned short &rpm, unsigned short &map, unsigned short &wheelSpeed);
-
-/*
 * Checks the DRS button and updates its rolling data.
 */
-void getDRSButtonState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsigned short &dataCount);
+void getDRSState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsigned short &dataCount);
 
 /*
 * Sets the DRS servo to the given state.
