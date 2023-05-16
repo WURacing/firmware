@@ -47,4 +47,4 @@ void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount);
 * Sets the DRS servo to open or close. 
 * true = open, false = close
 */
-void setDRS(bool state);
+void setDRS(bool drsOpen);

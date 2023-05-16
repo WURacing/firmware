@@ -22,14 +22,14 @@
 
 #define CAN_ID 0xCFFF248
 
-#define SERVO_OPEN_POS 90
-#define SERVO_CLOSE_POS 90
+#define DRS_OPEN 30
+#define DRS_CLOSE 105
 
 unsigned short gearPos = 3;
 unsigned long upData = 0;
 unsigned long downData = 0;
 unsigned long drsData = 0;
-bool drsState = false;
+bool drsOpen = false;
 bool upShifting = false;
 bool downShifting = false;
 bool drsChanging = false;
@@ -149,6 +149,18 @@ void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount)
   modifyBit(drsData, dataCount, drsStatus);
 }
 
+void setDRS(bool drsOpen)
+{
+  if (drsOpen)
+  {
+    drsServo.write(DRS_OPEN);
+  }
+  else
+  {
+    drsServo.write(DRS_CLOSE);
+  }
+}
+
 /* ----------------------- Main Loop ----------------------- */
 void loop() {
   // Blink LED
@@ -189,16 +201,18 @@ void loop() {
   setClutchPosition(position);
 
   // DRS Control
+  getDRSButtonState(drsData, dataCount);
   if (drsData == ULONG_MAX && !drsChanging)
   {
-    drsState = !drsState;
+    Serial.println("DRS changing!");
+    drsOpen = !drsOpen;
     drsChanging = true;
   }
   if (drsData == 0)
   {
     drsChanging = false;
   }
-  // setDRSState(drsState);
+  setDRS(drsOpen);
 
 
   // Data count update
