@@ -67,4 +67,5 @@ BO_ 49 CTRLBrd: 1 CTRLB
 CM_ BU_ FLSB "Front left sensor board";
 CM_ BU_ FRSB "Front right sensor board";
 CM_ BU_ RSB "Rear sensor board";
+CM_ BU_ CTRLB "Control board";
 BA_DEF_DEF_  "GenMsgCycleTime" 100;
