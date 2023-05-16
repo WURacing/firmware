@@ -17,7 +17,8 @@
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
 #define CLUTCH_OUT_PIN 13
-#define DRS_IN_PIN 6
+#define DRS_OPEN_PIN 6
+#define DRS_CLOSE_PIN 9
 #define DRS_OUT_PIN 12
 
 #define CAN_ID 0x100
@@ -29,7 +30,8 @@
 unsigned short gearPos, rpm, manAP, wheelSpeed; 
 unsigned long upData = 0;
 unsigned long downData = 0;
-unsigned long drsData = 0;
+unsigned long drsOpenData = 0;
+unsigned long drsCloseData = 0;
 bool shifting = false;
 bool drsOpen = false;
 bool drsChanging = false;
@@ -50,7 +52,7 @@ void setup() {
   pinMode(DOWN_IN_PIN, INPUT);
   pinMode(CLUTCH_IN1_PIN, INPUT);
   pinMode(CLUTCH_IN2_PIN, INPUT);
-  pinMode(DRS_IN_PIN, INPUT);
+  pinMode(DRS_OPEN_PIN, INPUT);
   pinMode(UP_OUT_PIN, OUTPUT);
   pinMode(DOWN_OUT_PIN, OUTPUT);
   digitalWrite(UP_OUT_PIN, LOW);
@@ -64,8 +66,6 @@ void setup() {
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
   digitalWrite(PIN_CAN_BOOSTEN, true);
-
-  // CAN.filter(CAN_ID);
   
   Serial.begin(9600);
   if (!CAN.begin(BAUD_RATE)) {
@@ -91,14 +91,12 @@ void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned 
 {
   bool upStatus = !digitalRead(UP_IN_PIN);
   bool downStatus = !digitalRead(DOWN_IN_PIN);
-  // Serial.printf("%d,%d\n", upStatus, downStatus);
   modifyBit(upData, dataCount, upStatus);
   modifyBit(downData, dataCount, downStatus);
 }
 
 void upshift(int pulse)
 {
-  // Serial.println("Upshift");
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
@@ -107,7 +105,6 @@ void upshift(int pulse)
 
 void downshift(int pulse)
 {
-  // Serial.println("Downshift");
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
@@ -139,10 +136,12 @@ void modifyBit(unsigned long &d, unsigned short c, bool v)
     d = ((d & ~mask) | (v << c));
 }
 
-void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount)
+void getDRSButtonState(unsigned long &drsOpenData, unsigned short &dataCount)
 {
-  bool drsStatus = !digitalRead(DRS_IN_PIN);
-  modifyBit(drsData, dataCount, drsStatus);
+  bool drsOpenStatus = !digitalRead(DRS_OPEN_PIN);
+  bool drsCloseStatus = !digitalRead(DRS_CLOSE_PIN);
+  modifyBit(drsOpenData, dataCount, drsOpenStatus);
+  modifyBit(drsCloseData, dataCount, drsCloseStatus);
 }
 
 void setDRS(bool drsOpen)
@@ -168,12 +167,9 @@ void loop() {
   getClutchPaddlePositions(clutch1, clutch2);
   checkShiftPaddles(upData, downData, dataCount);
 
-  // Serial.printf("%d,%d\n", upData, downData);
-
   if (upData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
-    // Serial.println("Upshift!");
     upshift(PULSE);
   }
   if (upData == 0 && downData == 0)
@@ -184,7 +180,6 @@ void loop() {
   if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
-    // Serial.println("Downshift!");
     downshift(PULSE);
   }
   if (downData == 0 && upData == 0)
@@ -196,13 +191,11 @@ void loop() {
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    // Serial.println("Neutral down!");
     downshift(PULSE * 0.5);
   }
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    // Serial.println("Neutral up!");
     upshift(PULSE * 0.5);
   }
   if (downData == 0 && upData == 0)
@@ -219,14 +212,18 @@ void loop() {
 
 
   // DRS Control
-  getDRSButtonState(drsData, dataCount);
-  if (drsData == ULONG_MAX && !drsChanging)
+  getDRSButtonState(drsOpenData, drsCloseData, dataCount);
+  if (drsOpenData == ULONG_MAX && !drsChanging)
   {
-    // Serial.println("DRS changing!");
-    drsOpen = !drsOpen;
+    drsOpen = true;
     drsChanging = true;
   }
-  if (drsData == 0)
+  if (drsCloseData == ULONG_MAX && !drsChanging)
+  {
+    drsOpen = false;
+    drsChanging = true;
+  }
+  if (drsOpenData == 0 && drsCloseData == 0)
   {
     drsChanging = false;
   }

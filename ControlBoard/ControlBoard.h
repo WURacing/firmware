@@ -53,7 +53,7 @@ void readCANData(unsigned short &gearPos, unsigned short &rpm, unsigned short &m
 /*
 * Checks the DRS button and updates its rolling data.
 */
-void getDRSButtonState(unsigned long &drsData, unsigned short &dataCount);
+void getDRSButtonState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsigned short &dataCount);
 
 /*
 * Sets the DRS servo to the given state.
