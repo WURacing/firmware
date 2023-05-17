@@ -59,6 +59,7 @@ void setup() {
   pinMode(DRS_OPEN_PIN, INPUT);
   pinMode(UP_OUT_PIN, OUTPUT);
   pinMode(DOWN_OUT_PIN, OUTPUT);
+  pinMode(DRS_CLOSE_PIN, INPUT);
   digitalWrite(UP_OUT_PIN, LOW);
   digitalWrite(DOWN_OUT_PIN, LOW);
   analogReadResolution(12);
@@ -144,6 +145,7 @@ void getDRSState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsign
 {
   bool drsOpenStatus = !digitalRead(DRS_OPEN_PIN);
   bool drsCloseStatus = !digitalRead(DRS_CLOSE_PIN);
+  Serial.printf("drsOpenStatus: %d, drsCloseStatus: %d:\n", drsOpenStatus, drsCloseStatus);
   modifyBit(drsOpenData, dataCount, drsOpenStatus);
   modifyBit(drsCloseData, dataCount, drsCloseStatus);
 }
