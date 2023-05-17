@@ -26,7 +26,7 @@
 
 #define CLUTCH_PULLED 0.8
 #define DRS_OPEN 30
-#define DRS_CLOSE 105
+#define DRS_CLOSE 100
 
 unsigned short gearPos, rpm, manAP, wheelSpeed; 
 unsigned long upData = 0;
