@@ -1,3 +1,0 @@
-This folder contains all of the required files to run the data acquisition system on the raspberry pi 4. There are a few isolated testing files that can be used to test components of the data acquisition system. The production source files are the __main__.py and the startup/ipLink.sh files.
-IpLink.sh establishes a connection to CAN through a CAN FD transceiver and the socket-can Linux kernel drivers. 
-__main__.py interfaces with CAN and servers two functions. First, it records all received CAN messages locally on the system's SD card. And secondly, connect to a UDP server from AWS IoT and send CAN message data over by MQTT.  
