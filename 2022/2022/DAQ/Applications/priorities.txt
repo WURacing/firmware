@@ -1,0 +1,21 @@
+inputs		4
+Responsible for sending control signals to shifting and eARB. Safety critical.
+Should not have halting risks, 
+50ms. 
+
+display		3
+Responsible for informing the driver of state and warnings. Safety critical.
+Should not have halting risks, assuming i2c peripheral works.
+50ms
+
+datalogger	2
+Formats and stores incoming data from sensor boards and engine controller. 
+Risks: some parts of drv_sd will not time out if SD is badly behaved.
+drv_sd functions (i.e. read/write which operate on 512 bytes at a time) might be good candidates for DMA/background operation. Probably not interrupts per byte though because we'd get interrupted every 40 cycles
+10ms
+
+telemetry	1
+Formats and transmits incoming data from sensor boards and engine controller.
+Risks: can't login if already logged in, but otherwise everything times out.
+Interrupt driven: sleeps while waiting for data over the UART
+500ms

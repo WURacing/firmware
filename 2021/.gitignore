@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+.*
+!/.gitignore
+/RPi_CAN/LOGS
+/CANPico test code/__pycache__
