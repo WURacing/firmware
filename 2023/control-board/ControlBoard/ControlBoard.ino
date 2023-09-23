@@ -178,6 +178,8 @@ void enableDRS(bool enable)
   else
   {
     drsServo.detach();
+    pinMode(DRS_OUT_PIN, OUTPUT);
+    digitalWrite(DRS_OUT_PIN, LOW);
   }
 }
 
@@ -237,12 +239,12 @@ void loop()
 
   // Enable / Disable DRS
   getDRSState(drsOpenData, drsCloseData, dataCount);
-  if (drsOpenData == ULONG_MAX && !drsChanging && clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)
-  {
-    drsEnabled = !drsEnabled;
-    enableDRS(drsEnabled);
-    drsChanging = true;
-  }
+  // if (drsOpenData == ULONG_MAX && !drsChanging && clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)
+  // {
+  //   drsEnabled = !drsEnabled;
+  //   enableDRS(drsEnabled);
+  //   drsChanging = true;
+  // }
 
   // DRS Control
   if (drsOpenData == ULONG_MAX && !drsChanging)
@@ -268,7 +270,6 @@ void loop()
     CAN.beginPacket(0x31);
     CAN.write(drsOpen);
     CAN.write((short)position);
-    Serial.printf("Clutch: %d\n", (short)position);
     CAN.endPacket();
   }
 
