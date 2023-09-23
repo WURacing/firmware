@@ -152,7 +152,7 @@ void getDRSState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsign
 {
   bool drsOpenStatus = !digitalRead(DRS_OPEN_PIN);
   bool drsCloseStatus = !digitalRead(DRS_CLOSE_PIN);
-  Serial.printf("drsOpenStatus: %d, drsCloseStatus: %d:\n", drsOpenStatus, drsCloseStatus);
+  // Serial.printf("drsOpenStatus: %d, drsCloseStatus: %d:\n", drsOpenStatus, drsCloseStatus);
   modifyBit(drsOpenData, dataCount, drsOpenStatus);
   modifyBit(drsCloseData, dataCount, drsCloseStatus);
 }
@@ -268,6 +268,7 @@ void loop()
     CAN.beginPacket(0x31);
     CAN.write(drsOpen);
     CAN.write((short)position);
+    Serial.printf("Clutch: %d\n", (short)position);
     CAN.endPacket();
   }
 
