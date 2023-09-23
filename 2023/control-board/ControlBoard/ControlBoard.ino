@@ -4,9 +4,9 @@
 #include <CAN.h>
 
 #define BAUD_RATE 1000000
-#define PULSE 100 //ms
-#define BLINK_INTERVAL 1000 //ms
-#define CAN_INTERVAL 1 //ms
+#define PULSE 100           // ms
+#define BLINK_INTERVAL 1000 // ms
+#define CAN_INTERVAL 1      // ms
 
 #define ANLG_RES 4096
 #define ANLG_VRANGE 3.3
@@ -28,7 +28,7 @@
 #define DRS_OPEN 30
 #define DRS_CLOSE 100
 
-unsigned short gearPos, rpm, manAP, wheelSpeed; 
+unsigned short gearPos, rpm, manAP, wheelSpeed;
 unsigned long upData = 0;
 unsigned long downData = 0;
 unsigned long drsOpenData = 0;
@@ -36,7 +36,8 @@ unsigned long drsCloseData = 0;
 bool shifting = false;
 bool drsOpen = false;
 bool drsChanging = false;
-const int BIT_NUM = sizeof(upData) * 8; 
+bool drsEnabled = true;
+const int BIT_NUM = sizeof(upData) * 8;
 unsigned short dataCount = 0;
 
 const int LED = 13;
@@ -46,12 +47,12 @@ unsigned long blinkPreviousMillis = 0;
 unsigned long canCurrentMillis = millis();
 unsigned long canPreviousMillis = 0;
 
-
 Servo clutchServo;
 Servo drsServo;
 
-void setup() {
-  // setting up CAN 
+void setup()
+{
+  // setting up CAN
   pinMode(UP_IN_PIN, INPUT);
   pinMode(DOWN_IN_PIN, INPUT);
   pinMode(CLUTCH_IN1_PIN, INPUT);
@@ -71,21 +72,27 @@ void setup() {
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
   digitalWrite(PIN_CAN_BOOSTEN, true);
-  
+
   Serial.begin(9600);
-  if (!CAN.begin(BAUD_RATE)) {
+  if (!CAN.begin(BAUD_RATE))
+  {
     Serial.println("Starting CAN failed!");
   }
 }
 
 /* ----------------------- Methods ----------------------- */
-void blink() {
+void blink()
+{
   blinkCurrentMillis = millis();
-  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL) {
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL)
+  {
     blinkPreviousMillis = blinkCurrentMillis;
-    if (ledState == LOW) {
+    if (ledState == LOW)
+    {
       ledState = HIGH;
-    } else {
+    }
+    else
+    {
       ledState = LOW;
     }
     digitalWrite(LED, ledState);
@@ -137,8 +144,8 @@ void setClutchPosition(unsigned int position)
 
 void modifyBit(unsigned long &d, unsigned short c, bool v)
 {
-    int mask = 1 << c;
-    d = ((d & ~mask) | (v << c));
+  int mask = 1 << c;
+  d = ((d & ~mask) | (v << c));
 }
 
 void getDRSState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsigned short &dataCount)
@@ -162,8 +169,21 @@ void setDRS(bool drsOpen)
   }
 }
 
+void enableDRS(bool enable)
+{
+  if (enable)
+  {
+    drsServo.attach(DRS_OUT_PIN);
+  }
+  else
+  {
+    drsServo.detach();
+  }
+}
+
 /* ----------------------- Main Loop ----------------------- */
-void loop() {
+void loop()
+{
   // Blink LED
   blink();
 
@@ -192,7 +212,7 @@ void loop() {
   {
     shifting = false;
   }
-  
+
   // Serial.printf("Clutch 1:%f\tClutch 2:%f\tshifting:%d\n", clutch1, clutch2, shifting);
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
   {
@@ -208,17 +228,23 @@ void loop() {
   {
     shifting = false;
   }
-  
 
   // Clutch Control
   double position = getClutchPaddlePosition();
-  position = (position * -100) + 135; 
+  position = (position * -100) + 135;
   // Serial.println(position);
   setClutchPosition(position);
 
+  // Enable / Disable DRS
+  getDRSState(drsOpenData, drsCloseData, dataCount);
+  if (drsOpenData == ULONG_MAX && !drsChanging && clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)
+  {
+    drsEnabled = !drsEnabled;
+    enableDRS(drsEnabled);
+    drsChanging = true;
+  }
 
   // DRS Control
-  getDRSState(drsOpenData, drsCloseData, dataCount);
   if (drsOpenData == ULONG_MAX && !drsChanging)
   {
     drsOpen = true;
@@ -235,16 +261,15 @@ void loop() {
   }
   setDRS(drsOpen);
 
-
   // CAN
   canCurrentMillis = millis();
-  if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL) 
+  if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL)
   {
     CAN.beginPacket(0x31);
     CAN.write(drsOpen);
+    CAN.write((short)position);
     CAN.endPacket();
   }
-
 
   // Data count update
   dataCount++;

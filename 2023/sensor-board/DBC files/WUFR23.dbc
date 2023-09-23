@@ -63,6 +63,7 @@ BO_ 35 FLSBAnlg2: 4 FLSB
 
 BO_ 49 CTRLBrd: 1 CTRLB
  SG_ DRS : 0|1@1+ (1,0) [0|1] "Open:1/Close:0" DAQ
+ SG_ ClutchPosition : 1|8@1+ (1,0) [0|360] "Deg" DAQ
 
 CM_ BU_ FLSB "Front left sensor board";
 CM_ BU_ FRSB "Front right sensor board";
