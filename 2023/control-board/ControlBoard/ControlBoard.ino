@@ -27,6 +27,7 @@
 #define CLUTCH_PULLED 0.8
 #define DRS_OPEN 30
 #define DRS_CLOSE 100
+#define SAMPLE_SIZE 10
 
 unsigned short gearPos, rpm, manAP, wheelSpeed;
 unsigned long upData = 0;
@@ -39,6 +40,7 @@ bool drsChanging = false;
 bool drsEnabled = true;
 const int BIT_NUM = sizeof(upData) * 8;
 unsigned short dataCount = 0;
+double position[SAMPLE_SIZE];
 
 const int LED = 13;
 int ledState = LOW;
@@ -46,6 +48,8 @@ unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 unsigned long canCurrentMillis = millis();
 unsigned long canPreviousMillis = 0;
+unsigned long runCount = 0;
+double positionCommanded = 135;
 
 Servo clutchServo;
 Servo drsServo;
@@ -183,6 +187,16 @@ void enableDRS(bool enable)
   }
 }
 
+double sum(double *arr, int size)
+{
+  double sum = 0;
+  for (int i = 0; i < size; i++)
+  {
+    sum += arr[i];
+  }
+  return sum;
+}
+
 /* ----------------------- Main Loop ----------------------- */
 void loop()
 {
@@ -232,10 +246,19 @@ void loop()
   }
 
   // Clutch Control
-  double position = getClutchPaddlePosition();
-  position = (position * -100) + 135;
+  position[runCount % 10] = getClutchPaddlePosition();
+  if (runCount < 10)
+  {
+    runCount++;
+  }
+  else
+  {
+    runCount = 0;
+    positionCommanded = ((sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE) * -100) + 135;
+    Serial.printf("Position commanded: %f\n", positionCommanded);
+  }
   // Serial.println(position);
-  setClutchPosition(position);
+  setClutchPosition(positionCommanded);
 
   // Enable / Disable DRS
   getDRSState(drsOpenData, drsCloseData, dataCount);
@@ -269,7 +292,7 @@ void loop()
   {
     CAN.beginPacket(0x31);
     CAN.write(drsOpen);
-    CAN.write((short)position);
+    CAN.write((short)positionCommanded);
     CAN.endPacket();
   }
 
