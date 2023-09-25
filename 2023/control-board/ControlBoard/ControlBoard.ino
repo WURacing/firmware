@@ -255,7 +255,7 @@ void loop()
   {
     runCount = 0;
     positionCommanded = ((sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE) * -100) + 135;
-    Serial.printf("Position commanded: %f\n", positionCommanded);
+    // Serial.printf("Position commanded: %f\n", positionCommanded);
   }
   // Serial.println(position);
   setClutchPosition(positionCommanded);
