@@ -1,0 +1,8 @@
+This is the first attempt at the sensorboard code.
+
+Implementation involves:
+-->Mux
+-->Accel/Gyro/Magn Sensor
+-->Hard Wired Analog Inputs
+-->Downsampling using a resetting interval average
+-->Output and packaging into a CAN frame
