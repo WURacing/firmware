@@ -254,8 +254,11 @@ void loop()
   else
   {
     runCount = 0;
-    positionCommanded = ((sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE) * -100) + 135;
-    // Serial.printf("Position commanded: %f\n", positionCommanded);
+    double averagedPosition = (sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE);
+    // positionCommanded = (averagedPosition * -100) + 135; // Old function
+    positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
+    positionCommanded = max(positionCommanded, 0);
+    // Serial.printf("Paddle position: %f\tClutch postion: %f\n", averagedPosition, positionCommanded);
   }
   // Serial.println(position);
   setClutchPosition(positionCommanded);
