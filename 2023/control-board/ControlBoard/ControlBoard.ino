@@ -24,6 +24,7 @@
 
 #define CAN_ID 0x100
 
+#define BITE_POINT 100
 #define CLUTCH_PULLED 0.8
 #define DRS_OPEN 30
 #define DRS_CLOSE 100
@@ -222,6 +223,7 @@ void loop()
   if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
+    setClutchPosition(BITE_POINT);
     downshift(PULSE);
   }
   if (downData == 0 && upData == 0)
@@ -256,7 +258,7 @@ void loop()
     runCount = 0;
     double averagedPosition = (sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE);
     // positionCommanded = (averagedPosition * -100) + 135; // Old function
-    positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
+    positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + BITE_POINT; // Calculated for a curve around the bite point
     positionCommanded = max(positionCommanded, 0);
     // Serial.printf("Paddle position: %f\tClutch postion: %f\n", averagedPosition, positionCommanded);
   }
