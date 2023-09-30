@@ -17,10 +17,10 @@
 #define DOWN_OUT_PIN 10
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
-#define CLUTCH_OUT_PIN 13
+#define CLUTCH_OUT_PIN 12
 #define DRS_OPEN_PIN 6
 #define DRS_CLOSE_PIN 9
-#define DRS_OUT_PIN 12
+#define DRS_OUT_PIN 13
 
 #define CAN_ID 0x100
 
@@ -28,6 +28,7 @@
 #define DRS_OPEN 30
 #define DRS_CLOSE 100
 #define SAMPLE_SIZE 10
+#define CLUTCH_CLOSED 135
 
 unsigned short gearPos, rpm, manAP, wheelSpeed;
 unsigned long upData = 0;
@@ -255,8 +256,8 @@ void loop()
   {
     runCount = 0;
     double averagedPosition = (sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE);
-    // positionCommanded = (averagedPosition * -100) + 135; // Old function
-    positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
+    // positionCommanded = (averagedPosition * -100) + CLUTCH_CLOSED; // Old function
+    positionCommanded = (-1.5 * sinh(10 * (averagedPosition - 0.35))) + 100;
     positionCommanded = max(positionCommanded, 0);
     // Serial.printf("Paddle position: %f\tClutch postion: %f\n", averagedPosition, positionCommanded);
   }
