@@ -222,6 +222,7 @@ void loop()
   if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
     shifting = true;
+    setClutchPosition(35);
     downshift(PULSE);
   }
   if (downData == 0 && upData == 0)
