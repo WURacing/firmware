@@ -29,6 +29,7 @@
 #define DRS_CLOSE 100
 #define SAMPLE_SIZE 10
 #define CLUTCH_CLOSED 135
+#define CLUTCH_MINIMUM 65
 
 unsigned short gearPos, rpm, manAP, wheelSpeed;
 unsigned long upData = 0;
@@ -259,7 +260,7 @@ void loop()
     double averagedPosition = (sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE);
     // positionCommanded = (averagedPosition * -100) + CLUTCH_CLOSED; // Old function
     positionCommanded = (-1.5 * sinh(10 * (averagedPosition - 0.35))) + 100;
-    positionCommanded = max(positionCommanded, 0);
+    positionCommanded = max(positionCommanded, CLUTCH_MINIMUM);
     // Serial.printf("Paddle position: %f\tClutch postion: %f\n", averagedPosition, positionCommanded);
   }
   // Serial.println(position);
