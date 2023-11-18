@@ -69,7 +69,7 @@ void readAnalogs(short *analogs) {
   analogs[3] = (analogRead(A5) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
   analogs[4] = (analogRead(A4) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
   analogs[5] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-  // Serial.printf("1: %d, 2: %d, 3: %d, 4: %d. 5: %d, 6: %d\n", analogs[0], analogs[1], analogs[2], analogs[3], analogs[4], analogs[5]);
+  Serial.printf("1: %d, 2: %d, 3: %d, 4: %d. 5: %d, 6: %d\n", analogs[0], analogs[1], analogs[2], analogs[3], analogs[4], analogs[5]);
 }
 
 /*
@@ -181,10 +181,14 @@ void loop() {
 
     // Analog data
     CAN.beginPacket(0x22);
-    canWriteShort(analogs[0]);
-    canWriteShort(analogs[1]);
-    canWriteShort(analogs[2]);
     canWriteShort(analogs[3]);
+    canWriteShort(analogs[0]);
+    canWriteShort(analogs[2]);
+    canWriteShort(analogs[1]);
+
+    
+    
+    
     CAN.endPacket();
 
     CAN.beginPacket(0x23);
