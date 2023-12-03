@@ -5,8 +5,8 @@ BS_: 1000000 : 0,0
 BU_: FLSB DAQ FRSB RSB CTRLB
 
 BO_ 1 RSBSPI: 7 RSB
- SG_ RXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
- SG_ RYAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ RXAccel : 0|8@1- (-0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ RYAccel : 8|8@1- (-0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ RZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ RXGyro : 24|8@1+ (1,0) [-80|80] "rad/s" DAQ
  SG_ RYGyro : 32|8@1+ (1,0) [-80|80] "rad/s" DAQ
@@ -24,8 +24,8 @@ BO_ 3 RSBAnlg2: 4 RSB
  SG_ RAnlg6 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 17 FRSBSPI: 7 FRSB
- SG_ FRXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
- SG_ FRYAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FRXAccel : 0|8@1- (-0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FRYAccel : 8|8@1- (-0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FRZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FRXGyro : 24|8@1+ (1,0) [-80|80] "rad/s" DAQ
  SG_ FRYGyro : 32|8@1+ (1,0) [-80|80] "rad/s" DAQ
@@ -43,9 +43,9 @@ BO_ 19 FRSBAnlg2: 4 FRSB
  SG_ SteeringPot : 16|16@1+ (0.120,-210) [-150|150] "degrees" DAQ
 
 BO_ 33 FLSBSPI: 7 FLSB
- SG_ FLXAccel : 0|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FLXAccel : 0|8@1- (-0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FLYAccel : 8|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
- SG_ FLZAccel : 16|8@1- (0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
+ SG_ FLZAccel : 16|8@1- (-0.307451,0.153725) [-39.2|39.2] "m/s^2" DAQ
  SG_ FLXGyro : 24|8@1+ (1,0) [-80|80] "rad/s" DAQ
  SG_ FLYGyro : 32|8@1+ (1,0) [-80|80] "rad/s" DAQ
  SG_ FLZGyro : 40|8@1+ (1,0) [-80|80] "rad/s" DAQ
