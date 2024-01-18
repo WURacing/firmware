@@ -1,4 +1,4 @@
-This is the first attempt at the sensorboard code.
+SB_CODE: Sensor Board Code
 
 Implementation involves:
 -->Mux
@@ -6,3 +6,7 @@ Implementation involves:
 -->Hard Wired Analog Inputs
 -->Downsampling using a resetting interval average
 -->Output and packaging into a CAN frame
+
+
+Telemetry 1
+
