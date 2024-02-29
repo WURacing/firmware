@@ -3,13 +3,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <SPI.h>
+#include <CAN.h>
 
 #define SPI_SPEED 1000000
-
-byte whoami;
-
-
-//Current Sensors
+#define BAUD_RATE 1000000
 
 //feather pins
 #define MUX_A0 11
@@ -52,6 +49,25 @@ byte whoami;
 #define WTPF_PIN 0b1001
 #define STRF_PIN 0b1000
 
+//MUX indices
+#define FAN 0
+#define ENG 1
+#define BAT122 2
+#define AUX1 3
+#define GPIO 4
+#define CAN 5
+#define STR 6
+#define BAT123 7
+#define FP 8
+#define PE3 9
+#define BAT121 10
+#define ETH 11
+#define AUX2 12
+#define STRIN 13
+#define PE3FP 14
+#define PE3FAN 15
+
+uint16_t coolant_temp;
 
 void setup() {
   SPI.begin();
@@ -73,6 +89,11 @@ void setup() {
 
 
   Serial.begin(9600); //start Serial monitor to display current read on monitor
+  if(CAN.begin(BAUD_RATE)){
+    Serial.println("Starting CAN failed");
+  }
+
+  delay(4000);
 
   //enable all relays
   for (int i = 0; i < 8; i++){
@@ -81,26 +102,65 @@ void setup() {
   
 }
 
-int aux1_error = 0;
 
 void loop() {
   //sense current on each pin
   uint16_t aux1 = currSense(AUX1F_PIN);
-  if(aux1 > 15){
-      aux1_error += aux1-15;
-      if(aux1_error > 300){
-          //disable relay
-      }
+  if(aux1 < 0){
+    relay(false, AUX1RD); //disable relay
   }
-  else {
-      aux1_error = 0;
-  }
+  //do some digital circuit breaking shit
 
 
   //read signals from PE3 and turn on related relays
-  //PE3FAN (S16), PE3FP (S15), Kill Switch, Starter (25) on Multiplexer Circuit
-  //if >4.5V, turn on
+  if(mux(16) > 0.1){
+    relay(false, PE3FANRD);
+  }
+  if(mux(15) > 0.1){
+    relay(false, PE3FPRD);
+  }
 
+  if(mux(16) < 0.1){
+    relay(true, PE3FANRD);
+  }
+  if(mux(15) < 0.1){
+    relay(true, PE3FPRD)
+  }
+
+  //water pump: start whenever engine is turned on, stop when coolant temp gets low enough
+  //get coolant temp from CAN
+  CAN.filter(2365584712); //coolant temp ID from DBC file
+  CAN.onReceive(onReceive);
+
+  //push to start
+  //timeout after 2s
+  //enable starter relay, stop when RPM >1000 
+  //get RPM from CAN
+    
+  //ethrottle (ETHF)
+
+  //read voltage of battery
+  //datasheet says minimum preferred is 8V
+  //added 20% factor of safety
+  if(mux(BAT121) < 9.6){
+     for (int i = 0; i < 8; i++){
+        relay(false, i);
+    }
+  }
+}
+
+void onReceive(){
+  uint16_t msg;
+  for(int i = 0; i < 6; i++){
+    int b = CAN.read()
+    if(i == 4){
+      msg = b << 8; //left shift first byte
+    }
+    if(i == 5){
+      msg |= b; //or second byte
+    }
+  }
+  coolant_temp = msg;
 }
 
 uint16_t currSense(int pin){
@@ -108,7 +168,7 @@ uint16_t currSense(int pin){
   SPI.beginTransaction(SPISettings(1000, MSBFIRST, SPI_MODE3));
   digitalWrite(ADC_CS, LOW);
 
-  uint16_t mesg = 0b00110000; //params: buffer (0b - unipolar binary, 0 - MSB out first, 0 - ?, 11 - 16-bit output length, XXXX - pin command), return size
+  uint16_t mesg = 0b00110000; //params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
   mesg |= pin; //bitwise operator
 
   uint16_t output = SPI.transfer16(mesg);
@@ -156,6 +216,8 @@ void relay(bool enable, uint8_t relay){
 #define R1 3000.0 //ohms
 #define R2 840.0 //ohms
 
+//params:
+//index: number between 0-15 (DOUBLE CHECK)
 float mux(int index){
   //set multiplexer pins
   if (index & 0b0001 > 0){
