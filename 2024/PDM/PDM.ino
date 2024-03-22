@@ -67,7 +67,32 @@
 #define PE3FP 14
 #define PE3FAN 15
 
+// Current limits
+#define ETHF_LIMIT 10
+#define FPF_LIMIT 10
+#define PE3F_LIMIT 10
+#define FANF_LIMIT 10
+#define ENGF_LIMIT 10
+#define CANF_LIMIT 10
+#define AUX1F_LIMIT 10
+#define STRF_LIMIT 10
+#define WTPF_LIMIT 10
+#define AUX2F_LIMIT 10
+
+#define ACCEPTED_ERROR 10
+
 uint16_t coolant_temp;
+
+int aux1_error = 0;
+int aux2_error = 0;
+int pe3_error = 0;
+int eth_error = 0;
+int eng_error = 0;
+int fp_error = 0;
+int fan_error = 0;
+int can_error = 0;
+int wtp_error = 0;
+int str_error = 0;
 
 void setup()
 {
@@ -105,7 +130,7 @@ void setup()
 
 void loop()
 {
-  // sense current on each pin
+  // Sense current on each pin
   uint16_t aux1 = currSense(AUX1F_PIN);
   uint16_t aux2 = currSense(AUX2F_PIN);
   uint16_t pe3 = currSense(PE3F_PIN);
@@ -116,27 +141,104 @@ void loop()
   uint16_t can = currSense(CANF_PIN);
   uint16_t wtp = currSense(WTPF_PIN);
   uint16_t str = currSense(STRF_PIN);
-  if (aux1 < 0)
+
+  if (aux1 > AUX1F_LIMIT)
+  {
+    aux1_error += aux1 - AUX1F_LIMIT;
+  }
+  if (aux2 > AUX2F_LIMIT)
+  {
+    aux2_error += aux2 - AUX2F_LIMIT;
+  }
+  if (pe3 > PE3F_LIMIT)
+  {
+    pe3_error += pe3 - PE3F_LIMIT;
+  }
+  if (eth > ETHF_LIMIT)
+  {
+    eth_error += eth - ETHF_LIMIT;
+  }
+  if (eng > ENGF_LIMIT)
+  {
+    eng_error += eng - ENGF_LIMIT;
+  }
+  if (fp > FPF_LIMIT)
+  {
+    fp_error += fp - FPF_LIMIT;
+  }
+  if (fan > FANF_LIMIT)
+  {
+    fan_error += fan - FANF_LIMIT;
+  }
+  if (can > CANF_LIMIT)
+  {
+    can_error += can - CANF_LIMIT;
+  }
+  if (wtp > WTPF_LIMIT)
+  {
+    wtp_error += wtp - WTPF_LIMIT;
+  }
+  if (str > STRF_LIMIT)
+  {
+    str_error += str - STRF_LIMIT;
+  }
+
+  // Digital circuit breaking
+  if (aux1 < 0 || aux1_error > ACCEPTED_ERROR)
   {
     relay(false, AUX1RD); // disable relay
   }
-  // do some digital circuit breaking shit
-
-  // read signals from PE3 and turn on related relays
-  if (mux(16) > 0.1)
+  if (aux2 < 0 || aux2_error > ACCEPTED_ERROR)
   {
-    relay(false, PE3FANRD);
+    relay(false, AUX2RD);
   }
-  if (mux(15) > 0.1)
+  if (pe3 < 0 || pe3_error > ACCEPTED_ERROR)
   {
     relay(false, PE3FPRD);
   }
+  if (eth < 0 || eth_error > ACCEPTED_ERROR)
+  {
+    relay(false, ENGRD);
+  }
+  if (eng < 0 || eng_error > ACCEPTED_ERROR)
+  {
+    relay(false, ENGRD);
+  }
+  if (fp < 0 || fp_error > ACCEPTED_ERROR)
+  {
+    relay(false, PE3FPRD);
+  }
+  if (fan < 0 || fan_error > ACCEPTED_ERROR)
+  {
+    relay(false, PE3FANRD);
+  }
+  if (can < 0 || can_error > ACCEPTED_ERROR)
+  {
+    relay(false, CANRD);
+  }
+  if (wtp < 0 || wtp_error > ACCEPTED_ERROR)
+  {
+    relay(false, WTPRD);
+  }
+  if (str < 0 || str_error > ACCEPTED_ERROR)
+  {
+    relay(false, STRRD);
+  }
 
-  if (mux(16) < 0.1)
+  // read signals from PE3 and turn on related relays
+  if (mux(16) > 0.5)
+  {
+    relay(false, PE3FANRD);
+  }
+  else
   {
     relay(true, PE3FANRD);
   }
-  if (mux(15) < 0.1)
+  if (mux(15) > 0.5)
+  {
+    relay(false, PE3FPRD);
+  }
+  else
   {
     relay(true, PE3FPRD)
   }
