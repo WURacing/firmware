@@ -29,12 +29,12 @@
 
 // relay pin indices
 #define ENGRD 0
-#define AUX1RD 2
-#define CANRD 4
-#define STRRD 6
 #define PE3FPRD 1
+#define AUX1RD 2
 #define PE3FANRD 3
+#define CANRD 4
 #define AUX2RD 5
+#define STRRD 6
 #define WTPRD 7
 
 // ADC pins
@@ -81,7 +81,7 @@
 
 #define ACCEPTED_ERROR 10
 
-uint16_t coolant_temp;
+int coolant_temp;
 
 int aux1_error = 0;
 int aux2_error = 0;
@@ -121,11 +121,11 @@ void setup()
 
   // delay(4000);
 
-  // enable all relays
-  for (int i = 0; i < 8; i++)
-  {
-    relay(true, i);
-  }
+  // Enable relays
+  relay(true, ENGRD);
+  relay(true, AUX1RD);
+  relay(true, CANRD);
+  relay(true, AUX2RD);
 }
 
 void loop()
