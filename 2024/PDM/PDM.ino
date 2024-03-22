@@ -226,7 +226,7 @@ void loop()
   }
 
   // read signals from PE3 and turn on related relays
-  if (mux(16) > 0.5)
+  if (mux(PE3FAN) > 0.5)
   {
     relay(false, PE3FANRD);
   }
@@ -234,7 +234,7 @@ void loop()
   {
     relay(true, PE3FANRD);
   }
-  if (mux(15) > 0.5)
+  if (mux(PE3FP) > 0.5)
   {
     relay(false, PE3FPRD);
   }
