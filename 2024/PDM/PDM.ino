@@ -70,25 +70,24 @@
 #define PE3FAN 15
 
 // Current limits
-#define ETHF_LIMIT 10
-#define FPF_LIMIT 10
-#define PE3F_LIMIT 10
-#define FANF_LIMIT 10
-#define ENGF_LIMIT 10
-#define CANF_LIMIT 10
-#define AUX1F_LIMIT 10
-#define STRF_LIMIT 10
-#define WTPF_LIMIT 10
-#define AUX2F_LIMIT 10
+#define ETHF_LIMIT 15
+#define FPF_LIMIT 15
+#define PE3F_LIMIT 15
+#define FANF_LIMIT 15
+#define ENGF_LIMIT 15
+#define CANF_LIMIT 15
+#define AUX1F_LIMIT 15
+#define STRF_LIMIT 15
+#define WTPF_LIMIT 15
+#define AUX2F_LIMIT 15
 
-#define ACCEPTED_ERROR 10
+#define ACCEPTED_ERROR 15
 #define ANALOG_LOW 0.5
 #define LOW_VOLTAGE 9.6
 #define LED 13
 #define BLINK_INTERVAL 1000
 #define VREF 3.3
 #define ADC_RES 4095
-#define MAX_CURRENT 50
 #define RUN_INTERVAL 1000
 
 // Mux voltage divider resistors
@@ -157,6 +156,8 @@ void setup()
   pinMode(TS7_CS, OUTPUT);
   pinMode(TS8_CS, OUTPUT);
 
+  pinMode(ADC_EOC, INPUT);
+
   // set CS pins high
   digitalWrite(ADC_CS, HIGH);
   digitalWrite(RD_CS, HIGH);
@@ -179,11 +180,14 @@ void setup()
 
   // Enable relays
   printDebug("Enabling relays\n");
-  relay(true, ENGRD);
-  relay(true, AUX1RD);
-  relay(true, CANRD);
-  relay(true, AUX2RD);
+  // relay(true, ENGRD);
+  // relay(true, AUX1RD);
+  // relay(true, CANRD);
+  // relay(true, AUX2RD);
   relay(true, WTPRD); // TODO: Disable this later
+
+  // For testing only
+  // relay(true, PE3FPRD);
 
   runPreviousMillis = millis();
 }
@@ -202,159 +206,214 @@ void loop()
   }
 
   // Sense current on each pin
-  float aux1 = currSense(AUX1F_PIN);
-  float aux2 = currSense(AUX2F_PIN);
-  float pe3 = currSense(PE3F_PIN);
-  float eth = currSense(ETHF_PIN);
-  float eng = currSense(ENGF_PIN);
-  float fp = currSense(FPF_PIN);
-  float fan = currSense(FANF_PIN);
-  float can = currSense(CANF_PIN);
-  float wtp = currSense(WTPF_PIN);
-  float str = currSense(STRF_PIN);
+  float aux1_c = currSense(AUX1F_PIN);
+  float aux2_c = currSense(AUX2F_PIN);
+  float pe3_c = currSense(PE3F_PIN);
+  float eth_c = currSense(ETHF_PIN);
+  float eng_c = currSense(ENGF_PIN);
+  float fp_c = currSense(FPF_PIN);
+  float fan_c = currSense(FANF_PIN);
+  float can_c = currSense(CANF_PIN);
+  float wtp_c = currSense(WTPF_PIN);
+  float str_c = currSense(STRF_PIN);
+
+  // Sense voltage on each pin
+  float fan_v = mux(FAN);
+  float eng_v = mux(ENG);
+  float bat122_v = mux(BAT122);
+  float aux1_v = mux(AUX1);
+  float gpio_v = mux(GPIO);
+  float can_v = mux(CAN);
+  float str_v = mux(STR);
+  float bat123_v = mux(BAT123);
+  float fp_v = mux(FP);
+  float pe3_v = mux(PE3);
+  float bat121_v = mux(BAT121);
+  float eth_v = mux(ETH);
+  float aux2_v = mux(AUX2);
+  float strin_v = mux(STRIN);
+  float pe3fp_v = mux(PE3FP);
+  float pe3fan_v = mux(PE3FAN);
 
   printDebug("Aux1: ");
-  printDebug(aux1);
+  printDebug(aux1_c);
   printDebug("\tAux2: ");
-  printDebug(aux2);
+  printDebug(aux2_c);
   printDebug("\tPE3: ");
-  printDebug(pe3);
+  printDebug(pe3_c);
   printDebug("\tETH: ");
-  printDebug(eth);
+  printDebug(eth_c);
   printDebug("\tENG: ");
-  printDebug(eng);
+  printDebug(eng_c);
   printDebug("\tFP: ");
-  printDebug(fp);
+  printDebug(fp_c);
   printDebug("\tFAN: ");
-  printDebug(fan);
+  printDebug(fan_c);
   printDebug("\tCAN: ");
-  printDebug(can);
-  printDebug("\tWTP: ");
-  printDebug(wtp);
+  printDebug(can_c);
   printDebug("\tSTR: ");
-  printDebug(str);
+  printDebug(str_c);
+  printDebug("\tWTP: ");
+  printDebug(wtp_c);
   printDebug("\n");
 
-  if (aux1 > AUX1F_LIMIT)
+  printDebug("Aux1: ");
+  printDebug(aux1_v);
+  printDebug("\tAux2: ");
+  printDebug(aux2_v);
+  printDebug("\tPE3: ");
+  printDebug(pe3_v);
+  printDebug("\tETH: ");
+  printDebug(eth_v);
+  printDebug("\tENG: ");
+  printDebug(eng_v);
+  printDebug("\tFP: ");
+  printDebug(fp_v);
+  printDebug("\tFAN: ");
+  printDebug(fan_v);
+  printDebug("\tCAN: ");
+  printDebug(can_v);
+  printDebug("\tSTR: ");
+  printDebug(str_v);
+  printDebug("\tBat121: ");
+  printDebug(bat121_v);
+  printDebug("\tBat122: ");
+  printDebug(bat122_v);
+  printDebug("\tBat123: ");
+  printDebug(bat123_v);
+  printDebug("\tSTRIN: ");
+  printDebug(strin_v);
+  printDebug("\tPE3FP: ");
+  printDebug(pe3fp_v);
+  printDebug("\tPE3FAN: ");
+  printDebug(pe3fan_v);
+  printDebug("\tGPIO: ");
+  printDebug(gpio_v);
+  printDebug("\n");
+
+  if (aux1_c > AUX1F_LIMIT)
   {
-    aux1_error += aux1 - AUX1F_LIMIT;
+    aux1_error += aux1_c - AUX1F_LIMIT;
   }
-  if (aux2 > AUX2F_LIMIT)
+  if (aux2_c > AUX2F_LIMIT)
   {
-    aux2_error += aux2 - AUX2F_LIMIT;
+    aux2_error += aux2_c - AUX2F_LIMIT;
   }
-  if (pe3 > PE3F_LIMIT)
+  if (pe3_c > PE3F_LIMIT)
   {
-    pe3_error += pe3 - PE3F_LIMIT;
+    pe3_error += pe3_c - PE3F_LIMIT;
   }
-  if (eth > ETHF_LIMIT)
+  if (eth_c > ETHF_LIMIT)
   {
-    eth_error += eth - ETHF_LIMIT;
+    eth_error += eth_c - ETHF_LIMIT;
   }
-  if (eng > ENGF_LIMIT)
+  if (eng_c > ENGF_LIMIT)
   {
-    eng_error += eng - ENGF_LIMIT;
+    eng_error += eng_c - ENGF_LIMIT;
   }
-  if (fp > FPF_LIMIT)
-  {
-    fp_error += fp - FPF_LIMIT;
+  if (fp_c > FPF_LIMIT)
+  { // relay(true, ENGRD);
+    // relay(true, AUX1RD);
+    // relay(true, CANRD);
+    // relay(true, AUX2RD);
+    fp_error += fp_c - FPF_LIMIT;
   }
-  if (fan > FANF_LIMIT)
+  if (fan_c > FANF_LIMIT)
   {
-    fan_error += fan - FANF_LIMIT;
+    fan_error += fan_c - FANF_LIMIT;
   }
-  if (can > CANF_LIMIT)
+  if (can_c > CANF_LIMIT)
   {
-    can_error += can - CANF_LIMIT;
+    can_error += can_c - CANF_LIMIT;
   }
-  if (wtp > WTPF_LIMIT)
+  if (wtp_c > WTPF_LIMIT)
   {
-    wtp_error += wtp - WTPF_LIMIT;
+    wtp_error += wtp_c - WTPF_LIMIT;
   }
-  if (str > STRF_LIMIT)
+  if (str_c > STRF_LIMIT)
   {
-    str_error += str - STRF_LIMIT;
+    str_error += str_c - STRF_LIMIT;
   }
 
   // Digital circuit breaking
-  if (aux1 < 0 || aux1_error > ACCEPTED_ERROR)
-  {
-    Serial.print("Aux1 error: ");
-    Serial.println(aux1_error);
-    relay(false, AUX1RD); // disable relay
-  }
-  if (aux2 < 0 || aux2_error > ACCEPTED_ERROR)
-  {
-    Serial.print("Aux2 error: ");
-    Serial.println(aux2_error);
-    relay(false, AUX2RD);
-  }
-  if (pe3 < 0 || pe3_error > ACCEPTED_ERROR)
-  {
-    Serial.print("PE3 error: ");
-    Serial.println(pe3_error);
-    relay(false, PE3FPRD);
-  }
-  if (eth < 0 || eth_error > ACCEPTED_ERROR)
-  {
-    Serial.print("ETH error: ");
-    Serial.println(eth_error);
-    relay(false, ENGRD);
-  }
-  if (eng < 0 || eng_error > ACCEPTED_ERROR)
-  {
-    Serial.print("ENG error: ");
-    Serial.println(eng_error);
-    relay(false, ENGRD);
-  }
-  if (fp < 0 || fp_error > ACCEPTED_ERROR)
-  {
-    Serial.print("FP error: ");
-    Serial.println(fp_error);
-    relay(false, PE3FPRD);
-  }
-  if (fan < 0 || fan_error > ACCEPTED_ERROR)
-  {
-    Serial.print("FAN error: ");
-    Serial.println(fan_error);
-    relay(false, PE3FANRD);
-  }
-  if (can < 0 || can_error > ACCEPTED_ERROR)
-  {
-    Serial.print("CAN error: ");
-    Serial.println(can_error);
-    relay(false, CANRD);
-  }
-  if (wtp < 0 || wtp_error > ACCEPTED_ERROR)
-  {
-    Serial.print("WTP error: ");
-    Serial.println(wtp_error);
-    relay(false, WTPRD);
-  }
-  if (str < 0 || str_error > ACCEPTED_ERROR)
-  {
-    Serial.print("STR error: ");
-    Serial.println(str_error);
-    relay(false, STRRD);
-  }
+  // if (aux1_c < 0 || aux1_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("Aux1 error: ");
+  //   Serial.println(aux1_error);
+  //   relay(false, AUX1RD); // disable relay
+  // }
+  // if (aux2_c < 0 || aux2_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("Aux2 error: ");
+  //   Serial.println(aux2_error);
+  //   relay(false, AUX2RD);
+  // }
+  // if (pe3_c < 0 || pe3_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("PE3 error: ");
+  //   Serial.println(pe3_error);
+  //   relay(false, PE3FPRD);
+  // }
+  // if (eth_c < 0 || eth_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("ETH error: ");
+  //   Serial.println(eth_error);
+  //   relay(false, ENGRD);
+  // }
+  // if (eng_c < 0 || eng_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("ENG error: ");
+  //   Serial.println(eng_error);
+  //   relay(false, ENGRD);
+  // }
+  // if (fp_c < 0 || fp_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("FP error: ");
+  //   Serial.println(fp_error);
+  //   relay(false, PE3FPRD);
+  // }
+  // if (fan_c < 0 || fan_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("FAN error: ");
+  //   Serial.println(fan_error);
+  //   relay(false, PE3FANRD);
+  // }
+  // if (can_c < 0 || can_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("CAN error: ");
+  //   Serial.println(can_error);
+  //   relay(false, CANRD);
+  // }
+  // if (wtp_c < 0 || wtp_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("WTP error: ");
+  //   Serial.println(wtp_error);
+  //   relay(false, WTPRD);
+  // }
+  // if (str_c < 0 || str_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("STR error: ");
+  //   Serial.println(str_error);
+  //   relay(false, STRRD);
+  // }
 
   // read signals from PE3 and turn on related relays
-  if (mux(PE3FAN) > ANALOG_LOW)
-  {
-    relay(false, PE3FANRD);
-  }
-  else
-  {
-    relay(true, PE3FANRD);
-  }
-  if (mux(PE3FP) > ANALOG_LOW)
-  {
-    relay(false, PE3FPRD);
-  }
-  else
-  {
-    relay(true, PE3FPRD);
-  }
+  // if (mux(PE3FAN) > ANALOG_LOW)
+  // {
+  //   relay(false, PE3FANRD);
+  // }
+  // else
+  // {
+  //   // relay(true, PE3FANRD);
+  // }
+  // if (mux(PE3FP) > ANALOG_LOW)
+  // {
+  //   relay(false, PE3FPRD);
+  // }
+  // else
+  // {
+  //   relay(true, PE3FPRD);
+  // }
   // TODO: Switch to push to start
   // if (mux(STRIN) > ANALOG_LOW)
   // {
@@ -415,19 +474,35 @@ void loop()
 
 float currSense(int pin)
 {
+  // Wait for conversion to finish
+  while (digitalRead(ADC_EOC) == LOW)
+  {
+    delay(1);
+  }
+
   digitalWrite(ADC_CS, HIGH);
-  SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE3));
+  SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
   digitalWrite(ADC_CS, LOW);
+  delay(1);
 
-  uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
-  mesg |= pin;                // bitwise operator
+  // uint8_t mesg = 0b00000101;
+  // mesg |= pin << 4; // bitwise operator
+  // uint8_t output = SPI.transfer(mesg);
 
-  uint16_t output = SPI.transfer16(mesg);
+  uint16_t mesg = 0b00001101 << 8;
+  mesg |= pin << 12; // bitwise operator
+  // mesg |= 0b1011 << 12;
+  uint16_t output = SPI.transfer(mesg);
+
+  // uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
+  // mesg |= pin;                // bitwise operator
+  // uint16_t output = SPI.transfer16(mesg);
   digitalWrite(ADC_CS, HIGH);
 
   SPI.endTransaction();
 
-  return output * VREF / (float)ADC_RES * MAX_CURRENT; // Linearize
+  return (output >> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
+  // return output >> 2;
 }
 
 // params:
