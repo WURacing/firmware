@@ -126,6 +126,7 @@ void setup()
   relay(true, AUX1RD);
   relay(true, CANRD);
   relay(true, AUX2RD);
+  relay(true; WTPRD); // TODO: Disable this later
 }
 
 void loop()
@@ -243,10 +244,10 @@ void loop()
     relay(true, PE3FPRD)
   }
 
-  // water pump: start whenever engine is turned on, stop when coolant temp gets low enough
+  // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
   // get coolant temp from CAN
-  CAN.filter(2365584712); // coolant temp ID from DBC file
-  CAN.onReceive(onReceive);
+  // CAN.filter(2365584712); // coolant temp ID from DBC file
+  // CAN.onReceive(onReceive);
 
   // push to start
   // timeout after 2s
