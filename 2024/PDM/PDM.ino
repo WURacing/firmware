@@ -138,6 +138,8 @@ void setup()
 
 void loop()
 {
+  // TODO: Delta timing
+
   // Sense current on each pin
   uint16_t aux1 = currSense(AUX1F_PIN);
   uint16_t aux2 = currSense(AUX2F_PIN);
@@ -262,6 +264,15 @@ void loop()
   else
   {
     relay(true, PE3FPRD)
+  }
+  // TODO: Switch to push to start
+  if (mux(STRIN) > 0.5)
+  {
+    relay(true, STRRD);
+  }
+  else
+  {
+    relay(false, STRRD);
   }
 
   // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
