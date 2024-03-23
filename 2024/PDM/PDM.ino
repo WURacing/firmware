@@ -6,7 +6,8 @@
 // #include <CAN.h>
 #include "PDM.h"
 
-#define SPI_SPEED 1000000
+#define SPI_SPEED_FEATHER 3000000
+#define SPI_SPEED_ADC 1500000
 #define BAUD_RATE 1000000
 
 // feather pins
@@ -83,13 +84,24 @@
 #define ACCEPTED_ERROR 10
 #define ANALOG_LOW 0.5
 #define LOW_VOLTAGE 9.6
+#define LED 13
+#define BLINK_INTERVAL 1000
+#define VREF 3.3
+#define ADC_RES 4095
+#define MAX_CURRENT 50
 
-// #define DEBUG
-// #ifdef DEBUG
-//   #define printDebug(fmt, ...) Serial.printf(fmt, __VA_ARGS__)
-// #else
-//   #define printDebug(fmt, ...)
-// #endif
+// Mux voltage divider resistors
+#define R1 3000.0 // ohms
+#define R2 840.0  // ohms
+
+#define DEBUG
+#ifdef DEBUG
+#define printfDebug(fmt, ...) Serial.printf(fmt, __VA_ARGS__)
+#define printDebug(message) Serial.print(message)
+#else
+#define printfDebug(fmt, ...)
+#define printDebug(message)
+#endif
 
 int coolant_temp;
 
@@ -105,6 +117,28 @@ int wtp_error = 0;
 int str_error = 0;
 
 unsigned long begin;
+
+int ledState = LOW;
+unsigned long blinkCurrentMillis = millis();
+unsigned long blinkPreviousMillis = 0;
+
+void blink()
+{
+  blinkCurrentMillis = millis();
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL)
+  {
+    blinkPreviousMillis = blinkCurrentMillis;
+    if (ledState == LOW)
+    {
+      ledState = HIGH;
+    }
+    else
+    {
+      ledState = LOW;
+    }
+    digitalWrite(LED, ledState);
+  }
+}
 
 void setup()
 {
@@ -125,16 +159,28 @@ void setup()
   pinMode(TS7_CS, OUTPUT);
   pinMode(TS8_CS, OUTPUT);
 
+  // set CS pins high
+  digitalWrite(ADC_CS, HIGH);
+  digitalWrite(RD_CS, HIGH);
+  digitalWrite(TS1_CS, HIGH);
+  digitalWrite(TS2_CS, HIGH);
+  digitalWrite(TS3_CS, HIGH);
+  digitalWrite(TS4_CS, HIGH);
+  digitalWrite(TS5_CS, HIGH);
+  digitalWrite(TS6_CS, HIGH);
+  digitalWrite(TS7_CS, HIGH);
+  digitalWrite(TS8_CS, HIGH);
+
   Serial.begin(9600); // start Serial monitor to display current read on monitor
   // if (CAN.begin(BAUD_RATE))
   // {
   //   Serial.printfln("Starting CAN failed");
   // }
 
-  // delay(4000);
+  delay(5000); // TODO: Remove or minimize this later
 
   // Enable relays
-  // printDebug("Enabling relays");
+  printDebug("Enabling relays\n");
   relay(true, ENGRD);
   relay(true, AUX1RD);
   relay(true, CANRD);
@@ -145,21 +191,22 @@ void setup()
 
 void loop()
 {
+  blink();
   // TODO: Delta timing
 
   // Sense current on each pin
-  uint16_t aux1 = currSense(AUX1F_PIN);
-  uint16_t aux2 = currSense(AUX2F_PIN);
-  uint16_t pe3 = currSense(PE3F_PIN);
-  uint16_t eth = currSense(ETHF_PIN);
-  uint16_t eng = currSense(ENGF_PIN);
-  uint16_t fp = currSense(FPF_PIN);
-  uint16_t fan = currSense(FANF_PIN);
-  uint16_t can = currSense(CANF_PIN);
-  uint16_t wtp = currSense(WTPF_PIN);
-  uint16_t str = currSense(STRF_PIN);
+  float aux1 = currSense(AUX1F_PIN);
+  float aux2 = currSense(AUX2F_PIN);
+  float pe3 = currSense(PE3F_PIN);
+  float eth = currSense(ETHF_PIN);
+  float eng = currSense(ENGF_PIN);
+  float fp = currSense(FPF_PIN);
+  float fan = currSense(FANF_PIN);
+  float can = currSense(CANF_PIN);
+  float wtp = currSense(WTPF_PIN);
+  float str = currSense(STRF_PIN);
 
-  // printDebug("%d: Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", millis(), aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
+  printfDebug("%d: Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", millis(), aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
 
   if (aux1 > AUX1F_LIMIT)
   {
@@ -297,7 +344,7 @@ void loop()
   // read voltage of battery
   // datasheet says minimum preferred is 8V
   // added 20% factor of safety
-  float battery_voltage = mux(BAT121);
+  float battery_voltage = mux(BAT123);
   if (battery_voltage < LOW_VOLTAGE)
   {
     Serial.printf("Battery voltage too low: %f", battery_voltage);
@@ -329,10 +376,10 @@ void loop()
 //   coolant_temp = msg;
 // }
 
-uint16_t currSense(int pin)
+float currSense(int pin)
 {
   digitalWrite(ADC_CS, HIGH);
-  SPI.beginTransaction(SPISettings(1000, MSBFIRST, SPI_MODE3));
+  SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE3));
   digitalWrite(ADC_CS, LOW);
 
   uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
@@ -343,7 +390,7 @@ uint16_t currSense(int pin)
 
   SPI.endTransaction();
 
-  return output;
+  return output * VREF / (float)ADC_RES * MAX_CURRENT; // Linearize
 }
 
 // params:
@@ -355,7 +402,7 @@ void relay(bool enable, uint8_t relay)
   uint16_t read = 0b0100000000000000;
 
   digitalWrite(RD_CS, HIGH);
-  SPI.beginTransaction(SPISettings(SPI_SPEED, MSBFIRST, SPI_MODE3));
+  SPI.beginTransaction(SPISettings(SPI_SPEED_FEATHER, MSBFIRST, SPI_MODE3));
   digitalWrite(RD_CS, LOW);
   uint16_t read_output = SPI.transfer16(read); // returns a 16 bit, convert it to 8
 
@@ -377,10 +424,6 @@ void relay(bool enable, uint8_t relay)
   digitalWrite(RD_CS, HIGH);
   SPI.endTransaction();
 }
-
-// Mux voltage divider resistors
-#define R1 3000.0 // ohms
-#define R2 840.0  // ohms
 
 // params:
 // index: number between 0-15 (DOUBLE CHECK)
