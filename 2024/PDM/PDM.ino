@@ -80,6 +80,7 @@
 #define AUX2F_LIMIT 10
 
 #define ACCEPTED_ERROR 10
+#define
 
 #define DEBUG true
 
@@ -95,6 +96,8 @@ int fan_error = 0;
 int can_error = 0;
 int wtp_error = 0;
 int str_error = 0;
+
+unsigned long begin;
 
 void setup()
 {
@@ -130,6 +133,7 @@ void setup()
   relay(true, CANRD);
   relay(true, AUX2RD);
   relay(true; WTPRD); // TODO: Disable this later
+  begin = millis();
 }
 
 void loop()
@@ -146,7 +150,7 @@ void loop()
   uint16_t wtp = currSense(WTPF_PIN);
   uint16_t str = currSense(STRF_PIN);
 
-  printDebug("Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
+  printDebug("%d: Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", millis(), aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
 
   if (aux1 > AUX1F_LIMIT)
   {
@@ -275,8 +279,10 @@ void loop()
   // read voltage of battery
   // datasheet says minimum preferred is 8V
   // added 20% factor of safety
-  if (mux(BAT121) < 9.6)
+  float battery_voltage = mux(BAT121);
+  if (battery_voltage < 9.6)
   {
+    print("Battery voltage too low: %f", battery_voltage);
     for (int i = 0; i < 8; i++)
     {
       relay(false, i);
