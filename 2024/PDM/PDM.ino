@@ -213,9 +213,27 @@ void loop()
   float wtp = currSense(WTPF_PIN);
   float str = currSense(STRF_PIN);
 
-  // char *msg;
-  // sprintf(msg, "Aux1: %f \tAux2: %f\tPE3: %f\tETH: %f\tENG: %f\tFP: %f\tFAN: %f\tCAN: %f\tWTP: %f\tSTR: %f\n", aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
-  // printDebug(msg);
+  printDebug("Aux1: ");
+  printDebug(aux1);
+  printDebug("\tAux2: ");
+  printDebug(aux2);
+  printDebug("\tPE3: ");
+  printDebug(pe3);
+  printDebug("\tETH: ");
+  printDebug(eth);
+  printDebug("\tENG: ");
+  printDebug(eng);
+  printDebug("\tFP: ");
+  printDebug(fp);
+  printDebug("\tFAN: ");
+  printDebug(fan);
+  printDebug("\tCAN: ");
+  printDebug(can);
+  printDebug("\tWTP: ");
+  printDebug(wtp);
+  printDebug("\tSTR: ");
+  printDebug(str);
+  printDebug("\n");
 
   if (aux1 > AUX1F_LIMIT)
   {
@@ -261,53 +279,62 @@ void loop()
   // Digital circuit breaking
   if (aux1 < 0 || aux1_error > ACCEPTED_ERROR)
   {
-    Serial.printf("Aux1 error: %f\n", aux1_error);
-    ;
+    Serial.print("Aux1 error: ");
+    Serial.println(aux1_error);
     relay(false, AUX1RD); // disable relay
   }
   if (aux2 < 0 || aux2_error > ACCEPTED_ERROR)
   {
-    Serial.printf("Aux2 error: %f\n", aux2_error);
+    Serial.print("Aux2 error: ");
+    Serial.println(aux2_error);
     relay(false, AUX2RD);
   }
   if (pe3 < 0 || pe3_error > ACCEPTED_ERROR)
   {
-    Serial.printf("PE3 error: %f\n", pe3_error);
+    Serial.print("PE3 error: ");
+    Serial.println(pe3_error);
     relay(false, PE3FPRD);
   }
   if (eth < 0 || eth_error > ACCEPTED_ERROR)
   {
-    Serial.printf("ETH error: %f\n", eth_error);
+    Serial.print("ETH error: ");
+    Serial.println(eth_error);
     relay(false, ENGRD);
   }
   if (eng < 0 || eng_error > ACCEPTED_ERROR)
   {
-    Serial.printf("ENG error: %f\n", eng_error);
+    Serial.print("ENG error: ");
+    Serial.println(eng_error);
     relay(false, ENGRD);
   }
   if (fp < 0 || fp_error > ACCEPTED_ERROR)
   {
-    Serial.printf("FP error: %f\n", fp_error);
+    Serial.print("FP error: ");
+    Serial.println(fp_error);
     relay(false, PE3FPRD);
   }
   if (fan < 0 || fan_error > ACCEPTED_ERROR)
   {
-    Serial.printf("FAN error: %f\n", fan_error);
+    Serial.print("FAN error: ");
+    Serial.println(fan_error);
     relay(false, PE3FANRD);
   }
   if (can < 0 || can_error > ACCEPTED_ERROR)
   {
-    Serial.printf("CAN error: %f\n", can_error);
+    Serial.print("CAN error: ");
+    Serial.println(can_error);
     relay(false, CANRD);
   }
   if (wtp < 0 || wtp_error > ACCEPTED_ERROR)
   {
-    Serial.printf("WTP error: %f\n", wtp_error);
+    Serial.print("WTP error: ");
+    Serial.println(wtp_error);
     relay(false, WTPRD);
   }
   if (str < 0 || str_error > ACCEPTED_ERROR)
   {
-    Serial.printf("STR error: %f\n", str_error);
+    Serial.print("STR error: ");
+    Serial.println(str_error);
     relay(false, STRRD);
   }
 
@@ -356,7 +383,8 @@ void loop()
   float battery_voltage = mux(BAT123);
   if (battery_voltage < LOW_VOLTAGE)
   {
-    Serial.printf("Battery voltage too low: %f\n", battery_voltage);
+    Serial.print("Battery voltage too low: ");
+    Serial.println(battery_voltage);
     for (int i = 0; i < 8; i++)
     {
       relay(false, i);
