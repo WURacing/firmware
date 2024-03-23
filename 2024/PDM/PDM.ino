@@ -3,7 +3,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <SPI.h>
-#include <CAN.h>
+// #include <CAN.h>
+#include "PDM.h"
 
 #define SPI_SPEED 1000000
 #define BAUD_RATE 1000000
@@ -83,7 +84,12 @@
 #define ANALOG_LOW 0.5
 #define LOW_VOLTAGE 9.6
 
-#define DEBUG true
+// #define DEBUG
+// #ifdef DEBUG
+//   #define printDebug(fmt, ...) Serial.printf(fmt, __VA_ARGS__)
+// #else
+//   #define printDebug(fmt, ...)
+// #endif
 
 int coolant_temp;
 
@@ -120,20 +126,20 @@ void setup()
   pinMode(TS8_CS, OUTPUT);
 
   Serial.begin(9600); // start Serial monitor to display current read on monitor
-  if (CAN.begin(BAUD_RATE))
-  {
-    Serial.println("Starting CAN failed");
-  }
+  // if (CAN.begin(BAUD_RATE))
+  // {
+  //   Serial.printfln("Starting CAN failed");
+  // }
 
   // delay(4000);
 
   // Enable relays
-  printDebug("Enabling relays");
+  // printDebug("Enabling relays");
   relay(true, ENGRD);
   relay(true, AUX1RD);
   relay(true, CANRD);
   relay(true, AUX2RD);
-  relay(true; WTPRD); // TODO: Disable this later
+  relay(true, WTPRD); // TODO: Disable this later
   begin = millis();
 }
 
@@ -153,7 +159,7 @@ void loop()
   uint16_t wtp = currSense(WTPF_PIN);
   uint16_t str = currSense(STRF_PIN);
 
-  printDebug("%d: Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", millis(), aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
+  // printDebug("%d: Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", millis(), aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
 
   if (aux1 > AUX1F_LIMIT)
   {
@@ -199,53 +205,53 @@ void loop()
   // Digital circuit breaking
   if (aux1 < 0 || aux1_error > ACCEPTED_ERROR)
   {
-    print("Aux1 error: %d", aux1_error);
+    Serial.printf("Aux1 error: %d", aux1_error);
     ;
     relay(false, AUX1RD); // disable relay
   }
   if (aux2 < 0 || aux2_error > ACCEPTED_ERROR)
   {
-    print("Aux2 error: %d", aux2_error);
+    Serial.printf("Aux2 error: %d", aux2_error);
     relay(false, AUX2RD);
   }
   if (pe3 < 0 || pe3_error > ACCEPTED_ERROR)
   {
-    print("PE3 error: %d", pe3_error);
+    Serial.printf("PE3 error: %d", pe3_error);
     relay(false, PE3FPRD);
   }
   if (eth < 0 || eth_error > ACCEPTED_ERROR)
   {
-    print("ETH error: %d", eth_error);
+    Serial.printf("ETH error: %d", eth_error);
     relay(false, ENGRD);
   }
   if (eng < 0 || eng_error > ACCEPTED_ERROR)
   {
-    print("ENG error: %d", eng_error);
+    Serial.printf("ENG error: %d", eng_error);
     relay(false, ENGRD);
   }
   if (fp < 0 || fp_error > ACCEPTED_ERROR)
   {
-    print("FP error: %d", fp_error);
+    Serial.printf("FP error: %d", fp_error);
     relay(false, PE3FPRD);
   }
   if (fan < 0 || fan_error > ACCEPTED_ERROR)
   {
-    print("FAN error: %d", fan_error);
+    Serial.printf("FAN error: %d", fan_error);
     relay(false, PE3FANRD);
   }
   if (can < 0 || can_error > ACCEPTED_ERROR)
   {
-    print("CAN error: %d", can_error);
+    Serial.printf("CAN error: %d", can_error);
     relay(false, CANRD);
   }
   if (wtp < 0 || wtp_error > ACCEPTED_ERROR)
   {
-    print("WTP error: %d", wtp_error);
+    Serial.printf("WTP error: %d", wtp_error);
     relay(false, WTPRD);
   }
   if (str < 0 || str_error > ACCEPTED_ERROR)
   {
-    print("STR error: %d", str_error);
+    Serial.printf("STR error: %d", str_error);
     relay(false, STRRD);
   }
 
@@ -264,7 +270,7 @@ void loop()
   }
   else
   {
-    relay(true, PE3FPRD)
+    relay(true, PE3FPRD);
   }
   // TODO: Switch to push to start
   if (mux(STRIN) > ANALOG_LOW)
@@ -294,7 +300,7 @@ void loop()
   float battery_voltage = mux(BAT121);
   if (battery_voltage < LOW_VOLTAGE)
   {
-    print("Battery voltage too low: %f", battery_voltage);
+    Serial.printf("Battery voltage too low: %f", battery_voltage);
     for (int i = 0; i < 8; i++)
     {
       relay(false, i);
@@ -305,30 +311,23 @@ void loop()
   // TODO: Ethrottle protections
 }
 
-void printDebug(char *message)
-{
-  if (DEBUG)
-  {
-    Serial.println(message);
-  }
-}
-
-void onReceive()
-{
-  uint16_t msg;
-  for (int i = 0; i < 6; i++)
-  {
-    int b = CAN.read() if (i == 4)
-    {
-      msg = b << 8; // left shift first byte
-    }
-    if (i == 5)
-    {
-      msg |= b; // or second byte
-    }
-  }
-  coolant_temp = msg;
-}
+// void onReceive()
+// {
+//   uint16_t msg;
+//   for (int i = 0; i < 6; i++)
+//   {
+//     int b = CAN.read();
+//     if (i == 4)
+//     {
+//       msg = b << 8; // left shift first byte
+//     }
+//     if (i == 5)
+//     {
+//       msg |= b; // or second byte
+//     }
+//   }
+//   coolant_temp = msg;
+// }
 
 uint16_t currSense(int pin)
 {

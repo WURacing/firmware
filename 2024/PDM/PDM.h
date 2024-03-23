@@ -3,7 +3,7 @@
 * Gets current measurement from sensor at pin as 16-bit unsigned integer
 * @param pin Pin identifier for current sensor
 */
-void currSense(int pin);
+uint16_t currSense(int pin);
 
 /*
 * Sets relay state using SPI communication
