@@ -188,12 +188,12 @@ void setup()
 
 void loop()
 {
-  // relay(true, ENGRD);
+  relay(true, ENGRD);
   delay(1000);
   blink();
   // TODO: Delta timing
 
-  Serial.println(mux(BAT121));
+  // Serial.println(mux(BAT121));
 
   // Sense current on each pin
   // float aux1 = currSense(AUX1F_PIN);
