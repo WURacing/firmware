@@ -89,6 +89,7 @@
 #define VREF 3.3
 #define ADC_RES 4095
 #define MAX_CURRENT 50
+#define RUN_INTERVAL 1000
 
 // Mux voltage divider resistors
 #define R1 3000.0 // ohms
@@ -96,31 +97,28 @@
 
 #define DEBUG
 #ifdef DEBUG
-#define printfDebug(fmt, ...) Serial.printf(fmt, __VA_ARGS__)
 #define printDebug(message) Serial.print(message)
 #else
-#define printfDebug(fmt, ...)
 #define printDebug(message)
 #endif
 
 int coolant_temp;
 
-int aux1_error = 0;
-int aux2_error = 0;
-int pe3_error = 0;
-int eth_error = 0;
-int eng_error = 0;
-int fp_error = 0;
-int fan_error = 0;
-int can_error = 0;
-int wtp_error = 0;
-int str_error = 0;
-
-unsigned long begin;
+float aux1_error = 0;
+float aux2_error = 0;
+float pe3_error = 0;
+float eth_error = 0;
+float eng_error = 0;
+float fp_error = 0;
+float fan_error = 0;
+float can_error = 0;
+float wtp_error = 0;
+float str_error = 0;
 
 int ledState = LOW;
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
+unsigned long runPreviousMillis = 0;
 
 void blink()
 {
@@ -186,13 +184,22 @@ void setup()
   relay(true, CANRD);
   relay(true, AUX2RD);
   relay(true, WTPRD); // TODO: Disable this later
-  begin = millis();
+
+  runPreviousMillis = millis();
 }
 
 void loop()
 {
   blink();
-  // TODO: Delta timing
+
+  if (millis() - runPreviousMillis < RUN_INTERVAL)
+  {
+    return;
+  }
+  else
+  {
+    runPreviousMillis += RUN_INTERVAL;
+  }
 
   // Sense current on each pin
   float aux1 = currSense(AUX1F_PIN);
@@ -206,7 +213,9 @@ void loop()
   float wtp = currSense(WTPF_PIN);
   float str = currSense(STRF_PIN);
 
-  printfDebug("%d: Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", millis(), aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
+  // char *msg;
+  // sprintf(msg, "Aux1: %f \tAux2: %f\tPE3: %f\tETH: %f\tENG: %f\tFP: %f\tFAN: %f\tCAN: %f\tWTP: %f\tSTR: %f\n", aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
+  // printDebug(msg);
 
   if (aux1 > AUX1F_LIMIT)
   {
@@ -252,53 +261,53 @@ void loop()
   // Digital circuit breaking
   if (aux1 < 0 || aux1_error > ACCEPTED_ERROR)
   {
-    Serial.printf("Aux1 error: %d", aux1_error);
+    Serial.printf("Aux1 error: %f\n", aux1_error);
     ;
     relay(false, AUX1RD); // disable relay
   }
   if (aux2 < 0 || aux2_error > ACCEPTED_ERROR)
   {
-    Serial.printf("Aux2 error: %d", aux2_error);
+    Serial.printf("Aux2 error: %f\n", aux2_error);
     relay(false, AUX2RD);
   }
   if (pe3 < 0 || pe3_error > ACCEPTED_ERROR)
   {
-    Serial.printf("PE3 error: %d", pe3_error);
+    Serial.printf("PE3 error: %f\n", pe3_error);
     relay(false, PE3FPRD);
   }
   if (eth < 0 || eth_error > ACCEPTED_ERROR)
   {
-    Serial.printf("ETH error: %d", eth_error);
+    Serial.printf("ETH error: %f\n", eth_error);
     relay(false, ENGRD);
   }
   if (eng < 0 || eng_error > ACCEPTED_ERROR)
   {
-    Serial.printf("ENG error: %d", eng_error);
+    Serial.printf("ENG error: %f\n", eng_error);
     relay(false, ENGRD);
   }
   if (fp < 0 || fp_error > ACCEPTED_ERROR)
   {
-    Serial.printf("FP error: %d", fp_error);
+    Serial.printf("FP error: %f\n", fp_error);
     relay(false, PE3FPRD);
   }
   if (fan < 0 || fan_error > ACCEPTED_ERROR)
   {
-    Serial.printf("FAN error: %d", fan_error);
+    Serial.printf("FAN error: %f\n", fan_error);
     relay(false, PE3FANRD);
   }
   if (can < 0 || can_error > ACCEPTED_ERROR)
   {
-    Serial.printf("CAN error: %d", can_error);
+    Serial.printf("CAN error: %f\n", can_error);
     relay(false, CANRD);
   }
   if (wtp < 0 || wtp_error > ACCEPTED_ERROR)
   {
-    Serial.printf("WTP error: %d", wtp_error);
+    Serial.printf("WTP error: %f\n", wtp_error);
     relay(false, WTPRD);
   }
   if (str < 0 || str_error > ACCEPTED_ERROR)
   {
-    Serial.printf("STR error: %d", str_error);
+    Serial.printf("STR error: %f\n", str_error);
     relay(false, STRRD);
   }
 
@@ -320,14 +329,14 @@ void loop()
     relay(true, PE3FPRD);
   }
   // TODO: Switch to push to start
-  if (mux(STRIN) > ANALOG_LOW)
-  {
-    relay(true, STRRD);
-  }
-  else
-  {
-    relay(false, STRRD);
-  }
+  // if (mux(STRIN) > ANALOG_LOW)
+  // {
+  //   relay(true, STRRD);
+  // }
+  // else
+  // {
+  //   relay(false, STRRD);
+  // }
 
   // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
   // get coolant temp from CAN
@@ -347,7 +356,7 @@ void loop()
   float battery_voltage = mux(BAT123);
   if (battery_voltage < LOW_VOLTAGE)
   {
-    Serial.printf("Battery voltage too low: %f", battery_voltage);
+    Serial.printf("Battery voltage too low: %f\n", battery_voltage);
     for (int i = 0; i < 8; i++)
     {
       relay(false, i);
