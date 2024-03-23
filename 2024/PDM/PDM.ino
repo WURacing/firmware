@@ -85,6 +85,9 @@
 #define LOW_VOLTAGE 9.6
 #define LED 13
 #define BLINK_INTERVAL 1000
+#define VREF 3.3
+#define ADC_RES 4095
+#define MAX_CURRENT 50
 
 #define DEBUG
 #ifdef DEBUG
@@ -187,21 +190,23 @@ void loop()
 {
   // relay(true, ENGRD);
   delay(1000);
-  // blink();
+  blink();
   // TODO: Delta timing
 
+  Serial.println(mux(BAT121));
+
   // Sense current on each pin
-  uint16_t aux1 = currSense(AUX1F_PIN);
-  Serial.println(aux1);
-  // uint16_t aux2 = currSense(AUX2F_PIN);
-  // uint16_t pe3 = currSense(PE3F_PIN);
-  // uint16_t eth = currSense(ETHF_PIN);
-  // uint16_t eng = currSense(ENGF_PIN);
-  // uint16_t fp = currSense(FPF_PIN);
-  // uint16_t fan = currSense(FANF_PIN);
-  // uint16_t can = currSense(CANF_PIN);
-  // uint16_t wtp = currSense(WTPF_PIN);
-  // uint16_t str = currSense(STRF_PIN);
+  // float aux1 = currSense(AUX1F_PIN);
+  // Serial.println(aux1);
+  // float aux2 = currSense(AUX2F_PIN);
+  // float pe3 = currSense(PE3F_PIN);
+  // float eth = currSense(ETHF_PIN);
+  // float eng = currSense(ENGF_PIN);
+  // float fp = currSense(FPF_PIN);
+  // float fan = currSense(FANF_PIN);
+  // float can = currSense(CANF_PIN);
+  // float wtp = currSense(WTPF_PIN);
+  // float str = currSense(STRF_PIN);
 
   // printfDebug("%d: Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", millis(), aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
 
@@ -387,7 +392,7 @@ float currSense(int pin)
 
   SPI.endTransaction();
 
-  return output;
+  return output * VREF / (float)ADC_RES * MAX_CURRENT; // Linearize
 }
 
 // params:
