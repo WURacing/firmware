@@ -80,7 +80,8 @@
 #define AUX2F_LIMIT 10
 
 #define ACCEPTED_ERROR 10
-#define
+#define ANALOG_LOW 0.5
+#define LOW_VOLTAGE 9.6
 
 #define DEBUG true
 
@@ -249,7 +250,7 @@ void loop()
   }
 
   // read signals from PE3 and turn on related relays
-  if (mux(PE3FAN) > 0.5)
+  if (mux(PE3FAN) > ANALOG_LOW)
   {
     relay(false, PE3FANRD);
   }
@@ -257,7 +258,7 @@ void loop()
   {
     relay(true, PE3FANRD);
   }
-  if (mux(PE3FP) > 0.5)
+  if (mux(PE3FP) > ANALOG_LOW)
   {
     relay(false, PE3FPRD);
   }
@@ -266,7 +267,7 @@ void loop()
     relay(true, PE3FPRD)
   }
   // TODO: Switch to push to start
-  if (mux(STRIN) > 0.5)
+  if (mux(STRIN) > ANALOG_LOW)
   {
     relay(true, STRRD);
   }
@@ -291,7 +292,7 @@ void loop()
   // datasheet says minimum preferred is 8V
   // added 20% factor of safety
   float battery_voltage = mux(BAT121);
-  if (battery_voltage < 9.6)
+  if (battery_voltage < LOW_VOLTAGE)
   {
     print("Battery voltage too low: %f", battery_voltage);
     for (int i = 0; i < 8; i++)
@@ -299,6 +300,9 @@ void loop()
       relay(false, i);
     }
   }
+
+  // TODO: Send CAN data
+  // TODO: Ethrottle protections
 }
 
 void printDebug(char *message)
