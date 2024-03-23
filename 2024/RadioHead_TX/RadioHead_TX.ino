@@ -8,7 +8,7 @@
 
 #include <SPI.h>
 #include <RH_RF95.h>
-
+#define ADAFRUIT_FEATHER_M0
 // First 3 here are boards w/radio BUILT-IN. Boards using FeatherWing follow.
 #if defined (__AVR_ATmega32U4__)  // Feather 32u4 w/Radio
   #define RFM95_CS    8
