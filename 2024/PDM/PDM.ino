@@ -81,6 +81,8 @@
 
 #define ACCEPTED_ERROR 10
 
+#define DEBUG true
+
 int coolant_temp;
 
 int aux1_error = 0;
@@ -122,6 +124,7 @@ void setup()
   // delay(4000);
 
   // Enable relays
+  printDebug("Enabling relays");
   relay(true, ENGRD);
   relay(true, AUX1RD);
   relay(true, CANRD);
@@ -142,6 +145,8 @@ void loop()
   uint16_t can = currSense(CANF_PIN);
   uint16_t wtp = currSense(WTPF_PIN);
   uint16_t str = currSense(STRF_PIN);
+
+  printDebug("Aux1: %d\tAux2: %d\tPE3: %d\tETH: %d\tENG: %d\tFP: %d\tFAN: %d\tCAN: %d\tWTP: %d\tSTR: %d\n", aux1, aux2, pe3, eth, eng, fp, fan, can, wtp, str);
 
   if (aux1 > AUX1F_LIMIT)
   {
@@ -187,42 +192,53 @@ void loop()
   // Digital circuit breaking
   if (aux1 < 0 || aux1_error > ACCEPTED_ERROR)
   {
+    print("Aux1 error: %d", aux1_error);
+    ;
     relay(false, AUX1RD); // disable relay
   }
   if (aux2 < 0 || aux2_error > ACCEPTED_ERROR)
   {
+    print("Aux2 error: %d", aux2_error);
     relay(false, AUX2RD);
   }
   if (pe3 < 0 || pe3_error > ACCEPTED_ERROR)
   {
+    print("PE3 error: %d", pe3_error);
     relay(false, PE3FPRD);
   }
   if (eth < 0 || eth_error > ACCEPTED_ERROR)
   {
+    print("ETH error: %d", eth_error);
     relay(false, ENGRD);
   }
   if (eng < 0 || eng_error > ACCEPTED_ERROR)
   {
+    print("ENG error: %d", eng_error);
     relay(false, ENGRD);
   }
   if (fp < 0 || fp_error > ACCEPTED_ERROR)
   {
+    print("FP error: %d", fp_error);
     relay(false, PE3FPRD);
   }
   if (fan < 0 || fan_error > ACCEPTED_ERROR)
   {
+    print("FAN error: %d", fan_error);
     relay(false, PE3FANRD);
   }
   if (can < 0 || can_error > ACCEPTED_ERROR)
   {
+    print("CAN error: %d", can_error);
     relay(false, CANRD);
   }
   if (wtp < 0 || wtp_error > ACCEPTED_ERROR)
   {
+    print("WTP error: %d", wtp_error);
     relay(false, WTPRD);
   }
   if (str < 0 || str_error > ACCEPTED_ERROR)
   {
+    print("STR error: %d", str_error);
     relay(false, STRRD);
   }
 
@@ -265,6 +281,14 @@ void loop()
     {
       relay(false, i);
     }
+  }
+}
+
+void printDebug(char *message)
+{
+  if (DEBUG)
+  {
+    Serial.println(message);
   }
 }
 
