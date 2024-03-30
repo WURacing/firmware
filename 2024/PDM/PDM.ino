@@ -88,7 +88,7 @@
 #define BLINK_INTERVAL 1000
 #define VREF 3.3
 #define ADC_RES 4095
-#define RUN_INTERVAL 50
+#define RUN_INTERVAL 500
 
 // Mux voltage divider resistors
 #define R1 3000.0 // ohms
@@ -119,11 +119,9 @@ unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 unsigned long runPreviousMillis = 0;
 
-
 bool str_state = false;
 bool fp_state = false;
 bool fan_state = false;
-
 
 void blink()
 {
@@ -179,8 +177,6 @@ void setup()
   digitalWrite(TS7_CS, HIGH);
   digitalWrite(TS8_CS, HIGH);
 
-
-
   digitalWrite(EN, HIGH);
 
   Serial.begin(9600); // start Serial monitor to display current read on monitor
@@ -189,28 +185,24 @@ void setup()
   //   Serial.printfln("Starting CAN failed");
   // }
 
-  delay(500); // TODO: Remove or minimize this later
+  delay(5000); // TODO: Remove or minimize this later
 
   // Enable relays
   printDebug("Enabling relays\n");
-  // relay(true, ENGRD);
+  relay(true, ENGRD);
   // relay(true, AUX1RD);
   // relay(true, CANRD);
   // relay(true, AUX2RD);
-  // relay(true, WTPRD); // TODO: Disable this later
+  relay(true, WTPRD); // TODO: Disable this later
 
   // For testing only
   // relay(true, PE3FPRD);
 
   runPreviousMillis = millis();
-
-  relay(true, ENGRD);
-  relay(true, PE3FPRD);
-
 }
 
-void loop() {
-
+void loop()
+{
 
   // blink();
 
@@ -224,89 +216,91 @@ void loop() {
   }
 
   // Sense current on each pin
-  // float aux1_c = currSense(AUX1F_PIN);
-  // float aux2_c = currSense(AUX2F_PIN);
-  // float pe3_c = currSense(PE3F_PIN);
-  // float eth_c = currSense(ETHF_PIN);
-  // float eng_c = currSense(ENGF_PIN);
-  // float fp_c = currSense(FPF_PIN);
-  // float fan_c = currSense(FANF_PIN);
-  // float can_c = currSense(CANF_PIN);
-  // float wtp_c = currSense(WTPF_PIN);
-  // float str_c = currSense(STRF_PIN);
+  float aux1_c = currSense(AUX1F_PIN);
+  float aux2_c = currSense(AUX2F_PIN);
+  float pe3_c = currSense(PE3F_PIN);
+  float eth_c = currSense(ETHF_PIN);
+  float eng_c = currSense(ENGF_PIN);
+  float fp_c = currSense(FPF_PIN);
+  float fan_c = currSense(FANF_PIN);
+  float can_c = currSense(CANF_PIN);
+  float wtp_c = currSense(WTPF_PIN);
+  float str_c = currSense(STRF_PIN);
 
   // Sense voltage on each pin
-  // float fan_v = mux(FAN);
-  // float eng_v = mux(ENG);
-  // float bat122_v = mux(BAT122);
-  // float aux1_v = mux(AUX1);
-  // float gpio_v = mux(GPIO);
-  // float can_v = mux(CAN);
-  // float str_v = mux(STR);
-  // float bat123_v = mux(BAT123);
-  // float fp_v = mux(FP);
-  // float pe3_v = mux(5);
-  // float eth_v = mux(ETH);
-  // float aux2_v = mux(AUX2);
-  // float strin_v = mux(STRIN);
-  // float pe3fp_v = mux(PE3FP);
-  // float pe3fan_v = mux(PE3FAN);
+  float fan_v = mux(FAN);
+  float eng_v = mux(ENG);
+  float bat122_v = mux(BAT122);
+  float aux1_v = mux(AUX1);
+  float gpio_v = mux(GPIO);
+  float can_v = mux(CAN);
+  float str_v = mux(STR);
+  float bat123_v = mux(BAT123);
+  float fp_v = mux(FP);
+  float pe3_v = mux(PE3);
+  float eth_v = mux(ETH);
+  float aux2_v = mux(AUX2);
+  float strin_v = mux(STRIN);
+  float pe3fp_v = mux(PE3FP);
+  float pe3fan_v = mux(PE3FAN);
 
-  // printDebug("Aux1: ");
-  // printDebug(aux1_c);
-  // printDebug("A\tAux2: ");
-  // printDebug(aux2_c);
-  // printDebug("A\tPE3: ");
-  // printDebug(pe3_c);
-  // printDebug("A\tETH: ");
-  // printDebug(eth_c);
-  // printDebug("A\tENG: ");
-  // printDebug(eng_c);
-  // printDebug("A\tFP: ");
-  // printDebug(fp_c);
-  // printDebug("A\tFAN: ");
-  // printDebug(fan_c);
-  // printDebug("A\tCAN: ");
-  // printDebug(can_c);
-  // printDebug("A\tSTR: ");
-  // printDebug(str_c);
-  // printDebug("A\tWTP: ");
-  // printDebug(wtp_c);
-  // printDebug("A\n");
+  printDebug("Aux1: ");
+  printDebug(aux1_c);
+  printDebug("A\tAux2: ");
+  printDebug(aux2_c);
+  printDebug("A\tPE3: ");
+  printDebug(pe3_c);
+  printDebug("A\tETH: ");
+  printDebug(eth_c);
+  printDebug("A\tENG: ");
+  printDebug(eng_c);
+  printDebug("A\tFP: ");
+  printDebug(fp_c);
+  printDebug("A\tFAN: ");
+  printDebug(fan_c);
+  printDebug("A\tCAN: ");
+  printDebug(can_c);
+  printDebug("A\tSTR: ");
+  printDebug(str_c);
+  printDebug("A\tWTP: ");
+  printDebug(wtp_c);
+  printDebug("A\n");
 
-  // printDebug("Aux1: ");
-  // printDebug(aux1_v);
-  // printDebug("V\tAux2: ");
-  // printDebug(aux2_v);
-  // printDebug("V\tPE3: ");
-  // printDebug(pe3_v);
-  // printDebug("V\tETH: ");
-  // printDebug(eth_v);
-  // printDebug("V\tENG: ");
-  // printDebug(eng_v);
-  // printDebug("V\tFP: ");
-  // printDebug(fp_v);
-  // printDebug("V\tFAN: ");
-  // printDebug(fan_v);
-  // printDebug("V\tCAN: ");
-  // printDebug(can_v);
-  // printDebug("V\tSTR: ");
-  // printDebug(str_v);
+  printDebug("Aux1: ");
+  printDebug(aux1_v);
+  printDebug("V\tAux2: ");
+  printDebug(aux2_v);
+  printDebug("V\tPE3: ");
+  printDebug(pe3_v);
+  printDebug("V\tETH: ");
+  printDebug(eth_v);
+  printDebug("V\tENG: ");
+  printDebug(eng_v);
+  printDebug("V\tFP: ");
+  printDebug(fp_v);
+  printDebug("V\tFAN: ");
+  printDebug(fan_v);
+  printDebug("V\tCAN: ");
+  printDebug(can_v);
+  printDebug("V\tSTR: ");
+  printDebug(str_v);
   // printDebug("V\tBat121: ");
   // printDebug(bat121_v);
-  // printDebug("V\tBat122: ");
-  // printDebug(bat122_v);
-  // printDebug("V\tBat123: ");
-  // printDebug(bat123_v);
-  // printDebug("V\tSTRIN: ");
-  // printDebug(strin_v);
-  // printDebug("V\tPE3FP: ");
-  // printDebug(pe3fp_v);
-  // printDebug("V\tPE3FAN: ");
-  // printDebug(pe3fan_v);
-  // printDebug("V\tGPIO: ");
-  // printDebug(gpio_v);
-  //printDebug("V\n");
+  printDebug("V\tBat122: ");
+  printDebug(bat122_v);
+  printDebug("V\tBat123: ");
+  printDebug(bat123_v);
+  printDebug("V\tSTRIN: ");
+  printDebug(strin_v);
+  printDebug("V\tPE3FP: ");
+  printDebug(pe3fp_v);
+  printDebug("V\tPE3FAN: ");
+  printDebug(pe3fan_v);
+  printDebug("V\tGPIO: ");
+  printDebug(gpio_v);
+  printDebug("V\n");
+
+  // delay(1000);
 
   // if (aux1_c > AUX1F_LIMIT)
   // {
@@ -436,17 +430,17 @@ void loop() {
   //   relay(true, PE3FPRD);
   //   fp_state = true;
   // }
-  // // TODO: Switch to push to start
-  // if (str_v < ANALOG_LOW && str_state)
-  // {
-  //   relay(true, STRRD);
-  //   str_state = true;
-  // }
-  // if (str_v >= ANALOG_LOW && !str_state)
-  // {
-  //   relay(false, STRRD);
-  //   str_state = false;
-  // }
+  // TODO: Switch to push to start
+  if (str_v < ANALOG_LOW && !str_state)
+  {
+    relay(true, STRRD);
+    str_state = true;
+  }
+  if (str_v >= ANALOG_LOW && str_state)
+  {
+    relay(false, STRRD);
+    str_state = false;
+  }
 
   // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
   // get coolant temp from CAN
@@ -533,6 +527,12 @@ float currSense(int pin)
 // relay (number between 0-7 corresponding to the relay number)
 void relay(bool enable, uint8_t relay)
 {
+  printDebug("Relay: ");
+  printDebug(relay);
+  printDebug("\tEnable: ");
+  printDebug(enable);
+  printDebug("\n");
+
   // read relay state first
   uint16_t read = 0b0100000000000000;
 
@@ -564,12 +564,12 @@ void relay(bool enable, uint8_t relay)
 // index: number between 0-15 (DOUBLE CHECK)
 float mux(unsigned int index)
 {
-  Serial.println(index, HEX);
+  // Serial.println(index, HEX);
   // set multiplexer pins
   if ((index & 0b0001) > 0)
   {
     digitalWrite(MUX_A0, HIGH);
-    Serial.println("A0 high");
+    //   Serial.println("A0 high");
   }
   else
   {
@@ -579,8 +579,7 @@ float mux(unsigned int index)
   if ((index & 0b0010) > 0)
   {
     digitalWrite(MUX_A1, HIGH);
-        Serial.println("A1 high");
-
+    // Serial.println("A1 high");
   }
   else
   {
@@ -590,8 +589,7 @@ float mux(unsigned int index)
   if ((index & 0b0100) > 0)
   {
     digitalWrite(MUX_A2, HIGH);
-        Serial.println("A2 high");
-
+    // Serial.println("A2 high");
   }
   else
   {
@@ -601,18 +599,17 @@ float mux(unsigned int index)
   if ((index & 0b1000) > 0)
   {
     digitalWrite(MUX_A3, HIGH);
-        Serial.println("A3 high");
-
+    // Serial.println("A3 high");
   }
   else
   {
     digitalWrite(MUX_A3, LOW);
   }
 
-  delay(1);
-  float voltage = analogRead(MUX_OUT_FB)* 12.0 /(float)4095; // voltage_measured = voltage_out
-
-  // voltage divider equation
-  // float voltage = (R1 + R2) * voltage_measured / R2;
+  delay(10);
+  float voltage = analogRead(MUX_OUT_FB) * 15.0 / (float)4095; // voltage_measured = voltage_out
+  // float voltage = analogRead(MUX_OUT_FB);
+  //  voltage divider equation
+  // voltage = (R1 + R2) * voltage / R2;
   return voltage;
 }
