@@ -122,6 +122,7 @@ unsigned long runPreviousMillis = 0;
 bool str_state = false;
 bool fp_state = false;
 bool fan_state = false;
+bool low_battery = false;
 
 void blink()
 {
@@ -190,9 +191,9 @@ void setup()
   // Enable relays
   printDebug("Enabling relays\n");
   relay(true, ENGRD);
-  // relay(true, AUX1RD);
-  // relay(true, CANRD);
-  // relay(true, AUX2RD);
+  relay(true, AUX1RD);
+  relay(true, CANRD);
+  relay(true, AUX2RD);
   relay(true, WTPRD); // TODO: Disable this later
 
   // For testing only
@@ -409,37 +410,38 @@ void loop()
   // }
 
   // read signals from PE3 and turn on related relays
-  // if (pe3fan_v > ANALOG_LOW && fan_state)
-  // {
-  //   relay(false, PE3FANRD);
-  //   fan_state = false;
-  // }
-  // if (pe3fan_v <= ANALOG_LOW && !fan_state)
-  // {
-  //   relay(true, PE3FANRD);
-  //   fan_state = true;
-  // }
-
-  // if (pe3fp_v > ANALOG_LOW && fp_state)
-  // {
-  //   relay(false, PE3FPRD);
-  //   fp_state = false;
-  // }
-  // if (pe3fp_v <= ANALOG_LOW && !fp_state)
-  // {
-  //   relay(true, PE3FPRD);
-  //   fp_state = true;
-  // }
-  // TODO: Switch to push to start
-  if (strin_v < ANALOG_LOW && !str_state)
+  if (pe3fan_v > ANALOG_LOW && fan_state)
   {
-    relay(true, STRRD);
-    str_state = true;
+    relay(false, PE3FANRD);
+    fan_state = false;
   }
+  if (pe3fan_v <= ANALOG_LOW && !fan_state)
+  {
+    relay(true, PE3FANRD);
+    fan_state = true;
+  }
+
+  if (pe3fp_v > ANALOG_LOW && fp_state)
+  {
+    relay(false, PE3FPRD);
+    fp_state = false;
+  }
+  if (pe3fp_v <= ANALOG_LOW && !fp_state)
+  {
+    relay(true, PE3FPRD);
+    fp_state = true;
+  }
+
+  // TODO: Switch to push to start
   if (strin_v >= ANALOG_LOW && str_state)
   {
     relay(false, STRRD);
     str_state = false;
+  }
+  if (strin_v < ANALOG_LOW && !str_state)
+  {
+    relay(true, STRRD);
+    str_state = true;
   }
 
   // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
@@ -457,15 +459,16 @@ void loop()
   // read voltage of battery
   // datasheet says minimum preferred is 8V
   // added 20% factor of safety
-  // if (bat123_v < LOW_VOLTAGE && strin_v > ANALOG_LOW)
-  // {
-  //   Serial.print("Battery voltage too low: ");
-  //   Serial.println(bat123_v);
-  //   for (int i = 0; i < 8; i++)
-  //   {
-  //     relay(false, i);
-  //   }
-  // }
+  if (bat123_v < LOW_VOLTAGE && strin_v > ANALOG_LOW)
+  {
+    Serial.print("Battery voltage too low: ");
+    Serial.println(bat123_v);
+    for (int i = 0; i < 8; i++)
+    {
+      relay(false, i);
+    }
+    low_battery = true;
+  }
 
   // TODO: Send CAN data
   // TODO: Ethrottle protections
@@ -527,6 +530,12 @@ float currSense(int pin)
 // relay (number between 0-7 corresponding to the relay number)
 void relay(bool enable, uint8_t relay)
 {
+  // if battery voltage is too low, stop relays from being reenabled
+  if (low_battery)
+  {
+    return;
+  }
+
   printDebug("Relay: ");
   printDebug(relay);
   printDebug("\tEnable: ");
