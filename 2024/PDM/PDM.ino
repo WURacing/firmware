@@ -88,7 +88,7 @@
 #define BLINK_INTERVAL 1000
 #define VREF 3.3
 #define ADC_RES 4095
-#define RUN_INTERVAL 500
+#define RUN_INTERVAL 50
 
 // Mux voltage divider resistors
 #define R1 3000.0 // ohms
@@ -285,7 +285,7 @@ void loop()
   printDebug("V\tSTR: ");
   printDebug(str_v);
   // printDebug("V\tBat121: ");
-  // printDebug(bat121_v);
+  // printDebug(bat121_v);rela
   printDebug("V\tBat122: ");
   printDebug(bat122_v);
   printDebug("V\tBat123: ");
@@ -431,12 +431,12 @@ void loop()
   //   fp_state = true;
   // }
   // TODO: Switch to push to start
-  if (str_v < ANALOG_LOW && !str_state)
+  if (strin_v < ANALOG_LOW && !str_state)
   {
     relay(true, STRRD);
     str_state = true;
   }
-  if (str_v >= ANALOG_LOW && str_state)
+  if (strin_v >= ANALOG_LOW && str_state)
   {
     relay(false, STRRD);
     str_state = false;
