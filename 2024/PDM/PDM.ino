@@ -83,7 +83,7 @@
 
 #define ACCEPTED_ERROR 15
 #define ANALOG_LOW 0.5
-#define LOW_VOLTAGE 9.6
+#define LOW_VOLTAGE 8.0
 #define LED 13
 #define BLINK_INTERVAL 1000
 #define VREF 3.3
@@ -410,6 +410,7 @@ void loop()
   // }
 
   // read signals from PE3 and turn on related relays
+  Serial.print(fan_state);
   if (pe3fan_v > ANALOG_LOW && fan_state)
   {
     relay(false, PE3FANRD);
@@ -440,7 +441,7 @@ void loop()
   }
   if (strin_v < ANALOG_LOW && !str_state)
   {
-    relay(true, STRRD);
+    // relay(true, STRRD);
     str_state = true;
   }
 
