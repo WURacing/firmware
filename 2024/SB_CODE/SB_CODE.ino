@@ -37,6 +37,7 @@ unsigned long blinkPreviousMillis = 0;
 unsigned long canCurrentMillis = millis();
 unsigned long canPreviousMillis = 0;
 bool LEDState = LOW;
+int test = 0;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
@@ -50,7 +51,6 @@ using namespace admux;
 
 void setup()
 {
-  delay(5000);
   // Pin Definitions
   // Serial.println("setup");
   pinMode(PIN_NEOPIXEL_POWER, OUTPUT);
@@ -86,16 +86,20 @@ void setup()
   // CAN error message
   if (!CAN.begin(BAUD_RATE))
   {
-    // Serial.println("Starting CAN failed!");
+    Serial.println("Starting CAN failed!");
   }
 
   // Accel error message
-  // TODO: Enable this
-  // if (bmx160.begin() != true)
-  // {
-  //   // Serial.println("init false");
-  //   while (1);
-  // }
+  if (bmx160.begin() != true)
+  {
+    Serial.println("init false");
+    while (1)
+      ;
+  }
+  else
+  {
+    Serial.println("init true");
+  }
 }
 
 void loop()
@@ -128,6 +132,8 @@ void loop()
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
+  // Serial.println(accel[0]);
+
   // 9 Sensor Values taken in here (3 seperate arrays)
 
   // each column of average_matrix will accumulate the average value over 10 entries
@@ -140,6 +146,7 @@ void loop()
 
   for (int i = 0; i < 3; i++)
   {
+    // Serial.println("imu data:");
     average_matrix[i + 20] += accel[i];
     average_matrix[i + 23] += gyro[i];
     average_matrix[i + 26] += magn[i];
@@ -157,23 +164,30 @@ void loop()
     {
       average_matrix[i] = average_matrix[i] / 10.0;
       avg_send[i] = (short)average_matrix[i];
+      // Serial.print(i);
+      // Serial.print(": ");
+      // Serial.println(avg_send[20]);
     }
     // Serial.println("asdf2");
 
     // clear average_matrix for next summation. All other arrays don't have to be cleared since they are set using '=' declarations and not '+='
 
     // Send CAN Frame
-    canShortFrame(avg_send, 0, 0x20);
-    canShortFrame(avg_send, 4, 0x21);
-    canShortFrame(avg_send, 8, 0x22);
-    canShortFrame(avg_send, 12, 0x23);
-    canShortFrame(avg_send, 16, 0x24);
-    canShortFrame(avg_send, 20, 0x25);
-    canShortFrame(avg_send, 24, 0x26);
+    canShortFrame(avg_send, 0, 0x10);
+    canShortFrame(avg_send, 4, 0x11);
+    canShortFrame(avg_send, 8, 0x12);
+    canShortFrame(avg_send, 12, 0x13);
+    canShortFrame(avg_send, 16, 0x14);
+    canShortFrame(avg_send, 20, 0x15);
+    canShortFrame(avg_send, 24, 0x16);
 
-    CAN.beginPacket(0x27);
-    // canWriteShort(avg_send[28]);
-    canWriteShort(1001);
+    CAN.beginPacket(0x17);
+    canWriteShort(test++);
+    Serial.println(test);
+    if (test > 65536)
+    {
+      test = 0;
+    }
     CAN.endPacket();
 
     // clear the avg_send and average_matrix arrays
@@ -203,9 +217,9 @@ void mux_update(short *analogs)
 
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 {
-  accel[0] = Oaccel.x;
-  accel[1] = Oaccel.y;
-  accel[2] = Oaccel.z;
+  accel[0] = Oaccel.x * 100;
+  accel[1] = Oaccel.y * 100;
+  accel[2] = Oaccel.z * 100;
 }
 
 // void blink(int r, int g, int b, Adafruit_NeoPixel &strip)
@@ -268,7 +282,8 @@ void canShortFrame(short *send, int i, int Hex)
   CAN.beginPacket(Hex);
   for (int j = i; j < i + 4; j++)
   {
-    canWriteShort(send[i]);
+    canWriteShort(send[j]);
+    // Serial.println(send[i]);
   }
   CAN.endPacket();
 }

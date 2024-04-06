@@ -49,15 +49,15 @@ BO_ 2365583688 PE02: 8 PE3
 
 BO_ 2365583944 PE03: 8 PE3
  SG_ AnalogInput1 : 0|16@1- (0.001,0) [0|5] "volts"  DAQ
- SG_ OilPressure : 16|16@1- (0.025,-12.5) [0|5] "psi"  DAQ
- SG_ GearPosition : 32|16@1- (0.001414,-0.0425) [0|6] "gear"  DAQ
- SG_ FuelPressure : 48|16@1- (0.025,-12.5) [0|100] "psi"  DAQ
+ SG_ AnalogInput2 : 16|16@1- (0.001,0) [0|5] "volts"  DAQ
+ SG_ FuelPressure : 32|16@1- (0.025,-12.5) [0|100] "psi"  DAQ
+ SG_ GearPosition : 48|16@1- (0.001414,-0.0425) [0|6] "gear"  DAQ
 
 BO_ 2365584200 PE04: 8 PE3
- SG_ O2Cond : 0|16@1- (0.0001621,.499) [0|5] "lambda"  DAQ
- SG_ AnalogInput6 : 16|16@1- (0.001,0) [0|5] "volts"  DAQ
+ SG_ AnalogInput5 : 0|16@1- (0.001,.0) [0|5] "volts"  DAQ
+ SG_ OilPressure : 16|16@1- (0.025,-12.5) [0|5] "psi"  DAQ
  SG_ AnalogInput7 : 32|16@1- (0.001,0) [0|5] "volts"  DAQ
- SG_ AnalogInput8 : 48|16@1- (0.001,0) [0|5] "volts"  DAQ
+ SG_ O2Cond :48|16@1- (0.0001621,.499) [0|5] "lambda"  DAQ
 
 BO_ 2365584456 PE05: 8 PE3
  SG_ Frequency1 : 0|16@1- (0.001,0) [0|5] "Hz"  DAQ

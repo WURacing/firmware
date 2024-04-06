@@ -193,7 +193,7 @@ void setup()
   relay(true, CANRD);
   relay(true, AUX2RD);
   relay(true, WTPRD); // TODO: Disable this later
-  // relay(true, PE3FPRD);
+  relay(true, PE3FPRD);
 
   // For testing only
   // relay(true, PE3FPRD);
@@ -422,28 +422,28 @@ void loop()
     fan_state = true;
   }
 
-  if (pe3fp_v > ANALOG_LOW && fp_state)
-  {
-    relay(false, PE3FPRD);
-    fp_state = false;
-  }
-  if (pe3fp_v <= ANALOG_LOW && !fp_state)
-  {
-    relay(true, PE3FPRD);
-    fp_state = true;
-  }
+  // if (pe3fp_v > ANALOG_LOW && fp_state)
+  // {
+  //   relay(false, PE3FPRD);
+  //   fp_state = false;
+  // }
+  // if (pe3fp_v <= ANALOG_LOW && !fp_state)
+  // {
+  //   relay(true, PE3FPRD);
+  //   fp_state = true;
+  // }
 
   // TODO: Switch to push to start
-  if (strin_v >= ANALOG_LOW && str_state)
-  {
-    relay(false, STRRD);
-    str_state = false;
-  }
-  if (strin_v < ANALOG_LOW && !str_state)
-  {
-    relay(true, STRRD);
-    str_state = true;
-  }
+  // if (strin_v >= ANALOG_LOW && str_state)
+  // {
+  //   relay(false, STRRD);
+  //   str_state = false;
+  // }
+  // if (strin_v < ANALOG_LOW && !str_state)
+  // {
+  //   relay(true, STRRD);
+  //   str_state = true;
+  // }
 
   // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
   // get coolant temp from CAN
