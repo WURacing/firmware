@@ -93,16 +93,16 @@ void setup()
   }
 
   // Accel error message
-  if (bmx160.begin() != true)
-  {
-    Serial.println("init false");
-    while (1)
-      ;
-  }
-  else
-  {
-    Serial.println("init true");
-  }
+  // if (bmx160.begin() != true)
+  // {
+  //   Serial.println("init false");
+  //   while (1)
+  //     ;
+  // }
+  // else
+  // {
+  //   Serial.println("init true");
+  // }
 }
 
 void loop()
@@ -212,12 +212,12 @@ void mux_update(short *analogs)
   int data;
   for (byte i = 0; i < 16; i++)
   {
-    data = mux(12);
-    analogs[12] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+    data = mux(11);
+    analogs[11] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
     Serial.print("Channel: ");
-    Serial.print(12);
+    Serial.print(11);
     Serial.print(" Data: ");
-    Serial.print(analogs[12]);
+    Serial.print(analogs[11]);
     Serial.print("\t");
     delay(4);
     // digitalWrite(EN, LOW);
