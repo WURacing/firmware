@@ -1,7 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <CAN.h>
 #include <SPI.h>
-#include <Mux.h>
 #include <DFRobot_BMX160.h>
 
 #include "SB_CODE.h"
@@ -15,6 +14,11 @@
 #define ANLG_VRANGE 3.3
 #define CAN_INTERVAL 1
 #define EN 9
+#define MUX_A0 10
+#define MUX_A1 11
+#define MUX_A2 12
+#define MUX_A3 13
+#define MUX_OUT A4
 
 #define BIT_RESOLUTION 12
 #define BRIGHTNESS 20
@@ -48,8 +52,6 @@ DFRobot_BMX160 bmx160;
 // to make using the mux space easier
 // using namespace admux;
 
-using namespace admux;
-
 void setup()
 {
   // Pin Definitions
@@ -61,6 +63,11 @@ void setup()
   pinMode(A3, INPUT);
   pinMode(A4, INPUT);
   pinMode(EN, OUTPUT);
+  pinMode(MUX_A0, OUTPUT);
+  pinMode(MUX_A1, OUTPUT);
+  pinMode(MUX_A2, OUTPUT);
+  pinMode(MUX_A3, OUTPUT);
+  pinMode(MUX_OUT, INPUT);
   analogReadResolution(BIT_RESOLUTION); // for our board --> bit resolution
 
   Serial.begin(9600);
@@ -71,12 +78,6 @@ void setup()
   strip.clear();
   strip.setBrightness(BRIGHTNESS);
   strip.show();
-
-  // MUX SETUP
-  // A4 is voltage output
-  // 4,5,6,7 are the output identifiers (4 binary codes)
-  // Serial.println("mux");
-  Mux mux(Pin(A4, INPUT, PinType::Analog), Pinset(4, 5, 6, 7));
 
   // CAN SETUP
   // Serial.println("CAN");
@@ -208,16 +209,13 @@ void loop()
 
 void mux_update(short *analogs)
 {
-  Mux mux(Pin(A4, INPUT, PinType::Analog), Pinset(4, 5, 6, 7));
   int data;
-  for (byte i = 0; i < mux.channelCount(); i++)
+  for (byte i = 0; i < 16; i++)
   {
-    digitalWrite(EN, HIGH);
-    mux.channel(12);
-    data = mux.read();
-    analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+    data = mux(12);
+    analogs[12] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
     Serial.print("Channel: ");
-    Serial.print(i);
+    Serial.print(12);
     Serial.print(" Data: ");
     Serial.print(analogs[12]);
     Serial.print("\t");
@@ -299,4 +297,59 @@ void canShortFrame(short *send, int i, int Hex)
     // Serial.println(send[i]);
   }
   CAN.endPacket();
+}
+
+// params:
+// index: number between 0-15 (DOUBLE CHECK)
+float mux(unsigned int index)
+{
+  digitalWrite(EN, HIGH);
+  // Serial.println(index, HEX);
+  // set multiplexer pins
+  if ((index & 0b0001) > 0)
+  {
+    digitalWrite(MUX_A0, HIGH);
+    //   Serial.println("A0 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A0, LOW);
+  }
+
+  if ((index & 0b0010) > 0)
+  {
+    digitalWrite(MUX_A1, HIGH);
+    // Serial.println("A1 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A1, LOW);
+  }
+
+  if ((index & 0b0100) > 0)
+  {
+    digitalWrite(MUX_A2, HIGH);
+    // Serial.println("A2 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A2, LOW);
+  }
+
+  if ((index & 0b1000) > 0)
+  {
+    digitalWrite(MUX_A3, HIGH);
+    // Serial.println("A3 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A3, LOW);
+  }
+
+  delay(1);
+  digitalWrite(EN, LOW);
+  // float voltage = analogRead(MUX_OUT_FB);
+  //  voltage divider equation
+  // voltage = (R1 + R2) * voltage / R2;
+  return analogRead(MUX_OUT);
 }
