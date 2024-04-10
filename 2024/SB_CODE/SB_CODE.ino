@@ -14,6 +14,7 @@
 #define ANLG_RES 4096
 #define ANLG_VRANGE 3.3
 #define CAN_INTERVAL 1
+#define EN 9
 
 #define BIT_RESOLUTION 12
 #define BRIGHTNESS 20
@@ -59,6 +60,7 @@ void setup()
   pinMode(A2, INPUT);
   pinMode(A3, INPUT);
   pinMode(A4, INPUT);
+  pinMode(EN, OUTPUT);
   analogReadResolution(BIT_RESOLUTION); // for our board --> bit resolution
 
   Serial.begin(9600);
@@ -104,6 +106,7 @@ void setup()
 
 void loop()
 {
+  delay(100);
   // inputs are R,G,B
   // Serial.println("blink");
   // blink(200, 0, 100, strip);
@@ -183,7 +186,7 @@ void loop()
 
     CAN.beginPacket(0x17);
     canWriteShort(test++);
-    Serial.println(test);
+    // Serial.println(test);
     if (test > 65536)
     {
       test = 0;
@@ -209,10 +212,20 @@ void mux_update(short *analogs)
   int data;
   for (byte i = 0; i < mux.channelCount(); i++)
   {
-    mux.channel(i);
+    digitalWrite(EN, HIGH);
+    mux.channel(12);
     data = mux.read();
     analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+    Serial.print("Channel: ");
+    Serial.print(i);
+    Serial.print(" Data: ");
+    Serial.print(analogs[12]);
+    Serial.print("\t");
+    delay(4);
+    // digitalWrite(EN, LOW);
   }
+  // Pin 27 -> A11 -> S12
+  Serial.println();
 }
 
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
