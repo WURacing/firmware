@@ -212,15 +212,14 @@ void mux_update(short *analogs)
   int data;
   for (byte i = 0; i < 16; i++)
   {
-    data = mux(11);
-    analogs[11] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+    data = mux(i);
+    analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize
     Serial.print("Channel: ");
-    Serial.print(11);
+    Serial.print(i);
     Serial.print(" Data: ");
-    Serial.print(analogs[11]);
+    Serial.print(analogs[i]);
     Serial.print("\t");
-    delay(4);
-    // digitalWrite(EN, LOW);
+    delay(1);
   }
   // Pin 27 -> A11 -> S12
   Serial.println();

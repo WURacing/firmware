@@ -195,6 +195,10 @@ void setup()
   relay(true, WTPRD); // TODO: Disable this later
   relay(true, PE3FPRD);
 
+  // Disable all other relays
+  relay(false, PE3FANRD);
+  relay(false, STRRD);
+
   // For testing only
   // relay(true, PE3FPRD);
 
@@ -229,22 +233,21 @@ void loop()
 
   // Sense voltage on each pin
   float fan_v = mux(FAN);
-  float eng_v = mux(ENG);
-  float bat122_v = mux(BAT122);
-  float aux1_v = mux(AUX1);
-  float gpio_v = mux(GPIO);
-  float can_v = mux(CAN);
-  float str_v = mux(STR);
-  float bat123_v = mux(BAT123);
-  float fp_v = mux(FP);
-  float pe3_v = mux(PE3);
-  float eth_v = mux(ETH);
-  float aux2_v = mux(AUX2);
-  float strin_v = mux(STRIN);
-  float pe3fp_v = mux(PE3FP);
+  // float eng_v = mux(ENG);
+  // float bat122_v = mux(BAT122);
+  // float aux1_v = mux(AUX1);
+  // float gpio_v = mux(GPIO);
+  // float can_v = mux(CAN);
+  // float str_v = mux(STR);
+  // float bat123_v = mux(BAT123);
+  // float fp_v = mux(FP);
+  // float pe3_v = mux(PE3);
+  // float eth_v = mux(ETH);
+  // float aux2_v = mux(AUX2);
+  // float strin_v = mux(STRIN);
+  // float pe3fp_v = mux(PE3FP);
   float pe3fan_v = mux(PE3FAN);
-  float bat121_v = mux(BAT121);
-
+  // float bat121_v = mux(BAT121);
 
   printDebug("Aux1: ");
   printDebug(aux1_c);
@@ -268,38 +271,38 @@ void loop()
   printDebug(wtp_c);
   printDebug("A\n");
 
-  printDebug("Aux1: ");
-  printDebug(aux1_v);
-  printDebug("V\tAux2: ");
-  printDebug(aux2_v);
-  printDebug("V\tPE3: ");
-  printDebug(pe3_v);
-  printDebug("V\tETH: ");
-  printDebug(eth_v);
-  printDebug("V\tENG: ");
-  printDebug(eng_v);
-  printDebug("V\tFP: ");
-  printDebug(fp_v);
+  // printDebug("Aux1: ");
+  // printDebug(aux1_v);
+  // printDebug("V\tAux2: ");
+  // printDebug(aux2_v);
+  // printDebug("V\tPE3: ");
+  // printDebug(pe3_v);
+  // printDebug("V\tETH: ");
+  // printDebug(eth_v);
+  // printDebug("V\tENG: ");
+  // printDebug(eng_v);
+  // printDebug("V\tFP: ");
+  // printDebug(fp_v);
   printDebug("V\tFAN: ");
   printDebug(fan_v);
-  printDebug("V\tCAN: ");
-  printDebug(can_v);
-  printDebug("V\tSTR: ");
-  printDebug(str_v);
-  printDebug("V\tBat121: ");
-  printDebug(bat121_v);
-  printDebug("V\tBat122: ");
-  printDebug(bat122_v);
-  printDebug("V\tBat123: ");
-  printDebug(bat123_v);
-  printDebug("V\tSTRIN: ");
-  printDebug(strin_v);
-  printDebug("V\tPE3FP: ");
-  printDebug(pe3fp_v);
-  printDebug("V\tPE3FAN: ");
-  printDebug(pe3fan_v);
-  printDebug("V\tGPIO: ");
-  printDebug(gpio_v);
+  // printDebug("V\tCAN: ");
+  // printDebug(can_v);
+  // printDebug("V\tSTR: ");
+  // printDebug(str_v);
+  // printDebug("V\tBat121: ");
+  // printDebug(bat121_v);
+  // printDebug("V\tBat122: ");
+  // printDebug(bat122_v);
+  // printDebug("V\tBat123: ");
+  // printDebug(bat123_v);
+  // printDebug("V\tSTRIN: ");
+  // printDebug(strin_v);
+  // printDebug("V\tPE3FP: ");
+  // printDebug(pe3fp_v);
+  // printDebug("V\tPE3FAN: ");
+  // printDebug(pe3fan_v);
+  // printDebug("V\tGPIO: ");
+  // printDebug(gpio_v);
   printDebug("V\n");
 
   // delay(1000);
@@ -411,16 +414,16 @@ void loop()
   // }
 
   // read signals from PE3 and turn on related relays
-  if (pe3fan_v > ANALOG_LOW && fan_state)
-  {
-    relay(false, PE3FANRD);
-    fan_state = false;
-  }
-  if (pe3fan_v <= ANALOG_LOW && !fan_state)
-  {
-    relay(true, PE3FANRD);
-    fan_state = true;
-  }
+  // if (pe3fan_v > ANALOG_LOW && fan_state)
+  // {
+  //   relay(false, PE3FANRD);
+  //   fan_state = false;
+  // }
+  // if (pe3fan_v <= ANALOG_LOW && !fan_state)
+  // {
+  //   relay(true, PE3FANRD);
+  //   fan_state = true;
+  // }
 
   // if (pe3fp_v > ANALOG_LOW && fp_state)
   // {
@@ -618,7 +621,7 @@ float mux(unsigned int index)
   }
 
   delay(1);
-  float voltage = analogRead(MUX_OUT_FB) * 15.0 / (float)4095; // voltage_measured = voltage_out
+  float voltage = analogRead(MUX_OUT_FB) * 12.0 / (float)4095; // voltage_measured = voltage_out
   digitalWrite(EN, LOW);
   // float voltage = analogRead(MUX_OUT_FB);
   //  voltage divider equation
