@@ -35,7 +35,7 @@ double average_matrix[29];
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
 #define ANLG_RES 4096
-#define ANLG_VRANGE 3.3
+#define ANLG_VRANGE 5
 
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
@@ -347,7 +347,7 @@ float mux(unsigned int index)
   }
 
   delay(1);
-  digitalWrite(EN, LOW);
+  // digitalWrite(EN, LOW);
   // float voltage = analogRead(MUX_OUT_FB);
   //  voltage divider equation
   // voltage = (R1 + R2) * voltage / R2;
