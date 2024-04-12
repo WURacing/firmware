@@ -94,7 +94,7 @@
 #define R1 3000.0 // ohms
 #define R2 840.0  // ohms
 
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define printDebug(message) Serial.print(message)
 #else
@@ -232,7 +232,7 @@ void loop()
   float str_c = currSense(STRF_PIN);
 
   // Sense voltage on each pin
-  float fan_v = mux(FAN);
+  // float fan_v = mux(FAN);
   // float eng_v = mux(ENG);
   // float bat122_v = mux(BAT122);
   // float aux1_v = mux(AUX1);
@@ -246,7 +246,7 @@ void loop()
   // float aux2_v = mux(AUX2);
   // float strin_v = mux(STRIN);
   // float pe3fp_v = mux(PE3FP);
-  float pe3fan_v = mux(PE3FAN);
+  // float pe3fan_v = mux(PE3FAN);
   // float bat121_v = mux(BAT121);
 
   printDebug("Aux1: ");
@@ -283,8 +283,8 @@ void loop()
   // printDebug(eng_v);
   // printDebug("V\tFP: ");
   // printDebug(fp_v);
-  printDebug("V\tFAN: ");
-  printDebug(fan_v);
+  // printDebug("V\tFAN: ");
+  // printDebug(fan_v);
   // printDebug("V\tCAN: ");
   // printDebug(can_v);
   // printDebug("V\tSTR: ");
@@ -303,7 +303,7 @@ void loop()
   // printDebug(pe3fan_v);
   // printDebug("V\tGPIO: ");
   // printDebug(gpio_v);
-  printDebug("V\n");
+  // printDebug("V\n");
 
   // delay(1000);
 
