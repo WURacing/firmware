@@ -6,6 +6,13 @@
 #include "SB_CODE.h"
 // #include "GoblinMode.h"
 
+// #define DEBUG
+#ifdef DEBUG
+#define printDebug(message) Serial.print(message)
+#else
+#define printDebug(message)
+#endif
+
 #define LEDPIN 8
 #define LED 13
 #define BLINK_INTERVAL 1000
@@ -93,16 +100,16 @@ void setup()
   }
 
   // Accel error message
-  // if (bmx160.begin() != true)
-  // {
-  //   Serial.println("init false");
-  //   while (1)
-  //     ;
-  // }
-  // else
-  // {
-  //   Serial.println("init true");
-  // }
+  if (bmx160.begin() != true)
+  {
+    Serial.println("init false");
+    while (1)
+      ;
+  }
+  else
+  {
+    Serial.println("init true");
+  }
 }
 
 void loop()
@@ -214,15 +221,15 @@ void mux_update(short *analogs)
   {
     data = mux(i);
     analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize
-    Serial.print("Channel: ");
-    Serial.print(i);
-    Serial.print(" Data: ");
-    Serial.print(analogs[i]);
-    Serial.print("\t");
+    printDebug("Channel: ");
+    printDebug(i);
+    printDebug(" Data: ");
+    printDebug(analogs[i]);
+    printDebug("\t");
     delay(1);
   }
   // Pin 27 -> A11 -> S12
-  Serial.println();
+  printDebug('\n');
 }
 
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
