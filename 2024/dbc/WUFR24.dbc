@@ -20,7 +20,7 @@ BO_ 18 FSBAnlg3: 8 FSB
  SG_ FAnlg9 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FAnlg10 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FAnlg11 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg12 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ Pitot : 48|16@1+ (0.000045,-0.0227) [0|0.2023] "PSI" DAQ
 
 BO_ 19 FSBAnlg4: 8 FSB
  SG_ FAnlg13 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
