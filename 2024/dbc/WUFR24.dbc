@@ -5,34 +5,34 @@ BS_: 1000000 : 0,0
 BU_: FSB DAQ RSB CTRLB
 
 BO_ 16 FSBAnlg1: 8 FSB
- SG_ FAnlg1 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg2 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg3 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg4 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg0 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg1 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg2 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg3 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 17 FSBAnlg2: 8 FSB
- SG_ FAnlg5 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg6 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg7 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg8 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg4 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg5 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg6 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg7 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 18 FSBAnlg3: 8 FSB
- SG_ FAnlg9 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg10 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg11 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ Pitot : 48|16@1+ (0.000045,-0.0227) [0|0.2023] "PSI" DAQ
+ SG_ FAnlg8 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg9 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg10 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg11 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 19 FSBAnlg4: 8 FSB
- SG_ FAnlg13 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg14 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg15 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg16 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg12 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg13 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg14 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg15 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 20 FSBAnlg5: 8 FSB
- SG_ FAnlg17 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg18 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg19 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ FAnlg20 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg16 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg17 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg18 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg19 : 48|16@1+ (1,0) [0|30000] "#" DAQ
 
 BO_ 21 FSBAnlg6: 8 FSB
  SG_ AccX : 0|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ

@@ -6,7 +6,7 @@
 #include "SB_CODE.h"
 // #include "GoblinMode.h"
 
-// #define DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define printDebug(message) Serial.print(message)
 #else
@@ -18,7 +18,6 @@
 #define BLINK_INTERVAL 1000
 #define BAUD_RATE 1000000
 #define ANLG_RES 4096
-#define ANLG_VRANGE 3.3
 #define CAN_INTERVAL 1
 #define EN 9
 #define MUX_A0 10
@@ -286,6 +285,11 @@ void readAnalogsMan(short *analogs)
   analogs[17] = (analogRead(A1) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
   analogs[18] = (analogRead(A2) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
   analogs[19] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  printDebug("Channel: ");
+  printDebug(19);
+  printDebug(" Data: ");
+  printDebug(analogs[19]);
+  printDebug("\t");
 }
 
 void canWriteShort(short data)
