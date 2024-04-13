@@ -227,6 +227,38 @@ void loop()
   float wtp_c = currSense(WTPF_PIN);
   float str_c = currSense(STRF_PIN);
 
+  if (aux1_c > 10 || aux1_c < 0){
+    Serial.print("WARNING: aux1 current is " + aux1_c);
+  }
+  if (aux2_c > 10 || aux2_c < 0){
+    Serial.print("WARNING: pe3 current is " + pe3_c);
+  }
+  if (pe3_c > 2 || pe3_c < 0){
+    Serial.print("WARNING: aux2 current is " + aux2_c);
+  }
+  if (eth_c > 10 || eth_c < 0){
+    Serial.print("WARNING: ethrottle current is " + eth_c);
+  }
+  if (eng_c > 2 || eng_c < 0){
+    Serial.print("WARNING: engine current is " + eng_c);
+  }
+  if (fp_c > 7 || fp_c < 0){
+    Serial.print("WARNING: fuel pump current is " + fp_c);
+  }
+  if (fan_c > 12 || fan_c < 0){
+    Serial.print("WARNING: fan current is " + fan_c);
+  }
+  if (can_c > 5 || can_c < 0){
+    Serial.print("WARNING: CAN current is " + can_c);
+  }
+  if (wtp_c > 5 || wtp_c < 0){
+    Serial.print("WARNING: water pump current is " + wtp_c);
+  }
+  if (str_c > 1 || str_c < 0){
+    Serial.print("WARNING: starter current is " + str_c);
+  }
+
+
   // Sense voltage on each pin
   float fan_v = mux(FAN);
   float eng_v = mux(ENG);
