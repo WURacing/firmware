@@ -82,7 +82,7 @@
 #define AUX2F_LIMIT 15
 
 #define ACCEPTED_ERROR 15
-#define ANALOG_LOW 0.5
+#define ANALOG_LOW 7.7
 #define LOW_VOLTAGE 8.0
 #define LED 13
 #define BLINK_INTERVAL 1000
@@ -197,7 +197,7 @@ void setup()
   // Disable all other relays
   relay(false, PE3FANRD);
   relay(false, STRRD);
-  relay(true, PE3FPRD);
+  relay(false, PE3FPRD);
 
   runPreviousMillis = millis();
 }
@@ -258,7 +258,6 @@ void loop()
   // if (str_c > 1 || str_c < 0){
   //   Serial.print("WARNING: starter current is " + str_c);
   // }
-
 
   // Sense voltage on each pin
   float fan_v = mux(FAN);
@@ -443,6 +442,13 @@ void loop()
   // }
 
   // read signals from PE3 and turn on related relays
+  printDebug("Fan State: ");
+  printDebug(fan_state);
+  printDebug("\tFP State: ");
+  printDebug(fp_state);
+  printDebug("\tSTR State: ");
+  printDebug(str_state);
+  printDebug("\n");
   if (pe3fan_v > ANALOG_LOW && fan_state)
   {
     relay(false, PE3FANRD);
@@ -492,16 +498,16 @@ void loop()
   // read voltage of battery
   // datasheet says minimum preferred is 8V
   // added 20% factor of safety
-  if (bat123_v < LOW_VOLTAGE && strin_v > ANALOG_LOW)
-  {
-    Serial.print("Battery voltage too low: ");
-    Serial.println(bat123_v);
-    for (int i = 0; i < 8; i++)
-    {
-      relay(false, i);
-    }
-    low_battery = true;
-  }
+  // if (bat123_v < LOW_VOLTAGE && strin_v > ANALOG_LOW)
+  // {
+  //   Serial.print("Battery voltage too low: ");
+  //   Serial.println(bat123_v);
+  //   for (int i = 0; i < 8; i++)
+  //   {
+  //     relay(false, i);
+  //   }
+  //   low_battery = true;
+  // }
 
   // TODO: Send CAN data
   // TODO: Ethrottle protections
