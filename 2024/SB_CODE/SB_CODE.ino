@@ -18,7 +18,7 @@
 #define BLINK_INTERVAL 1000
 #define BAUD_RATE 1000000
 #define ANLG_RES 4096
-#define CAN_INTERVAL 1
+#define SAMPLE_INTERVAL 10
 #define EN 9
 #define MUX_A0 10
 #define MUX_A1 11
@@ -45,10 +45,9 @@ double average_matrix[29];
 
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
-unsigned long canCurrentMillis = millis();
-unsigned long canPreviousMillis = 0;
 bool LEDState = LOW;
 int test = 0;
+unsigned long current_millis = millis();
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
@@ -109,11 +108,16 @@ void setup()
   {
     Serial.println("init true");
   }
+  current_millis = millis();
 }
 
 void loop()
 {
-  delay(100);
+  // Wait for the next sample interval
+  while (millis() - current_millis < SAMPLE_INTERVAL)
+  {
+  }
+  current_millis = millis();
   // inputs are R,G,B
   // Serial.println("blink");
   // blink(200, 0, 100, strip);
@@ -215,11 +219,11 @@ void loop()
 
 void mux_update(short *analogs)
 {
-  int data;
+  unsigned short data;
   for (byte i = 0; i < 16; i++)
   {
     data = mux(i);
-    analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize
+    analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize with weird voltage drop
     printDebug("Channel: ");
     printDebug(i);
     printDebug(" Data: ");
@@ -311,7 +315,7 @@ void canShortFrame(short *send, int i, int Hex)
 
 // params:
 // index: number between 0-15 (DOUBLE CHECK)
-float mux(unsigned int index)
+unsigned short mux(unsigned int index)
 {
   digitalWrite(EN, HIGH);
   // Serial.println(index, HEX);
@@ -357,9 +361,7 @@ float mux(unsigned int index)
   }
 
   delay(1);
-  // digitalWrite(EN, LOW);
-  // float voltage = analogRead(MUX_OUT_FB);
-  //  voltage divider equation
-  // voltage = (R1 + R2) * voltage / R2;
-  return analogRead(MUX_OUT);
+  unsigned short reading = analogRead(MUX_OUT);
+  digitalWrite(EN, LOW);
+  return reading;
 }
