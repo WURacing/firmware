@@ -43,7 +43,7 @@
 #define ETHF_PIN 0b0000
 #define FPF_PIN 0b0001
 #define PE3F_PIN 0b0010
-#define FANF_PIN 0b0100
+#define FANF_PIN 0b0100 
 #define ENGF_PIN 0b0101
 #define CANF_PIN 0b0110
 #define AUX1F_PIN 0b0111
@@ -82,7 +82,7 @@
 #define AUX2F_LIMIT 15
 
 #define ACCEPTED_ERROR 15
-#define ANALOG_LOW 3.5
+#define ANALOG_LOW 5.0
 #define LOW_VOLTAGE 8.0
 #define LED 13
 #define BLINK_INTERVAL 1000
@@ -119,28 +119,10 @@ unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 unsigned long runPreviousMillis = 0;
 
-bool str_state = false;
+bool str_state = true;
 bool fp_state = false;
 bool fan_state = false;
 bool low_battery = false;
-
-void blink()
-{
-  blinkCurrentMillis = millis();
-  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL)
-  {
-    blinkPreviousMillis = blinkCurrentMillis;
-    if (ledState == LOW)
-    {
-      ledState = HIGH;
-    }
-    else
-    {
-      ledState = LOW;
-    }
-    digitalWrite(LED, ledState);
-  }
-}
 
 void setup()
 {
@@ -184,27 +166,45 @@ void setup()
   //   Serial.printfln("Starting CAN failed");
   // }
 
-  delay(5000); // TODO: Remove or minimize this later
+
+  // decouple input mapping pins 0 and 1 from outputs 2 and 3
+  digitalWrite(RD_CS, HIGH);
+  SPI.beginTransaction(SPISettings(SPI_SPEED_FEATHER, MSBFIRST, SPI_MODE3));
+  digitalWrite(RD_CS, LOW);
+  SPI.transfer16(0b1000010000000000);
+  digitalWrite(RD_CS, HIGH);
+  delay(1);
+  digitalWrite(RD_CS, LOW);
+  SPI.transfer16(0b1000010100000000);
+  digitalWrite(RD_CS, HIGH);
+  SPI.endTransaction();
+
+  // Disable relays
+  relay(false, ENGRD); // good
+  relay(false, AUX1RD); // good
+  relay(false, CANRD); // good
+  relay(false, AUX2RD); // good
+  relay(false, WTPRD); // good
+  relay(false, PE3FPRD); // good
+  relay(false, STRRD); // good
+  relay(false, PE3FANRD); // good
 
   // Enable relays
-  printDebug("Enabling relays\n");
-  relay(true, ENGRD);
-  relay(true, AUX1RD);
-  relay(true, CANRD);
-  relay(true, AUX2RD);
-  relay(true, WTPRD); // TODO: Disable this later
-  // relay(true, PE3FPRD);
+  relay(true, ENGRD); // good
+  relay(true, AUX1RD); // good
+  relay(true, CANRD); // good
+  relay(false, AUX2RD); // good
 
-  // For testing only
-  // relay(true, PE3FPRD);
+
+  delay(1000); // TODO: Remove or minimize this later
+
+
 
   runPreviousMillis = millis();
 }
 
 void loop()
 {
-
-  // blink();
 
   if (millis() - runPreviousMillis < RUN_INTERVAL)
   {
@@ -334,8 +334,6 @@ void loop()
   printDebug(gpio_v);
   printDebug("V\n");
 
-  // delay(1000);
-
   // if (aux1_c > AUX1F_LIMIT)
   // {
   //   aux1_error += aux1_c - AUX1F_LIMIT;
@@ -442,15 +440,17 @@ void loop()
   //   relay(false, STRRD);
   // }
 
-  // read signals from PE3 and turn on related relays
+  // //read signals from PE3 and turn on related relays
   if (pe3fan_v > ANALOG_LOW && fan_state)
   {
     relay(false, PE3FANRD);
+    relay(false, WTPRD);
     fan_state = false;
   }
   if (pe3fan_v <= ANALOG_LOW && !fan_state)
   {
     relay(true, PE3FANRD);
+    relay(true, WTPRD);
     fan_state = true;
   }
 
@@ -465,7 +465,7 @@ void loop()
     fp_state = true;
   }
 
-  // TODO: Switch to push to start
+  // // TODO: Switch to push to start
   if (strin_v >= ANALOG_LOW && str_state)
   {
     relay(false, STRRD);
@@ -476,6 +476,7 @@ void loop()
     relay(true, STRRD);
     str_state = true;
   }
+
 
   // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
   // get coolant temp from CAN
@@ -564,10 +565,10 @@ float currSense(int pin)
 void relay(bool enable, uint8_t relay)
 {
   // if battery voltage is too low, stop relays from being reenabled
-  if (low_battery)
-  {
-    return;
-  }
+  // if (low_battery)
+  // {
+  //   return;
+  // }
 
   printDebug("Relay: ");
   printDebug(relay);
@@ -595,7 +596,6 @@ void relay(bool enable, uint8_t relay)
     command_data = disabled | relaybit; // enable relay bit
   }
 
-  // enable/disable relay
   uint16_t mesg = 0b1000000000000000 | command_data; // put command data in message
   SPI.transfer16(mesg);
   digitalWrite(RD_CS, HIGH);
@@ -649,11 +649,15 @@ float mux(unsigned int index)
     digitalWrite(MUX_A3, LOW);
   }
 
-  delay(1);
-  float voltage = analogRead(MUX_OUT_FB) * 15.0 / (float)4095; // voltage_measured = voltage_out
+  float voltage = analogRead(MUX_OUT_FB)*0.0039; //* 3.3 * 4.84  / (float)4095;
   digitalWrite(EN, LOW);
+  digitalWrite(MUX_A0, LOW);
+  digitalWrite(MUX_A1, LOW);
+  digitalWrite(MUX_A2, LOW);
+  digitalWrite(MUX_A3, LOW);
   // float voltage = analogRead(MUX_OUT_FB);
   //  voltage divider equation
-  // voltage = (R1 + R2) * voltage / R2;
+  //voltage = (2700 + 840) * voltage / 840;
+
   return voltage;
 }
