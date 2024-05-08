@@ -184,20 +184,26 @@ void setup()
   relay(false, AUX1RD); // good
   relay(false, CANRD); // good
   relay(false, AUX2RD); // good
-  relay(false, WTPRD); // good
+  // relay(false, WTPRD); // good
   relay(false, PE3FPRD); // good
   relay(false, STRRD); // good
   relay(false, PE3FANRD); // good
 
   // Enable relays
-  relay(true, ENGRD); // good
-  relay(true, AUX1RD); // good
-  relay(true, CANRD); // good
+  printDebug("Enabling relays\n");
+  relay(true, ENGRD);
+  relay(true, AUX1RD);
+  relay(true, CANRD);
+  relay(true, AUX2RD);
+  relay(true, WTPRD); // TODO: Disable this later
+
+  // Disable all other relays
+  relay(false, PE3FANRD);
+  relay(false, STRRD);
+  relay(false, PE3FPRD);
   relay(false, AUX2RD); // good
 
-
   delay(1000); // TODO: Remove or minimize this later
-
 
 
   runPreviousMillis = millis();
@@ -258,7 +264,6 @@ void loop()
   //   Serial.print("WARNING: starter current is " + str_c);
   // }
 
-
   // Sense voltage on each pin
   float fan_v = mux(FAN);
   float eng_v = mux(ENG);
@@ -276,7 +281,6 @@ void loop()
   float pe3fp_v = mux(PE3FP);
   float pe3fan_v = mux(PE3FAN);
   float bat121_v = mux(BAT121);
-
 
   printDebug("Aux1: ");
   printDebug(aux1_c);
@@ -440,17 +444,24 @@ void loop()
   //   relay(false, STRRD);
   // }
 
-  // //read signals from PE3 and turn on related relays
+  // read signals from PE3 and turn on related relays
+  printDebug("Fan State: ");
+  printDebug(fan_state);
+  printDebug("\tFP State: ");
+  printDebug(fp_state);
+  printDebug("\tSTR State: ");
+  printDebug(str_state);
+  printDebug("\n");
   if (pe3fan_v > ANALOG_LOW && fan_state)
   {
     relay(false, PE3FANRD);
-    relay(false, WTPRD);
+    // relay(false, WTPRD);
     fan_state = false;
   }
   if (pe3fan_v <= ANALOG_LOW && !fan_state)
   {
     relay(true, PE3FANRD);
-    relay(true, WTPRD);
+    // relay(true, WTPRD);
     fan_state = true;
   }
 
