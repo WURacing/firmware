@@ -184,7 +184,7 @@ void setup()
   relay(false, AUX1RD); // good
   relay(false, CANRD); // good
   relay(false, AUX2RD); // good
-  relay(false, WTPRD); // good
+  // relay(false, WTPRD); // good
   relay(false, PE3FPRD); // good
   relay(false, STRRD); // good
   relay(false, PE3FANRD); // good
@@ -455,13 +455,13 @@ void loop()
   if (pe3fan_v > ANALOG_LOW && fan_state)
   {
     relay(false, PE3FANRD);
-    relay(false, WTPRD);
+    // relay(false, WTPRD);
     fan_state = false;
   }
   if (pe3fan_v <= ANALOG_LOW && !fan_state)
   {
     relay(true, PE3FANRD);
-    relay(true, WTPRD);
+    // relay(true, WTPRD);
     fan_state = true;
   }
 

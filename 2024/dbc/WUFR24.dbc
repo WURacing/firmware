@@ -49,10 +49,56 @@ BO_ 22 FSBAnlg7: 8 FSB
 BO_ 23 FSBAnlg8: 8 FSB
  SG_ MagZ : 0|16@1+ (0.01,0) [-3276|3276] "#" DAQ
 
+BO_ 32 FSBAnlg1: 8 RSB
+ SG_ FAnlg0 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg1 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg2 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg3 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 33 FSBAnlg2: 8 RSB
+ SG_ FAnlg4 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg5 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg6 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg7 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 34 FSBAnlg3: 8 RSB
+ SG_ FAnlg8 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg9 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg10 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg11 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 35 FSBAnlg4: 8 RSB
+ SG_ FAnlg12 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg13 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg14 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg15 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 36 FSBAnlg5: 8 RSB
+ SG_ FAnlg16 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg17 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg18 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg19 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 37 FSBAnlg6: 8 RSB
+ SG_ AccX : 0|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ AccY : 16|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ AccZ : 32|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ GyroX : 48|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+
+BO_ 38 FSBAnlg7: 8 RSB
+ SG_ GyroY : 0|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+ SG_ GyroZ : 16|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+ SG_ MagX : 32|16@1- (0.01,0) [-3276|3276] "#" DAQ
+ SG_ MagY : 48|16@1- (0.01,0) [-3276|3276] "#" DAQ
+
+BO_ 39 FSBAnlg8: 8 RSB
+ SG_ MagZ : 0|16@1+ (0.01,0) [-3276|3276] "#" DAQ
+
 BO_ 49 CTRLBrd: 1 CTRLB
  SG_ DRS : 0|1@1+ (1,0) [0|1] "Open:1/Close:0" DAQ
  SG_ ClutchPosition : 8|8@1+ (1,0) [0|360] "Deg" DAQ
 
+CM_ BU_ FSB "Front sensor board";
 CM_ BU_ RSB "Rear sensor board";
 CM_ BU_ CTRLB "Control board";
 BA_DEF_DEF_  "GenMsgCycleTime" 100;
