@@ -13,6 +13,7 @@
 #define printDebug(message)
 #endif
 
+//Initializations
 #define LEDPIN 8
 #define LED 13
 #define BLINK_INTERVAL 1000
@@ -32,6 +33,7 @@
 
 unsigned long datacount = 0;
 
+//Data storage mechanism
 short analogs[20];
 short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
@@ -43,24 +45,23 @@ double average_matrix[29];
 #define ANLG_RES 4096
 #define ANLG_VRANGE 5
 
+//Delta Time Loop Setup
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 bool LEDState = LOW;
 int test = 0;
 unsigned long current_millis = millis();
 
+
+//LED Setup
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
 // accel/gyro sensor definition
 DFRobot_BMX160 bmx160;
 
-// to make using the mux space easier
-// using namespace admux;
-
 void setup()
 {
   // Pin Definitions
-  // Serial.println("setup");
   pinMode(PIN_NEOPIXEL_POWER, OUTPUT);
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
@@ -78,14 +79,12 @@ void setup()
   Serial.begin(9600);
 
   // LED SETUP
-  // Serial.println("led");
   strip.begin();
   strip.clear();
   strip.setBrightness(BRIGHTNESS);
   strip.show();
 
   // CAN SETUP
-  // Serial.println("CAN");
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
@@ -118,49 +117,34 @@ void loop()
   {
   }
   current_millis = millis();
-  // inputs are R,G,B
-  // Serial.println("blink");
-  // blink(200, 0, 100, strip);
-  // blink();
-
-  // MUX Update
-  // Serial.println("mux update");
+ 
+ //Oscillate through all 16 multiplexer channels
   mux_update(analogs);
 
-  // Manual Data (The hard wired Analog Inputs)
-  // Serial.println("read analogs");
+  //Add in the extra 4 analog channels
   readAnalogsMan(analogs);
 
-  // New Sensor Event
   // Taking in Accel, Gyro, Magnetometer results
   sBmx160SensorData_t Omagn, Ogyro, Oaccel;
-  // these are all objects with x,y,z attributes
-  // we source this from the attached library
 
-  // Serial.println("get imu");
+
+
   bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
 
   // updating accel, gyro, magn arrays
-  // Serial.println("update imu");
   accel_update(accel, Oaccel);
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
-
-  // Serial.println(accel[0]);
-
-  // 9 Sensor Values taken in here (3 seperate arrays)
-
+  
   // each column of average_matrix will accumulate the average value over 10 entries
-
-  // Serial.println("averaging");
   for (int i = 0; i < 20; i++)
   {
     average_matrix[i] += analogs[i];
   }
 
+  //Accelerometer on SB data
   for (int i = 0; i < 3; i++)
-  {
-    // Serial.println("imu data:");
+  { 
     average_matrix[i + 20] += accel[i];
     average_matrix[i + 23] += gyro[i];
     average_matrix[i + 26] += magn[i];
@@ -168,24 +152,16 @@ void loop()
 
   short avg_send[29];
 
-  // Serial.println("data");
+  //Average out the matrices used and convert to short for CAN
   if (datacount % 10)
   {
-    // Serial.println("asdf");
-    // divide by averaging sampling size
-    // convert to short for CAN frame
     for (int i = 0; i < 29; i++)
     {
       average_matrix[i] = average_matrix[i] / 10.0;
       avg_send[i] = (short)average_matrix[i];
-      // Serial.print(i);
-      // Serial.print(": ");
-      // Serial.println(avg_send[20]);
     }
-    // Serial.println("asdf2");
 
-    // clear average_matrix for next summation. All other arrays don't have to be cleared since they are set using '=' declarations and not '+='
-
+  
     // Send CAN Frame
     canShortFrame(avg_send, 0, 0x10);
     canShortFrame(avg_send, 4, 0x11);
@@ -197,26 +173,24 @@ void loop()
 
     CAN.beginPacket(0x17);
     canWriteShort(test++);
-    // Serial.println(test);
     if (test > 65536)
     {
       test = 0;
     }
     CAN.endPacket();
 
-    // clear the avg_send and average_matrix arrays
-    // Serial.println("asdf3");
+    // clear the avg_send and average_matrix arrays of all previous values
     for (int i = 0; i < 29; i++)
     {
       avg_send[i] = 0;
       average_matrix[i] = 0;
     }
-    // Serial.println("asdf4");
   }
 
   ++datacount;
 }
 
+//Oscillate through all mux values and add to matrix
 void mux_update(short *analogs)
 {
   unsigned short data;
@@ -234,7 +208,7 @@ void mux_update(short *analogs)
   // Pin 27 -> A11 -> S12
   printDebug('\n');
 }
-
+//Add 3 dimensions of accel, gyro, magn to matrix
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 {
   accel[0] = Oaccel.x * 100;
@@ -242,28 +216,6 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[2] = Oaccel.z * 100;
 }
 
-// void blink(int r, int g, int b, Adafruit_NeoPixel &strip)
-// {
-//   blinkCurrentMillis = millis();
-//   if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL)
-//   {
-//     blinkPreviousMillis = blinkCurrentMillis;
-//     if (LEDState == LOW)
-//     {
-//       Serial.println("high");
-//       LEDState = HIGH;
-//       strip.setPixelColor(0, r, g, b);
-//       strip.show();
-//     }
-//     else
-//     {
-//       Serial.println("low");
-//       LEDState = LOW;
-//       strip.clear();
-//       strip.show();
-//     }
-//   }
-// }
 
 void blink()
 {
@@ -283,6 +235,7 @@ void blink()
   }
 }
 
+//Read in the analog inputs not on the mux
 void readAnalogsMan(short *analogs)
 {
   analogs[16] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
@@ -296,29 +249,28 @@ void readAnalogsMan(short *analogs)
   printDebug("\t");
 }
 
+//Writing a short to CAN
 void canWriteShort(short data)
 {
   CAN.write(data & 0xFF);
   CAN.write(data >> 8);
 }
-
+//Writing a frame full of shorts to CAN
 void canShortFrame(short *send, int i, int Hex)
 {
   CAN.beginPacket(Hex);
   for (int j = i; j < i + 4; j++)
   {
     canWriteShort(send[j]);
-    // Serial.println(send[i]);
   }
   CAN.endPacket();
 }
 
-// params:
-// index: number between 0-15 (DOUBLE CHECK)
-unsigned short mux(unsigned int index)
+  // params:
+  // index: number between 0-15 on the mux
+ unsigned short mux(unsigned int index)
 {
   digitalWrite(EN, HIGH);
-  // Serial.println(index, HEX);
   // set multiplexer pins
   if ((index & 0b0001) > 0)
   {

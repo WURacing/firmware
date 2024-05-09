@@ -1,8 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# def filter(data):
-#     for i in range(len(data)):
 
 
 # Read the CSV file
@@ -36,8 +34,6 @@ df_filtered['FAnlg19'] = df_filtered['FAnlg19'] * 2.23694
 # Plot FAnlg19 over Time
 plt.plot(df['Time'], df['FAnlg19'],
          df_filtered['Time'], df_filtered['FAnlg19'])
-# plt.plot(df_filtered['Time'], df_filtered['FAnlg19'])
-# plt.scatter(df['Time'], df['FAnlg19'])
 
 
 # Set the labels and title
