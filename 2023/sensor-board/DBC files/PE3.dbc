@@ -38,12 +38,12 @@ BU_: DAQ PE3
 BO_ 2365583432 PE01: 8 PE3
  SG_ EngineSpeed : 0|16@1+ (1,0) [0|30000] "rpm"  DAQ
  SG_ ThrottlePosition : 16|16@1- (0.1,0) [0|100] "%"  DAQ
- SG_ FuelOpenTime : 32|16@1- (0.1,0) [0|30] "volts"  DAQ
+ SG_ FuelOpenTime : 32|16@1- (0.1,0) [0|30] "ms"  DAQ
  SG_ IgnitionAngle : 48|16@1- (0.1,0) [-20|100] "deg"  DAQ
 
 BO_ 2365583688 PE02: 8 PE3
- SG_ Barometer : 0|16@1- (0.01,0) [0|300] "psi"  DAQ
- SG_ MAP : 16|16@1- (0.01,0) [0|300] "psi"  DAQ
+ SG_ Barometer : 0|16@1- (0.01,0) [0|300] "kPa"  DAQ
+ SG_ MAP : 16|16@1- (0.01,0) [0|300] "kPa"  DAQ
  SG_ Lambda : 32|16@1- (0.01,0) [0|10] "lambda"  DAQ
  SG_ PressureType : 48|1@1+ (1,0) [0|1] "0-psi,1-kPa"  DAQ
 
