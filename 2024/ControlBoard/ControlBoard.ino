@@ -231,12 +231,12 @@ void loop()
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    downshift(PULSE * 0.5);
+    downshift(PULSE * 0.125);
   }
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    upshift(PULSE * 0.5);
+    upshift(PULSE * 0.125);
   }
   if (downData == 0 && upData == 0)
   {
@@ -253,8 +253,30 @@ void loop()
   {
     runCount = 0;
     double averagedPosition = (sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE);
-    positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
-    positionCommanded = max(positionCommanded, 0);
+    // positionCommand
+    // ed = (-180 / 0.9)  * averagedPosition + 200;
+    // positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
+    // positionCommanded = max(positionCommanded, 26);
+
+    if (averagedPosition < 0.145)
+    {
+      positionCommanded = 165;
+    }
+    else if (averagedPosition > 0.955)
+    {
+      positionCommanded = 26;
+    }
+    else
+    {
+      // positionCommanded = -12.3457 * averagedPosition + 121.79;
+      // positionCommanded = -18.5185 * averagedPosition + 127.685;
+      positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 136.64;
+    }
+
+    Serial.print("Clutch paddle: ");
+    Serial.print(averagedPosition);
+    Serial.print("\tClutch position: ");
+    Serial.println(positionCommanded);
   }
 
   setClutchPosition(positionCommanded);
