@@ -190,15 +190,12 @@ void setup()
   relay(false, PE3FANRD); // good
 
   // Enable relays
+  printDebug("Enabling relays\n");
   relay(true, ENGRD); // good
   relay(true, AUX1RD); // good
   relay(true, CANRD); // good
-  relay(false, AUX2RD); // good
-
 
   delay(1000); // TODO: Remove or minimize this later
-
-
 
   runPreviousMillis = millis();
 }
@@ -226,6 +223,8 @@ void loop()
   float can_c = currSense(CANF_PIN);
   float wtp_c = currSense(WTPF_PIN);
   float str_c = currSense(STRF_PIN);
+
+  //Useful for PDM current debugging
 
   // if (aux1_c > 10 || aux1_c < 0){
   //   Serial.print("WARNING: aux1 current is " + aux1_c);
@@ -258,7 +257,6 @@ void loop()
   //   Serial.print("WARNING: starter current is " + str_c);
   // }
 
-
   // Sense voltage on each pin
   float fan_v = mux(FAN);
   float eng_v = mux(ENG);
@@ -276,7 +274,6 @@ void loop()
   float pe3fp_v = mux(PE3FP);
   float pe3fan_v = mux(PE3FAN);
   float bat121_v = mux(BAT121);
-
 
   printDebug("Aux1: ");
   printDebug(aux1_c);
@@ -440,7 +437,17 @@ void loop()
   //   relay(false, STRRD);
   // }
 
-  // //read signals from PE3 and turn on related relays
+  // //read signals from PE3 and turn on related relays  
+
+  // read signals from PE3 and turn on related relays
+  printDebug("Fan State: ");
+  printDebug(fan_state);
+  printDebug("\tFP State: ");
+  printDebug(fp_state);
+  printDebug("\tSTR State: ");
+  printDebug(str_state);
+  printDebug("\n");
+  
   if (pe3fan_v > ANALOG_LOW && fan_state)
   {
     relay(false, PE3FANRD);
@@ -465,7 +472,7 @@ void loop()
     fp_state = true;
   }
 
-  // // TODO: Switch to push to start
+  // TODO: Switch to push to start
   if (strin_v >= ANALOG_LOW && str_state)
   {
     relay(false, STRRD);
@@ -476,7 +483,6 @@ void loop()
     relay(true, STRRD);
     str_state = true;
   }
-
 
   // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
   // get coolant temp from CAN
