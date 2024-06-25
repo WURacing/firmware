@@ -7,6 +7,7 @@
 
 #define BAUD_RATE 1000000
 #define PULSE 100           // ms
+#define N_PULSE 12.5
 #define BLINK_INTERVAL 1000 // ms
 #define BLINK_FAST_INTERVAL 250 // ms
 #define CAN_INTERVAL 1      // ms
@@ -21,6 +22,7 @@
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
 #define CLUTCH_OUT_PIN 9
+#define SMEET_PIN A3
 
 #define CAN_ID 0x100
 
@@ -61,9 +63,11 @@ void setup()
   //setting up Shifting pins
   pinMode(UP_OUT_PIN, OUTPUT);
   pinMode(DOWN_OUT_PIN, OUTPUT);
+  pinMode(SMEET_PIN,OUTPUT);
 
   digitalWrite(UP_OUT_PIN, LOW);
   digitalWrite(DOWN_OUT_PIN, LOW);
+  digitalWrite(SMEET_PIN,LOW);
   analogReadResolution(12);
 
   //setting up Clutch pins
@@ -146,15 +150,17 @@ void upshift(int pulse)
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
-  delay(PULSE);
+  delay(pulse);
 }
 
 void downshift(int pulse)
 {
+  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
-  delay(PULSE);
+  digitalWrite(SMEET_PIN,LOW);
+  delay(pulse);
 }
 
 double getClutchPaddlePosition()
@@ -231,12 +237,12 @@ void loop()
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    downshift(PULSE * 0.125);
+    downshift(N_PULSE);
   }
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    upshift(PULSE * 0.125);
+    upshift(N_PULSE);
   }
   if (downData == 0 && upData == 0)
   {
