@@ -13,6 +13,7 @@
 #define printDebug(message)
 #endif
 
+//Initializations
 #define LEDPIN 8
 #define LED 13
 #define BLINK_INTERVAL 1000
@@ -32,6 +33,7 @@
 
 unsigned long datacount = 0;
 
+//Data storage mechanism
 short analogs[20];
 short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
@@ -43,24 +45,22 @@ double average_matrix[29];
 #define ANLG_RES 4096
 #define ANLG_VRANGE 5
 
+//Delta Time Loop Setup
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 bool LEDState = LOW;
 int test = 0;
 unsigned long current_millis = millis();
 
+//LED Setup
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
 // accel/gyro sensor definition
 DFRobot_BMX160 bmx160;
 
-// to make using the mux space easier
-// using namespace admux;
-
 void setup()
 {
   // Pin Definitions
-  // Serial.println("setup");
   pinMode(PIN_NEOPIXEL_POWER, OUTPUT);
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
@@ -78,14 +78,12 @@ void setup()
   Serial.begin(9600);
 
   // LED SETUP
-  // Serial.println("led");
   strip.begin();
   strip.clear();
   strip.setBrightness(BRIGHTNESS);
   strip.show();
 
   // CAN SETUP
-  // Serial.println("CAN");
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
@@ -118,41 +116,25 @@ void loop()
   {
   }
   current_millis = millis();
-  // inputs are R,G,B
-  // Serial.println("blink");
-  // blink(200, 0, 100, strip);
-  // blink();
 
-  // MUX Update
-  // Serial.println("mux update");
+  //Oscillate through all 16 channels of the multiplexer
   mux_update(analogs);
 
   // Manual Data (The hard wired Analog Inputs)
-  // Serial.println("read analogs");
   readAnalogsMan(analogs);
 
-  // New Sensor Event
   // Taking in Accel, Gyro, Magnetometer results
   sBmx160SensorData_t Omagn, Ogyro, Oaccel;
-  // these are all objects with x,y,z attributes
-  // we source this from the attached library
 
-  // Serial.println("get imu");
+
   bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
 
   // updating accel, gyro, magn arrays
-  // Serial.println("update imu");
   accel_update(accel, Oaccel);
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
-  // Serial.println(accel[0]);
-
-  // 9 Sensor Values taken in here (3 seperate arrays)
-
-  // each column of average_matrix will accumulate the average value over 10 entries
-
-  // Serial.println("averaging");
+  //Data Accumulation
   for (int i = 0; i < 20; i++)
   {
     average_matrix[i] += analogs[i];
@@ -160,7 +142,6 @@ void loop()
 
   for (int i = 0; i < 3; i++)
   {
-    // Serial.println("imu data:");
     average_matrix[i + 20] += accel[i];
     average_matrix[i + 23] += gyro[i];
     average_matrix[i + 26] += magn[i];
@@ -168,23 +149,14 @@ void loop()
 
   short avg_send[29];
 
-  // Serial.println("data");
+  //Averaging the accumulated data
   if (datacount % 10)
   {
-    // Serial.println("asdf");
-    // divide by averaging sampling size
-    // convert to short for CAN frame
     for (int i = 0; i < 29; i++)
     {
       average_matrix[i] = average_matrix[i] / 10.0;
       avg_send[i] = (short)average_matrix[i];
-      // Serial.print(i);
-      // Serial.print(": ");
-      // Serial.println(avg_send[20]);
     }
-    // Serial.println("asdf2");
-
-    // clear average_matrix for next summation. All other arrays don't have to be cleared since they are set using '=' declarations and not '+='
 
     // Send CAN Frame
     canShortFrame(avg_send, 0, 0x20);
@@ -197,7 +169,6 @@ void loop()
 
     CAN.beginPacket(0x27);
     canWriteShort(test++);
-    // Serial.println(test);
     if (test > 65536)
     {
       test = 0;
@@ -205,18 +176,17 @@ void loop()
     CAN.endPacket();
 
     // clear the avg_send and average_matrix arrays
-    // Serial.println("asdf3");
     for (int i = 0; i < 29; i++)
     {
       avg_send[i] = 0;
       average_matrix[i] = 0;
     }
-    // Serial.println("asdf4");
+    
   }
 
   ++datacount;
 }
-
+//Oscillate through all 16 channels of the multiplexer
 void mux_update(short *analogs)
 {
   unsigned short data;
@@ -234,7 +204,7 @@ void mux_update(short *analogs)
   // Pin 27 -> A11 -> S12
   printDebug('\n');
 }
-
+//Add in all 3 dimensions of data for a specific type
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 {
   accel[0] = Oaccel.x * 100;
@@ -242,28 +212,6 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[2] = Oaccel.z * 100;
 }
 
-// void blink(int r, int g, int b, Adafruit_NeoPixel &strip)
-// {
-//   blinkCurrentMillis = millis();
-//   if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL)
-//   {
-//     blinkPreviousMillis = blinkCurrentMillis;
-//     if (LEDState == LOW)
-//     {
-//       Serial.println("high");
-//       LEDState = HIGH;
-//       strip.setPixelColor(0, r, g, b);
-//       strip.show();
-//     }
-//     else
-//     {
-//       Serial.println("low");
-//       LEDState = LOW;
-//       strip.clear();
-//       strip.show();
-//     }
-//   }
-// }
 
 void blink()
 {
@@ -283,6 +231,7 @@ void blink()
   }
 }
 
+//Reads the manual analog inputs not on the mux
 void readAnalogsMan(short *analogs)
 {
   analogs[16] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
@@ -296,19 +245,20 @@ void readAnalogsMan(short *analogs)
   printDebug("\t");
 }
 
+//Writes a short to the CAN bus
 void canWriteShort(short data)
 {
   CAN.write(data & 0xFF);
   CAN.write(data >> 8);
 }
 
+//Writes a frame full of shorts to the CAN bus
 void canShortFrame(short *send, int i, int Hex)
 {
   CAN.beginPacket(Hex);
   for (int j = i; j < i + 4; j++)
   {
     canWriteShort(send[j]);
-    // Serial.println(send[i]);
   }
   CAN.endPacket();
 }
@@ -318,7 +268,6 @@ void canShortFrame(short *send, int i, int Hex)
 unsigned short mux(unsigned int index)
 {
   digitalWrite(EN, HIGH);
-  // Serial.println(index, HEX);
   // set multiplexer pins
   if ((index & 0b0001) > 0)
   {

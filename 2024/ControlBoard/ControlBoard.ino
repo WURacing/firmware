@@ -3,8 +3,11 @@
 #include <Servo.h>
 #include <CAN.h>
 
+//Initializations
+
 #define BAUD_RATE 1000000
 #define PULSE 100           // ms
+#define N_PULSE 12.5
 #define BLINK_INTERVAL 1000 // ms
 #define BLINK_FAST_INTERVAL 250 // ms
 #define CAN_INTERVAL 1      // ms
@@ -19,32 +22,27 @@
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
 #define CLUTCH_OUT_PIN 9
-// #define DRS_OPEN_PIN 999
-// #define DRS_CLOSE_PIN 999
-// #define DRS_OUT_PIN 999
+#define SMEET_PIN A3
 
 #define CAN_ID 0x100
 
 #define CLUTCH_PULLED 0.8
-// #define DRS_OPEN 30
-// #define DRS_CLOSE 100
 #define SAMPLE_SIZE 10
 
 unsigned short gearPos, rpm, manAP, wheelSpeed;
 unsigned long upData = 0;
 unsigned long downData = 0;
-// unsigned long drsOpenData = 0;
-// unsigned long drsCloseData = 0;
+
 bool shifting = false;
 bool drsOpen = false;
-// bool drsChanging = false;
-// bool drsEnabled = true;
+
 const int BIT_NUM = sizeof(upData) * 8;
 unsigned short dataCount = 0;
 double position[SAMPLE_SIZE];
 
 const int LED = 13;
 int ledState = LOW;
+//Delta Time Loop Setup
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 unsigned long canCurrentMillis = millis();
@@ -53,7 +51,6 @@ unsigned long runCount = 0;
 double positionCommanded = 135;
 
 Servo clutchServo;
-// Servo drsServo;
 
 void setup()
 {
@@ -62,17 +59,21 @@ void setup()
   pinMode(DOWN_IN_PIN, INPUT);
   pinMode(CLUTCH_IN1_PIN, INPUT);
   pinMode(CLUTCH_IN2_PIN, INPUT);
-  // pinMode(DRS_OPEN_PIN, INPUT);
+  
+  //setting up Shifting pins
   pinMode(UP_OUT_PIN, OUTPUT);
   pinMode(DOWN_OUT_PIN, OUTPUT);
-  // pinMode(DRS_CLOSE_PIN, INPUT);
+  pinMode(SMEET_PIN,OUTPUT);
+
   digitalWrite(UP_OUT_PIN, LOW);
   digitalWrite(DOWN_OUT_PIN, LOW);
+  digitalWrite(SMEET_PIN,LOW);
   analogReadResolution(12);
 
+  //setting up Clutch pins
   clutchServo.attach(CLUTCH_OUT_PIN);
-  // drsServo.attach(DRS_OUT_PIN);
 
+  //CAN setup
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
@@ -149,15 +150,17 @@ void upshift(int pulse)
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
-  delay(PULSE);
+  delay(pulse);
 }
 
 void downshift(int pulse)
 {
+  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
-  delay(PULSE);
+  digitalWrite(SMEET_PIN,LOW);
+  delay(pulse);
 }
 
 double getClutchPaddlePosition()
@@ -185,40 +188,6 @@ void modifyBit(unsigned long &d, unsigned short c, bool v)
   d = ((d & ~mask) | (v << c));
 }
 
-// void getDRSState(unsigned long &drsOpenData, unsigned long &drsCloseData, unsigned short &dataCount)
-// {
-//   bool drsOpenStatus = !digitalRead(DRS_OPEN_PIN);
-//   bool drsCloseStatus = !digitalRead(DRS_CLOSE_PIN);
-//   // Serial.printf("drsOpenStatus: %d, drsCloseStatus: %d:\n", drsOpenStatus, drsCloseStatus);
-//   modifyBit(drsOpenData, dataCount, drsOpenStatus);
-//   modifyBit(drsCloseData, dataCount, drsCloseStatus);
-// }
-
-// void setDRS(bool drsOpen)
-// {
-//   if (drsOpen)
-//   {
-//     drsServo.write(DRS_OPEN);
-//   }
-//   else
-//   {
-//     drsServo.write(DRS_CLOSE);
-//   }
-// }
-
-// void enableDRS(bool enable)
-// {
-//   if (enable)
-//   {
-//     drsServo.attach(DRS_OUT_PIN);
-//   }
-//   else
-//   {
-//     drsServo.detach();
-//     pinMode(DRS_OUT_PIN, OUTPUT);
-//     digitalWrite(DRS_OUT_PIN, LOW);
-//   }
-// }
 
 double sum(double *arr, int size)
 {
@@ -233,9 +202,9 @@ double sum(double *arr, int size)
 /* ----------------------- Main Loop ----------------------- */
 void loop()
 {
-  // Blink LED
+  
+  //FOR DEBUGGING
   blink();
-
   // checkShiftPaddle();
   // checkClutchPaddle();
 
@@ -265,16 +234,15 @@ void loop()
     shifting = false;
   }
 
-  // Serial.printf("Clutch 1:%f\tClutch 2:%f\tshifting:%d\n", clutch1, clutch2, shifting);
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    downshift(PULSE * 0.5);
+    downshift(N_PULSE);
   }
   if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting)
   {
     shifting = true;
-    upshift(PULSE * 0.5);
+    upshift(N_PULSE);
   }
   if (downData == 0 && upData == 0)
   {
@@ -291,39 +259,33 @@ void loop()
   {
     runCount = 0;
     double averagedPosition = (sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE);
-    // positionCommanded = (averagedPosition * -100) + 135; // Old function
-    positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
-    positionCommanded = max(positionCommanded, 0);
-    // Serial.printf("Paddle position: %f\tClutch postion: %f\n", averagedPosition, positionCommanded);
+    // positionCommand
+    // ed = (-180 / 0.9)  * averagedPosition + 200;
+    // positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
+    // positionCommanded = max(positionCommanded, 26);
+
+    if (averagedPosition < 0.145)
+    {
+      positionCommanded = 165;
+    }
+    else if (averagedPosition > 0.955)
+    {
+      positionCommanded = 26;
+    }
+    else
+    {
+      // positionCommanded = -12.3457 * averagedPosition + 121.79;
+      // positionCommanded = -18.5185 * averagedPosition + 127.685;
+      positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 136.64;
+    }
+
+    Serial.print("Clutch paddle: ");
+    Serial.print(averagedPosition);
+    Serial.print("\tClutch position: ");
+    Serial.println(positionCommanded);
   }
-  // Serial.println(position);
+
   setClutchPosition(positionCommanded);
-
-  // // Enable / Disable DRS
-  // getDRSState(drsOpenData, drsCloseData, dataCount);
-  // // if (drsOpenData == ULONG_MAX && !drsChanging && clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)
-  // // {
-  // //   drsEnabled = !drsEnabled;
-  // //   enableDRS(drsEnabled);
-  // //   drsChanging = true;
-  // // }
-
-  // // DRS Control
-  // if (drsOpenData == ULONG_MAX && !drsChanging)
-  // {
-  //   drsOpen = true;
-  //   drsChanging = true;
-  // }
-  // if (drsCloseData == ULONG_MAX && !drsChanging)
-  // {
-  //   drsOpen = false;
-  //   drsChanging = true;
-  // }
-  // if (drsOpenData == 0 && drsCloseData == 0)
-  // {
-  //   drsChanging = false;
-  // }
-  // setDRS(drsOpen);
 
   // CAN
   canCurrentMillis = millis();
