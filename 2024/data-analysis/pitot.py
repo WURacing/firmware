@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 # Read the CSV file
-df = pd.read_csv('WUFR 23_WAP 23_a_0833.csv')
+df = pd.read_csv('/Users/jonahsachs/Racing/firmware/2024/data-analysis/WUFR 23_WAP 23_a_0833.csv')
 df_filtered = df[['Time', 'FAnlg19']]
 
 # Filter the data
@@ -22,6 +22,9 @@ df_filtered['FAnlg19'] = df_filtered['FAnlg19'] * 0.00045 - 0.0225
 # Convert to pascals
 df['FAnlg19'] = df['FAnlg19'] * 6894.76
 df_filtered['FAnlg19'] = df_filtered['FAnlg19'] * 6894.76
+
+for i in range(len(df_filtered)):
+    print(df_filtered['FAnlg19'][i])
 
 # Convert to velocity (m/s)
 df['FAnlg19'] = (2 * df['FAnlg19'] / 1.185) ** 0.5
