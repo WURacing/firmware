@@ -6,7 +6,7 @@
 #include "RSB_CODE.h"
 // #include "GoblinMode.h"
 
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define printDebug(message) Serial.print(message)
 #else
@@ -20,6 +20,7 @@
 #define BAUD_RATE 1000000
 #define ANLG_RES 4096
 #define SAMPLE_INTERVAL 10
+#define NUM_SAMPLES 10
 #define EN 9
 #define MUX_A0 10
 #define MUX_A1 11
@@ -31,7 +32,7 @@
 #define BRIGHTNESS 20
 #define DIMENSIONS 3
 
-unsigned long datacount = 0;
+unsigned char datacount = 0;
 
 // Data storage mechanism
 short analogs[20];
@@ -111,6 +112,7 @@ void setup()
 
 void loop()
 {
+    ++datacount;
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
   {
@@ -141,21 +143,23 @@ void loop()
 
   for (int i = 0; i < 3; i++)
   {
-    test_matrix[i + 20] = accel[i];
-    test_matrix[i + 23] = gyro[i];
-    test_matrix[i + 26] = magn[i];
+    average_matrix[i + 20] += accel[i];
+    average_matrix[i + 23] += gyro[i];
+    average_matrix[i + 26] += magn[i];
   }
 
   short avg_send[29];
 
   // Averaging the accumulated data
-  if (datacount % 10)
+  if (datacount >= NUM_SAMPLES)
   {
     for (int i = 0; i < 29; i++)
     {
-      average_matrix[i] = average_matrix[i] / 10.0;
-      avg_send[i] = (short)test_matrix[i];
+      average_matrix[i] = average_matrix[i] / (float)NUM_SAMPLES;
+      avg_send[i] = (short)average_matrix[i];
     }
+    Serial.print("A: ");
+    Serial.println(avg_send[20]);
 
     // Send CAN Frame
     canShortFrame(avg_send, 0, 0x20);
@@ -177,7 +181,10 @@ void loop()
     }
   }
 
-  ++datacount;
+  if (datacount >= NUM_SAMPLES)
+  {
+    datacount = 0;
+  }
 }
 // Oscillate through all 16 channels of the multiplexer
 void mux_update(short *analogs)
