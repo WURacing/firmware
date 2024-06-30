@@ -39,6 +39,7 @@ short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
 short magn[DIMENSIONS];
 double average_matrix[29];
+double test_matrix[29];
 
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
@@ -117,10 +118,10 @@ void loop()
   current_millis = millis();
 
   // Oscillate through all 16 channels of the multiplexer
-  // mux_update(analogs);
+  mux_update(analogs);
 
   // Manual Data (The hard wired Analog Inputs)
-  // readAnalogsMan(analogs);
+  readAnalogsMan(analogs);
 
   // Taking in Accel, Gyro, Magnetometer results
   sBmx160SensorData_t Omagn, Ogyro, Oaccel;
@@ -133,16 +134,16 @@ void loop()
   accel_update(magn, Omagn);
 
   // Data Accumulation
-  // for (int i = 0; i < 20; i++)
-  // {
-  //   average_matrix[i] += analogs[i];
-  // }
+  for (int i = 0; i < 20; i++)
+  {
+    average_matrix[i] += analogs[i];
+  }
 
   for (int i = 0; i < 3; i++)
   {
-    average_matrix[i + 20] += accel[i];
-    average_matrix[i + 23] += gyro[i];
-    average_matrix[i + 26] += magn[i];
+    test_matrix[i + 20] = accel[i];
+    test_matrix[i + 23] = gyro[i];
+    test_matrix[i + 26] = magn[i];
   }
 
   short avg_send[29];
@@ -153,7 +154,7 @@ void loop()
     for (int i = 0; i < 29; i++)
     {
       average_matrix[i] = average_matrix[i] / 10.0;
-      avg_send[i] = (short)average_matrix[i];
+      avg_send[i] = (short)test_matrix[i];
     }
 
     // Send CAN Frame
@@ -179,23 +180,23 @@ void loop()
   ++datacount;
 }
 // Oscillate through all 16 channels of the multiplexer
-// void mux_update(short *analogs)
-// {
-//   unsigned short data;
-//   for (byte i = 0; i < 16; i++)
-//   {
-//     data = mux(i);
-//     analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize with weird voltage drop
-//     printDebug("Channel: ");
-//     printDebug(i);
-//     printDebug(" Data: ");
-//     printDebug(analogs[i]);
-//     printDebug("\t");
-//     delay(1);
-//   }
-//   // Pin 27 -> A11 -> S12
-//   printDebug('\n');
-// }
+void mux_update(short *analogs)
+{
+  unsigned short data;
+  for (byte i = 0; i < 16; i++)
+  {
+    data = mux(i);
+    analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize with weird voltage drop
+    printDebug("Channel: ");
+    printDebug(i);
+    printDebug(" Data: ");
+    printDebug(analogs[i]);
+    printDebug("\t");
+    delay(1);
+  }
+  // Pin 27 -> A11 -> S12
+  printDebug('\n');
+}
 // Add in all 3 dimensions of data for a specific type
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 {
@@ -223,18 +224,18 @@ void blink()
 }
 
 // Reads the manual analog inputs not on the mux
-// void readAnalogsMan(short *analogs)
-// {
-//   analogs[16] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-//   analogs[17] = (analogRead(A1) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-//   analogs[18] = (analogRead(A2) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-//   analogs[19] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
-//   printDebug("Channel: ");
-//   printDebug(19);
-//   printDebug(" Data: ");
-//   printDebug(analogs[19]);
-//   printDebug("\t");
-// }
+void readAnalogsMan(short *analogs)
+{
+  analogs[16] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[17] = (analogRead(A1) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[18] = (analogRead(A2) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  analogs[19] = (analogRead(A3) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
+  printDebug("Channel: ");
+  printDebug(19);
+  printDebug(" Data: ");
+  printDebug(analogs[19]);
+  printDebug("\t");
+}
 
 // Writes a short to the CAN bus
 void canWriteShort(short data)
@@ -256,52 +257,52 @@ void canShortFrame(short *send, int i, int Hex)
 
 // params:
 // index: number between 0-15 (DOUBLE CHECK)
-// unsigned short mux(unsigned int index)
-// {
-//   digitalWrite(EN, HIGH);
-//   // set multiplexer pins
-//   if ((index & 0b0001) > 0)
-//   {
-//     digitalWrite(MUX_A0, HIGH);
-//     //   Serial.println("A0 high");
-//   }
-//   else
-//   {
-//     digitalWrite(MUX_A0, LOW);
-//   }
+unsigned short mux(unsigned int index)
+{
+  digitalWrite(EN, HIGH);
+  // set multiplexer pins
+  if ((index & 0b0001) > 0)
+  {
+    digitalWrite(MUX_A0, HIGH);
+    //   Serial.println("A0 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A0, LOW);
+  }
 
-//   if ((index & 0b0010) > 0)
-//   {
-//     digitalWrite(MUX_A1, HIGH);
-//     // Serial.println("A1 high");
-//   }
-//   else
-//   {
-//     digitalWrite(MUX_A1, LOW);
-//   }
+  if ((index & 0b0010) > 0)
+  {
+    digitalWrite(MUX_A1, HIGH);
+    // Serial.println("A1 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A1, LOW);
+  }
 
-//   if ((index & 0b0100) > 0)
-//   {
-//     digitalWrite(MUX_A2, HIGH);
-//     // Serial.println("A2 high");
-//   }
-//   else
-//   {
-//     digitalWrite(MUX_A2, LOW);
-//   }
+  if ((index & 0b0100) > 0)
+  {
+    digitalWrite(MUX_A2, HIGH);
+    // Serial.println("A2 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A2, LOW);
+  }
 
-//   if ((index & 0b1000) > 0)
-//   {
-//     digitalWrite(MUX_A3, HIGH);
-//     // Serial.println("A3 high");
-//   }
-//   else
-//   {
-//     digitalWrite(MUX_A3, LOW);
-//   }
+  if ((index & 0b1000) > 0)
+  {
+    digitalWrite(MUX_A3, HIGH);
+    // Serial.println("A3 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A3, LOW);
+  }
 
-//   delay(1);
-//   unsigned short reading = analogRead(MUX_OUT);
-//   digitalWrite(EN, LOW);
-//   return reading;
-// }
+  delay(1);
+  unsigned short reading = analogRead(MUX_OUT);
+  digitalWrite(EN, LOW);
+  return reading;
+}
