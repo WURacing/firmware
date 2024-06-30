@@ -40,7 +40,6 @@ short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
 short magn[DIMENSIONS];
 double average_matrix[29];
-double test_matrix[29];
 
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
@@ -112,7 +111,7 @@ void setup()
 
 void loop()
 {
-    ++datacount;
+  ++datacount;
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
   {
@@ -158,8 +157,6 @@ void loop()
       average_matrix[i] = average_matrix[i] / (float)NUM_SAMPLES;
       avg_send[i] = (short)average_matrix[i];
     }
-    Serial.print("A: ");
-    Serial.println(avg_send[20]);
 
     // Send CAN Frame
     canShortFrame(avg_send, 0, 0x20);
