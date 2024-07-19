@@ -210,6 +210,14 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[2] = Oaccel.z * 100;
 }
 
+short* transform(short *inp, short *out) {
+  out[0] = (short)(0.59573224 * inp[0] + -0.02765014 * inp[1] + 0.74384836 * inp[2]);
+  out[1] = (short)(-0.02765014 * inp[0] + 0.95126259 * inp[1] + 0.05750449 * inp[2]);
+  out[2] = (short)(-0.74384836 * inp[0] + -0.05750449 * inp[1] + 0.5935947 * inp[2]);
+  return out;
+}
+
+
 void blink()
 {
   blinkCurrentMillis = millis();
@@ -310,3 +318,7 @@ unsigned short mux(unsigned int index)
   digitalWrite(EN, LOW);
   return reading;
 }
+
+
+
+
