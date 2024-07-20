@@ -19,7 +19,7 @@
 #define BLINK_INTERVAL 1000
 #define BAUD_RATE 1000000
 #define ANLG_RES 4096
-#define SAMPLE_INTERVAL 10
+#define SAMPLE_INTERVAL 4
 #define NUM_SAMPLES 10
 #define EN 9
 #define MUX_A0 10
@@ -32,13 +32,16 @@
 #define BRIGHTNESS 20
 #define DIMENSIONS 3
 
-unsigned char datacount = 0;
+unsigned long datacount = 0;
 
 // Data storage mechanism
 short analogs[20];
 short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
 short magn[DIMENSIONS];
+short accel_out[DIMENSIONS];
+short gyro_out[DIMENSIONS];
+short magn_out[DIMENSIONS];
 double average_matrix[29];
 
 #define BLINK_INTERVAL 1000
@@ -57,6 +60,8 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
 // accel/gyro sensor definition
 DFRobot_BMX160 bmx160;
+
+float scale = 1000 * ANLG_VRANGE * 1.342 / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
 void setup()
 {
@@ -134,6 +139,10 @@ void loop()
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
+  transform(accel, accel_out);
+  transform(gyro, gyro_out);
+  transform(magn, magn_out);
+
   // Data Accumulation
   for (int i = 0; i < 20; i++)
   {
@@ -142,9 +151,9 @@ void loop()
 
   for (int i = 0; i < 3; i++)
   {
-    average_matrix[i + 20] += accel[i];
-    average_matrix[i + 23] += gyro[i];
-    average_matrix[i + 26] += magn[i];
+    average_matrix[i + 20] += accel_out[i];
+    average_matrix[i + 23] += gyro_out[i];
+    average_matrix[i + 26] += magn_out[i];
   }
 
   short avg_send[29];
@@ -190,13 +199,12 @@ void mux_update(short *analogs)
   for (byte i = 0; i < 16; i++)
   {
     data = mux(i);
-    analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize with weird voltage drop
+    analogs[i] = data * scale;
     printDebug("Channel: ");
     printDebug(i);
     printDebug(" Data: ");
     printDebug(analogs[i]);
     printDebug("\t");
-    delay(1);
   }
   // Pin 27 -> A11 -> S12
   printDebug('\n');
@@ -207,6 +215,14 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[0] = Oaccel.x * 100;
   accel[1] = Oaccel.y * 100;
   accel[2] = Oaccel.z * 100;
+}
+
+short *transform(short *inp, short *out)
+{
+  out[0] = (short)(0.6027638 * inp[0] + 0.07851487 * inp[1] + 0.77457531 * inp[2]);
+  out[1] = (short)(0.07851487 * inp[0] + 0.96846523 * inp[1] + -0.15926772 * inp[2]);
+  out[2] = (short)(-0.77457531 * inp[0] + 0.15926772 * inp[1] + 0.58661961 * inp[2]);
+  return out;
 }
 
 void blink()
@@ -305,7 +321,6 @@ unsigned short mux(unsigned int index)
     digitalWrite(MUX_A3, LOW);
   }
 
-  delay(1);
   unsigned short reading = analogRead(MUX_OUT);
   digitalWrite(EN, LOW);
   return reading;
