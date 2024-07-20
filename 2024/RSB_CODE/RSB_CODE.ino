@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <CAN.h>
 #include <SPI.h>
-#include <DFRobot_BMX160.h>
+#include <BMX160.h>
 
 #include "RSB_CODE.h"
 // #include "GoblinMode.h"
@@ -59,7 +59,7 @@ unsigned long current_millis = millis();
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
 // accel/gyro sensor definition
-DFRobot_BMX160 bmx160;
+BMX160 bmx160;
 
 float scale = 1000 * ANLG_VRANGE * 1.342 / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
@@ -110,6 +110,11 @@ void setup()
   else
   {
     Serial.println("init true");
+    // Set the accelerometer range to 2G
+    bmx160.setAccelRange(eAccelRange_2G);
+
+    // Set the gyroscope range to 250DPS
+    bmx160.setGyroRange(eGyroRange_250DPS);
   }
   current_millis = millis();
 }
@@ -219,9 +224,9 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 
 short *transform(short *inp, short *out)
 {
-  out[0] = (short)(0.6027638 * inp[0] + 0.07851487 * inp[1] + 0.77457531 * inp[2]);
-  out[1] = (short)(0.07851487 * inp[0] + 0.96846523 * inp[1] + -0.15926772 * inp[2]);
-  out[2] = (short)(-0.77457531 * inp[0] + 0.15926772 * inp[1] + 0.58661961 * inp[2]);
+  out[0] = (short)(0.61146138 * inp[0] + 0.09275305 * inp[1] + 0.76278828 * inp[2]);
+  out[1] = (short)(0.09275305 * inp[0] + 0.95878757 * inp[1] + -0.19093815 * inp[2]);
+  out[2] = (short)(-0.76278828 * inp[0] + 0.19093815 * inp[1] + 0.5882438 * inp[2]);
   return out;
 }
 
