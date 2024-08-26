@@ -146,9 +146,9 @@ void setup()
 
     pinMode(ADC_EOC, INPUT);
     pinMode(MUX_OUT_FB, INPUT);
-    analogReadResolution(12);
+    analogReadResolution(12); // ADC turns voltage to 12bits
 
-    // set CS pins high
+    // set CS pins high. Low means selected "Slave"
     digitalWrite(ADC_CS, HIGH);
     digitalWrite(RD_CS, HIGH);
     digitalWrite(TS1_CS, HIGH);
@@ -204,7 +204,7 @@ void loop()
         runPreviousMillis += RUN_INTERVAL;
     }
 
-    test_relays();    
+    test_relays_2();    
 }
 
 // params:
@@ -217,13 +217,11 @@ void relay(bool enable, uint8_t relay)
     // {
     //   return;
     // }
-
-    printDebug("Relay: ");
-    printDebug(relay);
-    printDebug("\tEnable: ");
-    printDebug(enable);
-    printDebug("\n");
-
+    // printDebug("Relay: ");
+    // printDebug(relay);
+    // printDebug("\tEnable: ");
+    // printDebug(enable);
+    // printDebug("\n");
     // read relay state first
     uint16_t read = 0b0100000000000000;
 
@@ -233,8 +231,8 @@ void relay(bool enable, uint8_t relay)
     uint16_t read_output = SPI.transfer16(read); // returns a 16 bit, convert it to 8
 
     uint8_t data = read_output & 0b11111111; // get data
-
-    uint8_t relaybit = 1 << relay;       // bit that's being set
+    Serial.println(data);
+    uint8_t relaybit = 1 << relay;       // Bitshift. bit that's being set
     uint8_t disabled = ~relaybit & data; // normal data, but disable relay bit
 
     uint16_t command_data = disabled; // if it doesn't work, change this to uint8_t
@@ -253,8 +251,7 @@ void relay(bool enable, uint8_t relay)
 void test_relays()
 {
     Serial.println("Turning relays on");
-    for (int i = 0; i++; i < 8)
-    {
+    for (int i = 0; i < 8; i++){
         relay(true, i);
         delay(1000);
     }
@@ -262,9 +259,34 @@ void test_relays()
     delay(4000);
 
     Serial.println("Turning relays off");
-    for (int i = 0; i++; i < 8)
+    for (int i = 0; i < 8; i++)
     {
         relay(false, i);
+        delay(1000);
+    }
+
+    delay(4000);
+}
+
+void test_relays_2()
+{
+    Serial.println("Turning relays on");
+    for (int i = 0; i < 8; i++)
+    {
+        relay(true, i);
+        Serial.print("On: ");
+        Serial.println(i);
+        delay(1000);
+    }
+
+    delay(4000);
+
+    Serial.println("Turning relays off");
+    for (int i = 0; i < 8; i++)
+    {
+        relay(false, i);
+        Serial.println("Off: ");
+        Serial.println(i);
         delay(1000);
     }
 
