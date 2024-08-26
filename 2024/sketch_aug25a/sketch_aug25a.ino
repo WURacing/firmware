@@ -203,7 +203,8 @@ void loop()
         runPreviousMillis += RUN_INTERVAL;
     }
 
-    test_relays_2();    
+    // test_relays_2();    
+    Serial.println(currSense(ETHF_PIN));
 }
 
 // params:
@@ -290,4 +291,37 @@ void test_relays_2()
     }
 
     delay(4000);
+}
+
+float currSense(int pin)
+{
+  // Wait for conversion to finish
+  while (digitalRead(ADC_EOC) == LOW)
+  {
+    delay(1);
+  }
+
+  digitalWrite(ADC_CS, HIGH);
+  SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
+  digitalWrite(ADC_CS, LOW);
+  delay(1);
+
+  // uint8_t mesg = 0b00000101;
+  // mesg |= pin << 4; // bitwise operator
+  // uint8_t output = SPI.transfer(mesg);
+
+  uint16_t mesg = 0b00001101 << 8;
+  mesg |= pin << 12; // bitwise operator
+  // mesg |= 0b1011 << 12;
+  uint16_t output = SPI.transfer(mesg);
+
+  // uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
+  // mesg |= pin;                // bitwise operator
+  // uint16_t output = SPI.transfer16(mesg);
+  digitalWrite(ADC_CS, HIGH);
+
+  SPI.endTransaction();
+
+  return (output >> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
+  // return output >> 2;
 }
