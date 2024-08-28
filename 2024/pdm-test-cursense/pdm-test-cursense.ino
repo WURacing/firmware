@@ -253,12 +253,15 @@ uint8_t testAdc()
 {
     while (digitalRead(ADC_EOC) == LOW)
     {
+        Serial.println("Waiting for conversion to finish");
         delay(1);
     }
     digitalWrite(ADC_CS, HIGH);
     SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
     digitalWrite(ADC_CS, LOW);
-    uint8_t output = SPI.transfer(0b10110101); // 8 bit test command, should return (vref + gnd) / 2
+    uint8_t output = SPI.transfer(0b10110100); // 8 bit test command, should return (vref + gnd) / 2     (128)
+    // uint8_t output = SPI.transfer(0b11010100); // 8 bit test command, should return vref                 (255)
+    // uint8_t output = SPI.transfer(0b11000100); // 8 bit test command, should return gnd                  (0)
     digitalWrite(ADC_CS, HIGH);
     SPI.endTransaction();
     return output;
