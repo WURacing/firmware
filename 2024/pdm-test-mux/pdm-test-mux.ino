@@ -178,7 +178,7 @@ void setup()
     SPI.endTransaction();
 
     // Disable relays
-    relay(false, ENGRD);    // good
+    relay(true, ENGRD);    // good
     relay(false, AUX1RD);   // good
     relay(false, CANRD);    // good
     relay(false, AUX2RD);   // good
@@ -202,14 +202,81 @@ void loop()
     {
         runPreviousMillis += RUN_INTERVAL;
     }
-
-    // test_relays_2();    
-    Serial.println(currSense(ETHF_PIN));
+    // test_mux();
+    float voltage = mux(1);
+    Serial.println(voltage);
 }
 
-// params:
-// enable (true if enabling, false if disabling)
-// relay (number between 0-7 corresponding to the relay number)
+void test_mux()
+{
+    for (int i = 0; i < 16; i++)
+    {
+        float voltage = mux(i);
+        Serial.println(i);
+        Serial.print("Voltage: ");
+        Serial.println(voltage);
+        delay(8000);
+    }
+}
+
+float mux(unsigned int index)
+{
+  digitalWrite(EN, HIGH);
+  // Serial.println(index, HEX);
+  // set multiplexer pins
+  if ((index & 0b0001) > 0)
+  {
+    digitalWrite(MUX_A0, HIGH);
+    //   Serial.println("A0 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A0, LOW);
+  }
+
+  if ((index & 0b0010) > 0)
+  {
+    digitalWrite(MUX_A1, HIGH);
+    // Serial.println("A1 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A1, LOW);
+  }
+
+  if ((index & 0b0100) > 0)
+  {
+    digitalWrite(MUX_A2, HIGH);
+    // Serial.println("A2 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A2, LOW);
+  }
+
+  if ((index & 0b1000) > 0)
+  {
+    digitalWrite(MUX_A3, HIGH);
+    // Serial.println("A3 high");
+  }
+  else
+  {
+    digitalWrite(MUX_A3, LOW);
+  }
+
+  float voltage = analogRead(MUX_OUT_FB)*0.0039; //* 3.3 * 4.84  / (float)4095;
+  digitalWrite(EN, LOW);
+  digitalWrite(MUX_A0, LOW);
+  digitalWrite(MUX_A1, LOW);
+  digitalWrite(MUX_A2, LOW);
+  digitalWrite(MUX_A3, LOW);
+  // float voltage = analogRead(MUX_OUT_FB);
+  //  voltage divider equation
+  //voltage = (2700 + 840) * voltage / 840;
+
+  return voltage;
+}
+
 void relay(bool enable, uint8_t relay)
 {
     // if battery voltage is too low, stop relays from being reenabled
@@ -246,82 +313,4 @@ void relay(bool enable, uint8_t relay)
     SPI.transfer16(mesg);
     digitalWrite(RD_CS, HIGH);
     SPI.endTransaction();
-}
-
-void test_relays()
-{
-    Serial.println("Turning relays on");
-    for (int i = 0; i < 8; i++){
-        relay(true, i);
-        delay(1000);
-    }
-
-    delay(4000);
-
-    Serial.println("Turning relays off");
-    for (int i = 0; i < 8; i++)
-    {
-        relay(false, i);
-        delay(1000);
-    }
-
-    delay(4000);
-}
-
-void test_relays_2()
-{
-    Serial.println("Turning relays on");
-    for (int i = 0; i < 8; i++)
-    {
-        relay(true, i);
-        Serial.print("On: ");
-        Serial.println(i);
-        delay(1000);
-    }
-
-    delay(4000);
-
-    Serial.println("Turning relays off");
-    for (int i = 0; i < 8; i++)
-    {
-        relay(false, i);
-        Serial.println("Off: ");
-        Serial.println(i);
-        delay(1000);
-    }
-
-    delay(4000);
-}
-
-float currSense(int pin)
-{
-  // Wait for conversion to finish
-  while (digitalRead(ADC_EOC) == LOW)
-  {
-    delay(1);
-  }
-
-  digitalWrite(ADC_CS, HIGH);
-  SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
-  digitalWrite(ADC_CS, LOW);
-  delay(1);
-
-  // uint8_t mesg = 0b00000101;
-  // mesg |= pin << 4; // bitwise operator
-  // uint8_t output = SPI.transfer(mesg);
-
-  uint16_t mesg = 0b00001101 << 8;
-  mesg |= pin << 12; // bitwise operator
-  // mesg |= 0b1011 << 12;
-  uint16_t output = SPI.transfer(mesg);
-
-  // uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
-  // mesg |= pin;                // bitwise operator
-  // uint16_t output = SPI.transfer16(mesg);
-  digitalWrite(ADC_CS, HIGH);
-
-  SPI.endTransaction();
-
-  return (output >> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
-  // return output >> 2;
 }
