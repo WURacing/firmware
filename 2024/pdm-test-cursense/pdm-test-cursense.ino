@@ -286,7 +286,6 @@ float currSense(int pin)
   SPI.endTransaction();
   uint16_t output = ((output1 << 8) | output2) >> 4;
   return output * 0.0201416015625 - 41.47;
-  // return output >> 2;
 }
 
 

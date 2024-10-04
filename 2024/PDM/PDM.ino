@@ -7,7 +7,7 @@
 #include "PDM.h"
 
 #define SPI_SPEED_FEATHER 3000000
-#define SPI_SPEED_ADC 1500000
+#define SPI_SPEED_ADC 10000000
 #define BAUD_RATE 1000000
 
 // feather pins
@@ -545,25 +545,15 @@ float currSense(int pin)
   SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
   digitalWrite(ADC_CS, LOW);
   delay(1);
-
-  // uint8_t mesg = 0b00000101;
-  // mesg |= pin << 4; // bitwise operator
-  // uint8_t output = SPI.transfer(mesg);
-
-  uint16_t mesg = 0b00001101 << 8;
-  mesg |= pin << 12; // bitwise operator
-  // mesg |= 0b1011 << 12;
-  uint16_t output = SPI.transfer(mesg);
-
-  // uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
-  // mesg |= pin;                // bitwise operator
-  // uint16_t output = SPI.transfer16(mesg);
+  // uint8_t message = (pin << 4) | 0b1000;
+  // uint8_t output1 = SPI.transfer(message);
+  uint8_t output1 = SPI.transfer(0b01101000);
+  uint8_t output2 = SPI.transfer(0b00000000);
   digitalWrite(ADC_CS, HIGH);
 
   SPI.endTransaction();
-
-  return (output >> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
-  // return output >> 2;
+  uint16_t output = ((output1 << 8) | output2) >> 4;
+  return output * 0.0201416015625 - 41.47;
 }
 
 // params:
