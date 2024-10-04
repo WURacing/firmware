@@ -180,11 +180,11 @@ void setup()
     // Disable relays
     relay(true, ENGRD);    // good
     relay(false, AUX1RD);   // good
-    relay(false, CANRD);    // good
+    relay(true, CANRD);    // good
     relay(false, AUX2RD);   // good
     relay(false, WTPRD);    // good
     relay(false, PE3FPRD);  // good
-    relay(false, STRRD);    // good
+    relay(true, STRRD);    // good
     relay(false, PE3FANRD); // good
 
     delay(1000); // TODO: Remove or minimize this later
@@ -204,7 +204,7 @@ void loop()
     }
     // float current = currSense2(ENGF_PIN);
     // Serial.println(current);
-    Serial.println(testAdc());
+    Serial.println(currSense(CANF_PIN));
 
 }
 
@@ -259,8 +259,8 @@ uint8_t testAdc()
     digitalWrite(ADC_CS, HIGH);
     SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
     digitalWrite(ADC_CS, LOW);
-    uint8_t output = SPI.transfer(0b10110100); // 8 bit test command, should return (vref + gnd) / 2     (128)
-    // uint8_t output = SPI.transfer(0b11010100); // 8 bit test command, should return vref                 (255)
+    //uint16_t output = SPI.transfer(0b10110100); // 8 bit test command, should return (vref + gnd) / 2     (128)
+    uint16_t output = SPI.transfer(0b11010000); // 8 bit test command, should return vref                 (255)
     // uint8_t output = SPI.transfer(0b11000100); // 8 bit test command, should return gnd                  (0)
     digitalWrite(ADC_CS, HIGH);
     SPI.endTransaction();
@@ -279,15 +279,16 @@ float currSense(int pin)
   SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
   digitalWrite(ADC_CS, LOW);
   delay(1);
-
+  uint8_t output1 = SPI.transfer(0b01101000);
+  uint8_t output2 = SPI.transfer(0b00000000);
   // uint8_t mesg = 0b00000101;
   // mesg |= pin << 4; // bitwise operator
   // uint8_t output = SPI.transfer(mesg);
 
-  uint16_t mesg = 0b00001101 << 8;
-  mesg |= pin << 12; // bitwise operator
+  //uint16_t mesg = 0b00001101 << 8;
+  //mesg |= pin << 12; // bitwise operator
   // mesg |= 0b1011 << 12;
-  uint16_t output = SPI.transfer(mesg);
+  //uint16_t output = SPI.transfer(mesg);
 
   // uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
   // mesg |= pin;                // bitwise operator
@@ -295,8 +296,8 @@ float currSense(int pin)
   digitalWrite(ADC_CS, HIGH);
 
   SPI.endTransaction();
-
-  return (output >> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
+  uint16_t output = ((output1 << 8) | output2) >> 4;
+  return (output); //>> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
   // return output >> 2;
 }
 
