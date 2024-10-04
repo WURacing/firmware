@@ -281,23 +281,11 @@ float currSense(int pin)
   delay(1);
   uint8_t output1 = SPI.transfer(0b01101000);
   uint8_t output2 = SPI.transfer(0b00000000);
-  // uint8_t mesg = 0b00000101;
-  // mesg |= pin << 4; // bitwise operator
-  // uint8_t output = SPI.transfer(mesg);
-
-  //uint16_t mesg = 0b00001101 << 8;
-  //mesg |= pin << 12; // bitwise operator
-  // mesg |= 0b1011 << 12;
-  //uint16_t output = SPI.transfer(mesg);
-
-  // uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
-  // mesg |= pin;                // bitwise operator
-  // uint16_t output = SPI.transfer16(mesg);
   digitalWrite(ADC_CS, HIGH);
 
   SPI.endTransaction();
   uint16_t output = ((output1 << 8) | output2) >> 4;
-  return (output); //>> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
+  return output * 0.0201416015625 - 41.47;
   // return output >> 2;
 }
 
