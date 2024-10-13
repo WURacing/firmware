@@ -178,7 +178,7 @@ void setup()
     SPI.endTransaction();
 
     // Disable relays
-    relay(true, ENGRD);    // good
+    relay(false, ENGRD);    // good
     relay(false, AUX1RD);   // good
     relay(false, CANRD);    // good
     relay(false, AUX2RD);   // good
@@ -259,9 +259,9 @@ uint8_t testAdc()
     digitalWrite(ADC_CS, HIGH);
     SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
     digitalWrite(ADC_CS, LOW);
-    uint8_t output = SPI.transfer(0b10110100); // 8 bit test command, should return (vref + gnd) / 2     (128)
-    // uint8_t output = SPI.transfer(0b11010100); // 8 bit test command, should return vref                 (255)
-    // uint8_t output = SPI.transfer(0b11000100); // 8 bit test command, should return gnd                  (0)
+    // uint16_t output = SPI.transfer(0b10110000); // 12 bit test command, should return (vref + gnd) / 2     (128)
+    //uint16_t output = SPI.transfer(0b11010000); // 12 bit test command, should return vref                 (255)
+    uint16_t output = SPI.transfer(0b11000000); // 12 bit test command, should return gnd                  (0)
     digitalWrite(ADC_CS, HIGH);
     SPI.endTransaction();
     return output;
