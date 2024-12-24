@@ -1,25 +1,26 @@
 #include <Adafruit_NeoPixel.h>
 #include <CAN.h>
 #include <SPI.h>
-#include <DFRobot_BMX160.h>
+#include <BMX160.h>
 
 #include "RSB_CODE.h"
 // #include "GoblinMode.h"
 
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define printDebug(message) Serial.print(message)
 #else
 #define printDebug(message)
 #endif
 
-//Initializations
+// Initializations
 #define LEDPIN 8
 #define LED 13
 #define BLINK_INTERVAL 1000
 #define BAUD_RATE 1000000
 #define ANLG_RES 4096
-#define SAMPLE_INTERVAL 10
+#define SAMPLE_INTERVAL 4
+#define NUM_SAMPLES 10
 #define EN 9
 #define MUX_A0 10
 #define MUX_A1 11
@@ -33,11 +34,14 @@
 
 unsigned long datacount = 0;
 
-//Data storage mechanism
+// Data storage mechanism
 short analogs[20];
 short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
 short magn[DIMENSIONS];
+short accel_out[DIMENSIONS];
+short gyro_out[DIMENSIONS];
+short magn_out[DIMENSIONS];
 double average_matrix[29];
 
 #define BLINK_INTERVAL 1000
@@ -45,18 +49,19 @@ double average_matrix[29];
 #define ANLG_RES 4096
 #define ANLG_VRANGE 5
 
-//Delta Time Loop Setup
+// Delta Time Loop Setup
 unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 bool LEDState = LOW;
-int test = 0;
 unsigned long current_millis = millis();
 
-//LED Setup
+// LED Setup
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
 // accel/gyro sensor definition
-DFRobot_BMX160 bmx160;
+BMX160 bmx160;
+
+float scale = 1000 * ANLG_VRANGE * 1.342 / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
 void setup()
 {
@@ -105,19 +110,25 @@ void setup()
   else
   {
     Serial.println("init true");
+    // Set the accelerometer range to 2G
+    bmx160.setAccelRange(eAccelRange_2G);
+
+    // Set the gyroscope range to 250DPS
+    bmx160.setGyroRange(eGyroRange_250DPS);
   }
   current_millis = millis();
 }
 
 void loop()
 {
+  ++datacount;
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
   {
   }
   current_millis = millis();
 
-  //Oscillate through all 16 channels of the multiplexer
+  // Oscillate through all 16 channels of the multiplexer
   mux_update(analogs);
 
   // Manual Data (The hard wired Analog Inputs)
@@ -126,7 +137,6 @@ void loop()
   // Taking in Accel, Gyro, Magnetometer results
   sBmx160SensorData_t Omagn, Ogyro, Oaccel;
 
-
   bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
 
   // updating accel, gyro, magn arrays
@@ -134,7 +144,11 @@ void loop()
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
-  //Data Accumulation
+  transform(accel, accel_out);
+  transform(gyro, gyro_out);
+  transform(magn, magn_out);
+
+  // Data Accumulation
   for (int i = 0; i < 20; i++)
   {
     average_matrix[i] += analogs[i];
@@ -142,19 +156,19 @@ void loop()
 
   for (int i = 0; i < 3; i++)
   {
-    average_matrix[i + 20] += accel[i];
-    average_matrix[i + 23] += gyro[i];
-    average_matrix[i + 26] += magn[i];
+    average_matrix[i + 20] += accel_out[i];
+    average_matrix[i + 23] += gyro_out[i];
+    average_matrix[i + 26] += magn_out[i];
   }
 
   short avg_send[29];
 
-  //Averaging the accumulated data
-  if (datacount % 10)
+  // Averaging the accumulated data
+  if (datacount >= NUM_SAMPLES)
   {
     for (int i = 0; i < 29; i++)
     {
-      average_matrix[i] = average_matrix[i] / 10.0;
+      average_matrix[i] = average_matrix[i] / (float)NUM_SAMPLES;
       avg_send[i] = (short)average_matrix[i];
     }
 
@@ -168,11 +182,6 @@ void loop()
     canShortFrame(avg_send, 24, 0x26);
 
     CAN.beginPacket(0x27);
-    canWriteShort(test++);
-    if (test > 65536)
-    {
-      test = 0;
-    }
     CAN.endPacket();
 
     // clear the avg_send and average_matrix arrays
@@ -181,30 +190,31 @@ void loop()
       avg_send[i] = 0;
       average_matrix[i] = 0;
     }
-    
   }
 
-  ++datacount;
+  if (datacount >= NUM_SAMPLES)
+  {
+    datacount = 0;
+  }
 }
-//Oscillate through all 16 channels of the multiplexer
+// Oscillate through all 16 channels of the multiplexer
 void mux_update(short *analogs)
 {
   unsigned short data;
   for (byte i = 0; i < 16; i++)
   {
     data = mux(i);
-    analogs[i] = (data / (float)ANLG_RES) * 1000 * ANLG_VRANGE * 1.342; // Added 1.342 to linearize with weird voltage drop
+    analogs[i] = data * scale;
     printDebug("Channel: ");
     printDebug(i);
     printDebug(" Data: ");
     printDebug(analogs[i]);
     printDebug("\t");
-    delay(1);
   }
   // Pin 27 -> A11 -> S12
   printDebug('\n');
 }
-//Add in all 3 dimensions of data for a specific type
+// Add in all 3 dimensions of data for a specific type
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 {
   accel[0] = Oaccel.x * 100;
@@ -212,6 +222,13 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[2] = Oaccel.z * 100;
 }
 
+short *transform(short *inp, short *out)
+{
+  out[0] = (short)(0.61146138 * inp[0] + 0.09275305 * inp[1] + 0.76278828 * inp[2]);
+  out[1] = (short)(0.09275305 * inp[0] + 0.95878757 * inp[1] + -0.19093815 * inp[2]);
+  out[2] = (short)(-0.76278828 * inp[0] + 0.19093815 * inp[1] + 0.5882438 * inp[2]);
+  return out;
+}
 
 void blink()
 {
@@ -231,7 +248,7 @@ void blink()
   }
 }
 
-//Reads the manual analog inputs not on the mux
+// Reads the manual analog inputs not on the mux
 void readAnalogsMan(short *analogs)
 {
   analogs[16] = (analogRead(A0) / (float)ANLG_RES) * 1000 * ANLG_VRANGE;
@@ -245,14 +262,14 @@ void readAnalogsMan(short *analogs)
   printDebug("\t");
 }
 
-//Writes a short to the CAN bus
+// Writes a short to the CAN bus
 void canWriteShort(short data)
 {
   CAN.write(data & 0xFF);
   CAN.write(data >> 8);
 }
 
-//Writes a frame full of shorts to the CAN bus
+// Writes a frame full of shorts to the CAN bus
 void canShortFrame(short *send, int i, int Hex)
 {
   CAN.beginPacket(Hex);
@@ -309,7 +326,6 @@ unsigned short mux(unsigned int index)
     digitalWrite(MUX_A3, LOW);
   }
 
-  delay(1);
   unsigned short reading = analogRead(MUX_OUT);
   digitalWrite(EN, LOW);
   return reading;

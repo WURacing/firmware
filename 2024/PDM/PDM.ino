@@ -7,7 +7,7 @@
 #include "PDM.h"
 
 #define SPI_SPEED_FEATHER 3000000
-#define SPI_SPEED_ADC 1500000
+#define SPI_SPEED_ADC 10000000
 #define BAUD_RATE 1000000
 
 // feather pins
@@ -82,7 +82,7 @@
 #define AUX2F_LIMIT 15
 
 #define ACCEPTED_ERROR 15
-#define ANALOG_LOW 5.0
+#define ANALOG_LOW 9.55
 #define LOW_VOLTAGE 8.0
 #define LED 13
 #define BLINK_INTERVAL 1000
@@ -184,29 +184,19 @@ void setup()
   relay(false, AUX1RD); // good
   relay(false, CANRD); // good
   relay(false, AUX2RD); // good
-  // relay(false, WTPRD); // good
+  relay(false, WTPRD); // good
   relay(false, PE3FPRD); // good
   relay(false, STRRD); // good
   relay(false, PE3FANRD); // good
 
   // Enable relays
   printDebug("Enabling relays\n");
-  relay(true, ENGRD);
-  relay(true, AUX1RD);
-  relay(true, CANRD);
-  relay(true, AUX2RD);
-  relay(true, WTPRD); // TODO: Disable this later
-
-  // Disable all other relays
-  relay(false, PE3FANRD);
-  relay(false, STRRD);
-  relay(false, PE3FPRD);
-  relay(false, AUX2RD); // good
+  relay(true, ENGRD); // good
+  relay(true, AUX1RD); // good
+  relay(true, CANRD); // good
   relay(true, WTPRD); // good
 
-
   delay(1000); // TODO: Remove or minimize this later
-
 
   runPreviousMillis = millis();
 }
@@ -342,7 +332,113 @@ void loop()
   printDebug(gpio_v);
   printDebug("V\n");
 
-  
+  // if (aux1_c > AUX1F_LIMIT)
+  // {
+  //   aux1_error += aux1_c - AUX1F_LIMIT;
+  // }
+  // if (aux2_c > AUX2F_LIMIT)
+  // {
+  //   aux2_error += aux2_c - AUX2F_LIMIT;
+  // }
+  // if (pe3_c > PE3F_LIMIT)
+  // {
+  //   pe3_error += pe3_c - PE3F_LIMIT;
+  // }
+  // if (eth_c > ETHF_LIMIT)
+  // {
+  //   eth_error += eth_c - ETHF_LIMIT;
+  // }
+  // if (eng_c > ENGF_LIMIT)
+  // {
+  //   eng_error += eng_c - ENGF_LIMIT;
+  // }
+  // if (fp_c > FPF_LIMIT)
+  // { // relay(true, ENGRD);
+  //   // relay(true, AUX1RD);
+  //   // relay(true, CANRD);
+  //   // relay(true, AUX2RD);
+  //   fp_error += fp_c - FPF_LIMIT;
+  // }
+  // if (fan_c > FANF_LIMIT)
+  // {
+  //   fan_error += fan_c - FANF_LIMIT;
+  // }
+  // if (can_c > CANF_LIMIT)
+  // {
+  //   can_error += can_c - CANF_LIMIT;
+  // }
+  // if (wtp_c > WTPF_LIMIT)
+  // {
+  //   wtp_error += wtp_c - WTPF_LIMIT;
+  // }
+  // if (str_c > STRF_LIMIT)
+  // {
+  //   str_error += str_c - STRF_LIMIT;
+  // }
+
+  // Digital circuit breaking
+  // if (aux1_c < 0 || aux1_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("Aux1 error: ");
+  //   Serial.println(aux1_error);
+  //   relay(false, AUX1RD); // disable relay
+  // }
+  // if (aux2_c < 0 || aux2_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("Aux2 error: ");
+  //   Serial.println(aux2_error);
+  //   relay(false, AUX2RD);
+  // }
+  // if (pe3_c < 0 || pe3_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("PE3 error: ");
+  //   Serial.println(pe3_error);
+  //   relay(false, PE3FPRD);
+  // }
+  // if (eth_c < 0 || eth_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("ETH error: ");
+  //   Serial.println(eth_error);
+  //   relay(false, ENGRD);
+  // }
+  // if (eng_c < 0 || eng_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("ENG error: ");
+  //   Serial.println(eng_error);
+  //   relay(false, ENGRD);
+  // }
+  // if (fp_c < 0 || fp_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("FP error: ");
+  //   Serial.println(fp_error);
+  //   relay(false, PE3FPRD);
+  // }
+  // if (fan_c < 0 || fan_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("FAN error: ");
+  //   Serial.println(fan_error);
+  //   relay(false, PE3FANRD);
+  // }
+  // if (can_c < 0 || can_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("CAN error: ");
+  //   Serial.println(can_error);
+  //   relay(false, CANRD);
+  // }
+  // if (wtp_c < 0 || wtp_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("WTP error: ");
+  //   Serial.println(wtp_error);
+  //   relay(false, WTPRD);
+  // }
+  // if (str_c < 0 || str_error > ACCEPTED_ERROR)
+  // {
+  //   Serial.print("STR error: ");
+  //   Serial.println(str_error);
+  //   relay(false, STRRD);
+  // }
+
+  // //read signals from PE3 and turn on related relays  
 
   // read signals from PE3 and turn on related relays
   printDebug("Fan State: ");
@@ -352,14 +448,17 @@ void loop()
   printDebug("\tSTR State: ");
   printDebug(str_state);
   printDebug("\n");
+  
   if (pe3fan_v > ANALOG_LOW && fan_state)
   {
     relay(false, PE3FANRD);
+    // relay(false, WTPRD);
     fan_state = false;
   }
   if (pe3fan_v <= ANALOG_LOW && !fan_state)
   {
     relay(true, PE3FANRD);
+    // relay(true, WTPRD);
     fan_state = true;
   }
 
@@ -374,6 +473,7 @@ void loop()
     fp_state = true;
   }
 
+  // TODO: Switch to push to start
   if (strin_v >= ANALOG_LOW && str_state)
   {
     relay(false, STRRD);
@@ -385,6 +485,53 @@ void loop()
     str_state = true;
   }
 
+  // TODO: water pump: start whenever engine is turned on, stop when coolant temp gets low enough
+  // get coolant temp from CAN
+  // CAN.filter(2365584712); // coolant temp ID from DBC file
+  // CAN.onReceive(onReceive);
+
+  // push to start
+  // timeout after 2s
+  // enable starter relay, stop when RPM >1000
+  // get RPM from CAN
+
+  // ethrottle (ETHF)
+
+  // read voltage of battery
+  // datasheet says minimum preferred is 8V
+  // added 20% factor of safety
+  // if (bat123_v < LOW_VOLTAGE && strin_v > ANALOG_LOW)
+  // {
+  //   Serial.print("Battery voltage too low: ");
+  //   Serial.println(bat123_v);
+  //   for (int i = 0; i < 8; i++)
+  //   {
+  //     relay(false, i);
+  //   }
+  //   low_battery = true;
+  // }
+
+  // TODO: Send CAN data
+  // TODO: Ethrottle protections
+}
+
+// void onReceive()
+// {
+//   uint16_t msg;
+//   for (int i = 0; i < 6; i++)
+//   {
+//     int b = CAN.read();
+//     if (i == 4)
+//     {
+//       msg = b << 8; // left shift first byte
+//     }
+//     if (i == 5)
+//     {
+//       msg |= b; // or second byte
+//     }
+//   }
+//   coolant_temp = msg;
+// }
 
 float currSense(int pin)
 {
@@ -398,25 +545,15 @@ float currSense(int pin)
   SPI.beginTransaction(SPISettings(SPI_SPEED_ADC, MSBFIRST, SPI_MODE0));
   digitalWrite(ADC_CS, LOW);
   delay(1);
-
-  // uint8_t mesg = 0b00000101;
-  // mesg |= pin << 4; // bitwise operator
-  // uint8_t output = SPI.transfer(mesg);
-
-  uint16_t mesg = 0b00001101 << 8;
-  mesg |= pin << 12; // bitwise operator
-  // mesg |= 0b1011 << 12;
-  uint16_t output = SPI.transfer(mesg);
-
-  // uint16_t mesg = 0b00110000; // params: buffer (0b - binary, 0 - unipolar binary, 0 - MSB out first, 11 - 16-bit output length, XXXX - pin command), return size
-  // mesg |= pin;                // bitwise operator
-  // uint16_t output = SPI.transfer16(mesg);
+  // uint8_t message = (pin << 4) | 0b1000;
+  // uint8_t output1 = SPI.transfer(message);
+  uint8_t output1 = SPI.transfer(0b01101000);
+  uint8_t output2 = SPI.transfer(0b00000000);
   digitalWrite(ADC_CS, HIGH);
 
   SPI.endTransaction();
-
-  return (output >> 4) * (VREF / (float)ADC_RES); //* 30.303 - 50; // Linearize
-  // return output >> 2;
+  uint16_t output = ((output1 << 8) | output2) >> 4;
+  return output * 0.0201416015625 - 41.47;
 }
 
 // params:

@@ -1,7 +1,7 @@
 #include "ControlBoard.h"
 #include <SPI.h>
 #include <Servo.h>
-#include <CAN.h>
+// #include <CAN.h>
 
 //Initializations
 
@@ -80,10 +80,10 @@ void setup()
   digitalWrite(PIN_CAN_BOOSTEN, true);
 
   Serial.begin(9600);
-  if (!CAN.begin(BAUD_RATE))
-  {
-    Serial.println("Starting CAN failed!");
-  }
+  // if (!CAN.begin(BAUD_RATE))
+  // {
+  //   Serial.println("Starting CAN failed!");
+  // }
 }
 
 /* ----------------------- Methods ----------------------- */
@@ -267,6 +267,7 @@ void loop()
     if (averagedPosition < 0.145)
     {
       positionCommanded = 165;
+      // positionCommanded = 0;
     }
     else if (averagedPosition > 0.955)
     {
@@ -277,6 +278,7 @@ void loop()
       // positionCommanded = -12.3457 * averagedPosition + 121.79;
       // positionCommanded = -18.5185 * averagedPosition + 127.685;
       positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 136.64;
+      // positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 75;
     }
 
     Serial.print("Clutch paddle: ");
@@ -288,14 +290,14 @@ void loop()
   setClutchPosition(positionCommanded);
 
   // CAN
-  canCurrentMillis = millis();
-  if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL)
-  {
-    CAN.beginPacket(0x31);
-    CAN.write(drsOpen);
-    CAN.write((short)positionCommanded);
-    CAN.endPacket();
-  }
+  // canCurrentMillis = millis();
+  // if (canCurrentMillis - canPreviousMillis > CAN_INTERVAL)
+  // {
+  //   CAN.beginPacket(0x31);
+  //   CAN.write(drsOpen);
+  //   CAN.write((short)positionCommanded);
+  //   CAN.endPacket();
+  // }
 
   // Data count update
   dataCount++;
