@@ -82,7 +82,7 @@
 #define AUX2F_LIMIT 15
 
 #define ACCEPTED_ERROR 15
-#define ANALOG_LOW 5.0
+#define ANALOG_LOW 9.55
 #define LOW_VOLTAGE 8.0
 #define LED 13
 #define BLINK_INTERVAL 1000
