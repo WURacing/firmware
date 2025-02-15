@@ -1,0 +1,105 @@
+VERSION "WUFR 25.1.0"
+
+BS_: 1000000 : 0,0
+
+BU_: FSB DAQ RSB CTRLB
+
+BO_ 16 FSBAnlg1: 8 FSB
+ SG_ ShockPotFL : 0|16@1+ (10.0,0) [0|50] "mm" DAQ
+ SG_ ShockPotFR : 16|16@1+ (10.0,0) [0|50] "mm" DAQ
+ SG_ FAnlg2 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg3 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 17 FSBAnlg2: 8 FSB
+ SG_ FAnlg4 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg5 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg6 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg7 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 18 FSBAnlg3: 8 FSB
+ SG_ FAnlg8 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ BrkPrsF : 16|16@1+ (250.0,-125.0) [-125|1125] "Psi" DAQ
+ SG_ FAnlg10 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ SteeringPot : 48|16@1+ (0.83044,-315.013) [-90|90] "deg" DAQ
+
+BO_ 19 FSBAnlg4: 8 FSB
+ SG_ FAnlg12 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ BrakeTempFR : 16|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
+ SG_ FAnlg14 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ BrakeTempFL : 48|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
+
+BO_ 20 FSBAnlg5: 8 FSB
+ SG_ FAnlg16 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg17 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg18 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ Pitot : 48|16@1+ (0.000045,-0.0225) [0|0.18] "psi" DAQ
+
+BO_ 21 FSBAnlg6: 8 FSB
+ SG_ AccX : 0|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ AccY : 16|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ AccZ : 32|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ GyroX : 48|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+
+BO_ 22 FSBAnlg7: 8 FSB
+ SG_ GyroY : 0|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+ SG_ GyroZ : 16|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+ SG_ MagX : 32|16@1- (0.01,0) [-3276|3276] "#" DAQ
+ SG_ MagY : 48|16@1- (0.01,0) [-3276|3276] "#" DAQ
+
+BO_ 23 FSBAnlg8: 8 FSB
+ SG_ MagZ : 0|16@1+ (0.01,0) [-3276|3276] "#" DAQ
+
+BO_ 32 FSBAnlg1: 8 RSB
+ SG_ ShockPotRL : 0|16@1+ (10.0,0) [0|50] "mm" DAQ
+ SG_ BrakeTempRL : 16|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
+ SG_ FAnlg2 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ OutletTempL : 48|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
+
+BO_ 33 FSBAnlg2: 8 RSB
+ SG_ InletTemp2R : 0|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
+ SG_ FAnlg5 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ InletTemp1R : 32|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
+ SG_ FAnlg7 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 34 FSBAnlg3: 8 RSB
+ SG_ FAnlg8 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ ShockPotRR : 16|16@1+ (10.0,0) [0|50] "mm" DAQ
+ SG_ InletTempL : 32|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
+ SG_ FAnlg11 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 35 FSBAnlg4: 8 RSB
+ SG_ FAnlg12 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ BrakeTempRR : 16|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
+ SG_ BrkPrsR : 32|16@1+ (250.0,-125.0) [-125|1125] "Psi" DAQ
+ SG_ FAnlg15 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
+
+BO_ 36 FSBAnlg5: 8 RSB
+ SG_ FAnlg16 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FlowRate : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ FAnlg18 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ OutletTempR : 48|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
+
+BO_ 37 FSBAnlg6: 8 RSB
+ SG_ AccX : 0|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ AccY : 16|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ AccZ : 32|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
+ SG_ GyroX : 48|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+
+BO_ 38 FSBAnlg7: 8 RSB
+ SG_ GyroY : 0|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+ SG_ GyroZ : 16|16@1- (0.01,0) [-3276|3276] "deg/s^2" DAQ
+ SG_ MagX : 32|16@1- (0.01,0) [-3276|3276] "#" DAQ
+ SG_ MagY : 48|16@1- (0.01,0) [-3276|3276] "#" DAQ
+
+BO_ 39 FSBAnlg8: 8 RSB
+ SG_ MagZ : 0|16@1+ (0.01,0) [-3276|3276] "#" DAQ
+
+BO_ 49 CTRLBrd: 5 CTRLB
+ SG_ ClutchPosition : 0|8@1+ (1,0) [0|255] "Deg" DAQ
+ SG_ ClutchL : 8|16@1+ (0.00024414,0) [0|1] "" DAQ
+ SG_ ClutchR : 24|16@1+ (0.00024414,0) [0|1] "" DAQ
+
+CM_ BU_ FSB "Front sensor board";
+CM_ BU_ RSB "Rear sensor board";
+CM_ BU_ CTRLB "Control board";
+BA_DEF_DEF_  "GenMsgCycleTime" 100;
