@@ -284,15 +284,15 @@ void loop()
 
     if (averagedPosition < 0.145)
     {
-      positionCommanded = 165;
+      positionCommanded = 21;
     }
     else if (averagedPosition > 0.735)
     {
-      positionCommanded = 26;
+      positionCommanded = 165;
     }
     else
     {
-      positionCommanded = 235.59322 * averagedPosition - 8.16102;
+      positionCommanded = 244.0678 * averagedPosition - 14.38983;
     }
 
     Serial.print("Clutch paddle: ");
