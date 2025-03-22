@@ -36,7 +36,7 @@ class SensorDataCollector:
                         try:
                             voltage = float(line)  # Read the voltage value
                             with self.lock:
-                                self.latest_voltage = voltage * (5.0 / 3.0)  # Scale back to 0–5V
+                                self.latest_voltage = voltage 
                                 print("Updated voltage:", self.latest_voltage)
                         except ValueError:
                             print(f"Invalid voltage data: {line}")
