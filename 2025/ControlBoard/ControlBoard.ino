@@ -284,19 +284,15 @@ void loop()
 
     if (averagedPosition < 0.145)
     {
-      positionCommanded = 165;
-      // positionCommanded = 0;
+      positionCommanded = 21;
     }
-    else if (averagedPosition > 0.955)
+    else if (averagedPosition > 0.735)
     {
-      positionCommanded = 26;
+      positionCommanded = 165;
     }
     else
     {
-      // positionCommanded = -12.3457 * averagedPosition + 121.79;
-      // positionCommanded = -18.5185 * averagedPosition + 127.685;
-      positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 136.64;
-      // positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 75;
+      positionCommanded = 244.0678 * averagedPosition - 14.38983;
     }
 
     Serial.print("Clutch paddle: ");
