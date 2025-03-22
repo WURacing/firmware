@@ -1,0 +1,142 @@
+import tkinter as tk
+from tkinter import messagebox
+import serial
+import csv
+import os
+from threading import Thread, Lock
+
+class SensorDataCollector:
+    def __init__(self, port, baud_rate, csv_file):
+        self.port = port
+        self.baud_rate = baud_rate
+        self.csv_file = csv_file
+        self.running = False
+        self.ser = None
+        self.root = None
+        self.latest_voltage = None  # Only one channel (pitot tube)
+        self.lock = Lock()
+        self.header_written = os.path.exists(self.csv_file)
+
+    def mph_to_millibar(self, speed_mph):
+        """
+        Convert speed in mph to pressure difference in millibar.
+        Assumes air density at 57°F (1.226 kg/m³).
+        """
+        speed_mps = speed_mph * 0.44704  # Convert mph to m/s
+        pressure_pa = 0.5 * 1.226 * (speed_mps ** 2)  # Pressure in Pascals
+        pressure_mbar = pressure_pa * 0.01  # Convert Pascals to millibar
+        return pressure_mbar
+
+    def read_serial(self):
+        while self.running:
+            if self.ser and self.ser.is_open:
+                try:
+                    line = self.ser.readline().decode('utf-8').strip()
+                    if line:  # Check if line is not empty
+                        try:
+                            voltage = float(line)  # Read the voltage value
+                            with self.lock:
+                                self.latest_voltage = voltage * (5.0 / 3.0)  # Scale back to 0–5V
+                                print("Updated voltage:", self.latest_voltage)
+                        except ValueError:
+                            print(f"Invalid voltage data: {line}")
+                except (serial.SerialException, UnicodeDecodeError) as e:
+                    print(f"Serial error: {e}")
+
+    def save_data(self, speed_mph):
+        with self.lock:
+            voltage = self.latest_voltage
+            
+        if voltage is None:
+            messagebox.showerror("Error", "No valid sensor data available")
+            return
+        
+        # Convert speed to millibar
+        pressure_mbar = self.mph_to_millibar(speed_mph)
+        
+        # Save data to CSV
+        with open(self.csv_file, 'a', newline='') as f:
+            writer = csv.writer(f)
+            if not self.header_written:
+                writer.writerow(["Speed (mph)", "Pressure (mbar)", "Voltage (V)"])
+                self.header_written = True
+            writer.writerow([speed_mph, pressure_mbar, voltage])
+        messagebox.showinfo("Saved", f"Speed {speed_mph} mph saved with pressure {pressure_mbar:.2f} mbar and voltage {voltage:.2f} V")
+
+    def add_external_speed(self, entry_widget):
+        try:
+            speed_mph = float(entry_widget.get())
+            entry_widget.delete(0, tk.END)
+            # Send speed to Arduino (if needed)
+            if self.ser and self.ser.is_open:
+                self.ser.write(f"{speed_mph}\n".encode())
+            self.save_data(speed_mph)
+        except ValueError:
+            messagebox.showerror("Error", "Invalid speed value")
+
+    def stop_program(self):
+        self.running = False
+        if self.ser and self.ser.is_open:
+            self.ser.write(b"END\n")  # Send END command to Arduino
+            self.ser.close()
+        if self.root:
+            self.root.quit()
+
+    def start(self):
+        try:
+            self.ser = serial.Serial(self.port, self.baud_rate, timeout=1)
+            self.running = True
+        except serial.SerialException as e:
+            messagebox.showerror("Error", f"Could not open serial port: {e}")
+            return
+
+        # Create GUI
+        self.root = tk.Tk()
+        self.root.title("Pitot Tube Data Collector")
+
+        # Speed input
+        input_frame = tk.Frame(self.root)
+        input_frame.pack(pady=10)
+        
+        tk.Label(input_frame, text="Speed (mph):").pack(side=tk.LEFT)
+        speed_entry = tk.Entry(input_frame, width=10)
+        speed_entry.pack(side=tk.LEFT, padx=5)
+        tk.Button(input_frame, text="Record", 
+                 command=lambda: self.add_external_speed(speed_entry)).pack(side=tk.LEFT)
+
+        # Status display
+        status_frame = tk.Frame(self.root)
+        status_frame.pack(pady=10)
+        self.status_label = tk.Label(status_frame, text="Waiting for sensor data...")
+        self.status_label.pack()
+
+        # Stop button
+        tk.Button(self.root, text="Stop Program", 
+                 command=self.stop_program, bg="red", fg="white").pack(pady=10)
+
+        # Start serial thread
+        Thread(target=self.read_serial, daemon=True).start()
+        
+        # Start UI updates
+        self.update_ui()
+        self.root.mainloop()
+
+    def update_ui(self):
+        if self.running:
+            with self.lock:
+                voltage = self.latest_voltage
+                
+            if voltage is not None:
+                status_text = f"Voltage: {voltage:.2f} V"
+                self.status_label.config(text=status_text)
+            
+            self.root.after(500, self.update_ui)
+
+# Configuration - Update these values
+PORT = '/dev/cu.usbmodem143101'  # Replace with your actual port
+BAUD_RATE = 9600
+CSV_FILE = 'pitot_data.csv'
+
+# Start application
+app = SensorDataCollector(PORT, BAUD_RATE, CSV_FILE)
+app.start()
