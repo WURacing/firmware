@@ -335,7 +335,7 @@ void loop()
     // }
     // else
     // {
-    //   positionCommanded = -50.7697 * pow(1 - averagedPosition, 3) + 120.513 * pow(1 - averagedPosition, 2) - 96.6814 * 1 - averagedPosition + 136.64;
+    //   positionCommanded = -50.7697 * pow(1 - averagedPosition, 3) + 120.513 * pow(1 - averagedPosition, 2) - 96.6814 * (1 - averagedPosition) + 136.64;
     // }
 
     Serial.print("Clutch paddle: ");
