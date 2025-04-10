@@ -5,8 +5,8 @@ BS_: 1000000 : 0,0
 BU_: FSB DAQ RSB CTRLB
 
 BO_ 16 FSBAnlg1: 8 FSB
- SG_ ShockPotFL : 0|16@1+ (10.0,0) [0|50] "mm" DAQ
- SG_ ShockPotFR : 16|16@1+ (10.0,0) [0|50] "mm" DAQ
+ SG_ ShockPotFL : 0|16@1+ (0.013986,-0.0112) [0|50] "mm" DAQ
+ SG_ ShockPotFR : 16|16@1+ (0.013986,-0.0112) [0|50] "mm" DAQ
  SG_ FAnlg2 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FAnlg3 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
@@ -32,7 +32,7 @@ BO_ 20 FSBAnlg5: 8 FSB
  SG_ FAnlg16 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FAnlg17 : 16|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ FAnlg18 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ Pitot : 48|16@1+ (0.000045,-0.0225) [0|0.18] "psi" DAQ
+ SG_ Pitot : 48|16@1+ (0.00326,-1.63) [0|13.04] "mbar" DAQ
 
 BO_ 21 FSBAnlg6: 8 FSB
  SG_ AccX : 0|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
@@ -50,7 +50,7 @@ BO_ 23 FSBAnlg8: 8 FSB
  SG_ MagZ : 0|16@1+ (0.01,0) [-3276|3276] "#" DAQ
 
 BO_ 32 FSBAnlg1: 8 RSB
- SG_ ShockPotRL : 0|16@1+ (10.0,0) [0|50] "mm" DAQ
+ SG_ ShockPotRL : 0|16@1+ (0.013986,-0.0112) [0|50] "mm" DAQ
  SG_ BrakeTempRL : 16|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
  SG_ FAnlg2 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ OutletTempL : 48|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
@@ -63,7 +63,7 @@ BO_ 33 FSBAnlg2: 8 RSB
 
 BO_ 34 FSBAnlg3: 8 RSB
  SG_ FAnlg8 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ ShockPotRR : 16|16@1+ (10.0,0) [0|50] "mm" DAQ
+ SG_ ShockPotRR : 16|16@1+ (0.013986,-0.0112) [0|50] "mm" DAQ
  SG_ InletTempL : 32|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
  SG_ FAnlg11 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
