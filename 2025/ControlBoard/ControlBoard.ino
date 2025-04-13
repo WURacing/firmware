@@ -146,19 +146,19 @@ void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned 
 
 void upshift(int pulse)
 {
+  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
+  digitalWrite(SMEET_PIN,LOW);
   delay(pulse);
 }
 
 void downshift(int pulse)
 {
-  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
-  digitalWrite(SMEET_PIN,LOW);
   delay(pulse);
 }
 
@@ -285,7 +285,7 @@ void loop()
     // LINEAR FUNCTION
     // (base case)
     //
-    if (averagedPosition < 0.245)
+    if (averagedPosition < 0.357)
     {
       positionCommanded = 21;
     }
@@ -293,11 +293,18 @@ void loop()
     {
       positionCommanded = 165;
     }
-    else
+    else if (averagedPosition<0.9 && averagedPosition>0.7)
     {
-      positionCommanded = 220 * averagedPosition - 33;
+      positionCommanded = 350 * averagedPosition - 150;
     }
-
+    else if (averagedPosition<0.7 && averagedPosition>0.47)
+    {
+      positionCommanded = 150 * averagedPosition - 10;
+    }
+    else 
+    {
+      positionCommanded = 350 * averagedPosition - 104;
+    }
     // S-SHAPED FUNCTION
     // (comment this out to use it)
     //00
