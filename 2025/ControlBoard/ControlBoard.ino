@@ -146,19 +146,19 @@ void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned 
 
 void upshift(int pulse)
 {
+  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
+  digitalWrite(SMEET_PIN,LOW);
   delay(pulse);
 }
 
 void downshift(int pulse)
 {
-  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
-  digitalWrite(SMEET_PIN,LOW);
   delay(pulse);
 }
 
@@ -282,18 +282,60 @@ void loop()
     // positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
     // positionCommanded = max(positionCommanded, 26);
 
-    if (averagedPosition < 0.145)
+    // LINEAR FUNCTION
+    // (base case)
+    //
+    if (averagedPosition < 0.37)
     {
       positionCommanded = 21;
     }
-    else if (averagedPosition > 0.735)
+    else if (averagedPosition > 0.93)
     {
       positionCommanded = 165;
     }
-    else
+    else 
     {
-      positionCommanded = 244.0678 * averagedPosition - 14.38983;
+      positionCommanded = 125 * averagedPosition +13.75;
     }
+    // S-SHAPED FUNCTION
+    // (comment this out to use it)
+    //00
+    //     if (averagedPosition < 0.1)
+    // {
+    //     positionCommanded = 21;
+    // }
+    // else if (averagedPosition > 0.9)
+    // {
+    //     positionCommanded = 165;
+    // }
+    // else
+    // {
+    //     // Normalize to 0-1 range
+    //     double normalizedPos = (averagedPosition - 0.145) / (0.735 - 0.145);
+        
+    //     // Create a balanced S-curve that tapers at both ends
+    //     // Using sine function: (sin(π(x-0.5)) + 1) / 2
+    //     double sValue = (sin(PI * (normalizedPos - 0.5)) + 1) / 2;
+        
+    //     // Scale to our clutch range (21 to 165)
+    //     positionCommanded = 21 + (144 * sValue);
+    // }
+
+    // QUINN FUNCTION
+    // (mad weird, use at your own risk)
+    //
+    // if (averagedPosition < 0.145)
+    // {
+    //   positionCommanded = 21;
+    // }
+    // else if (averagedPosition > 0.955)
+    // {
+    //   positionCommanded = 165;
+    // }
+    // else
+    // {
+    //   positionCommanded = -50.7697 * pow(1 - averagedPosition, 3) + 120.513 * pow(1 - averagedPosition, 2) - 96.6814 * (1 - averagedPosition) + 136.64;
+    // }
 
     Serial.print("Clutch paddle: ");
     Serial.print(averagedPosition);

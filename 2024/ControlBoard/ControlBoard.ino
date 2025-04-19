@@ -147,19 +147,19 @@ void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned 
 
 void upshift(int pulse)
 {
+  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
+  digitalWrite(SMEET_PIN,LOW);
   delay(pulse);
 }
 
 void downshift(int pulse)
 {
-  digitalWrite(SMEET_PIN,HIGH);
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
-  digitalWrite(SMEET_PIN,LOW);
   delay(pulse);
 }
 

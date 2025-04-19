@@ -39,9 +39,9 @@ short analogs[20];
 short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
 short magn[DIMENSIONS];
-short accel_out[DIMENSIONS];
-short gyro_out[DIMENSIONS];
-short magn_out[DIMENSIONS];
+double accel_out[DIMENSIONS];
+double gyro_out[DIMENSIONS];
+double magn_out[DIMENSIONS];
 double average_matrix[29];
 
 #define BLINK_INTERVAL 1000
@@ -148,6 +148,24 @@ void loop()
   transform(gyro, gyro_out);
   transform(magn, magn_out);
 
+  Serial.print("Gyro0:");
+Serial.print(gyro[0]);
+Serial.print(",");
+Serial.print("Gyro1:");
+Serial.print(gyro[1]);
+Serial.print(",");
+Serial.print("Gyro2:");
+Serial.print(gyro[2]);
+Serial.print(",");
+Serial.print("TGyro0:");
+Serial.print(gyro_out[0]);
+Serial.print(",");
+Serial.print("TGyro1:");
+Serial.print(gyro_out[1]);
+Serial.print(",");
+Serial.print("TGyro2:");
+Serial.println(gyro_out[2]);
+
   // each column of average_matrix will accumulate the average value over 10 entries
   for (int i = 0; i < 20; i++)
   {
@@ -223,12 +241,19 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[2] = Oaccel.z * 100;
 }
 
-short *transform(short *inp, short *out)
+void transform(short *inp, double *out)
 {
-  out[0] = (short)(0.60814773 * inp[0] + -0.01220856 * inp[1] + 0.74215944 * inp[2]);
-  out[1] = (short)(-0.01220856 * inp[0] + 0.95915566 * inp[1] + 0.02578221 * inp[2]);
-  out[2] = (short)(-0.74215944 * inp[0] + -0.02578221 * inp[1] + 0.60772361 * inp[2]);
-  return out;
+  // out[0] = (short)(0.61146138 * inp[0] + 0.09275305 * inp[1] + 0.76278828 * inp[2]);
+  // out[1] = (short)(0.09275305 * inp[0] + 0.95878757 * inp[1] + -0.19093815 * inp[2]);
+  // out[2] = (short)(-0.76278828 * inp[0] + 0.19093815 * inp[1] + 0.5882438 * inp[2]);
+
+  double angle = 80;
+  double c = cos(angle / 180.0 * 3.14);
+  double s = sin(angle / 180.0 * 3.14);
+
+  out[0] = (1 * inp[0] + 0 * inp[1] + 0 * inp[2]) / 40;
+  out[1] = (0 * inp[0] + c * inp[1] + (-s) * inp[2]) / 40;
+  out[2] = (0 * inp[0] + s * inp[1] + c * inp[2]) / 40;
 }
 
 void blink()
