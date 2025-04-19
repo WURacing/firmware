@@ -285,7 +285,7 @@ void loop()
     // LINEAR FUNCTION
     // (base case)
     //
-    if (averagedPosition < 0.5)
+    if (averagedPosition < 0.37)
     {
       positionCommanded = 21;
     }
@@ -295,7 +295,7 @@ void loop()
     }
     else 
     {
-      positionCommanded = 200 * averagedPosition - 59;
+      positionCommanded = 125 * averagedPosition +13.75;
     }
     // S-SHAPED FUNCTION
     // (comment this out to use it)
