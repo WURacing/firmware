@@ -18,15 +18,15 @@ BO_ 17 FSBAnlg2: 8 FSB
 
 BO_ 18 FSBAnlg3: 8 FSB
  SG_ FAnlg8 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ BrkPrsF : 16|16@1+ (250.0,-125.0) [-125|1125] "Psi" DAQ
+ SG_ BrkPrsF : 16|16@1+ (0.25,-125.0) [-125|1125] "Psi" DAQ
  SG_ FAnlg10 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ SteeringPot : 48|16@1+ (0.83044,-315.013) [-90|90] "deg" DAQ
 
 BO_ 19 FSBAnlg4: 8 FSB
  SG_ FAnlg12 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ BrakeTempFR : 16|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
+ SG_ BrakeTempFR : 16|16@1+ (0.36,-148.0) [-148|1652] "F" DAQ
  SG_ FAnlg14 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ BrakeTempFL : 48|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
+ SG_ BrakeTempFL : 48|16@1+ (0.36,-148.0) [-148|1652] "F" DAQ
 
 BO_ 20 FSBAnlg5: 8 FSB
  SG_ FAnlg16 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
@@ -51,7 +51,7 @@ BO_ 23 FSBAnlg8: 8 FSB
 
 BO_ 32 FSBAnlg1: 8 RSB
  SG_ ShockPotRL : 0|16@1+ (0.013986,-0.0112) [0|50] "mm" DAQ
- SG_ BrakeTempRL : 16|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
+ SG_ BrakeTempRL : 16|16@1+ (0.36,-148.0) [-148|1652] "F" DAQ
  SG_ FAnlg2 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
  SG_ OutletTempL : 48|16@1+ (-131.01462,375.7208) [375.7208|-279.3523] "F" DAQ
 
@@ -69,8 +69,8 @@ BO_ 34 FSBAnlg3: 8 RSB
 
 BO_ 35 FSBAnlg4: 8 RSB
  SG_ FAnlg12 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ BrakeTempRR : 16|16@1+ (360.0,-148.0) [-148|1652] "F" DAQ
- SG_ BrkPrsR : 32|16@1+ (250.0,-125.0) [-125|1125] "Psi" DAQ
+ SG_ BrakeTempRR : 16|16@1+ (0.36,-148.0) [-148|1652] "F" DAQ
+ SG_ BrkPrsR : 32|16@1+ (0.25,-125.0) [-125|1125] "Psi" DAQ
  SG_ FAnlg15 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 36 FSBAnlg5: 8 RSB

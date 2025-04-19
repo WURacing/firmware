@@ -39,9 +39,9 @@ short analogs[20];
 short accel[DIMENSIONS];
 short gyro[DIMENSIONS];
 short magn[DIMENSIONS];
-short accel_out[DIMENSIONS];
-short gyro_out[DIMENSIONS];
-short magn_out[DIMENSIONS];
+double accel_out[DIMENSIONS];
+double gyro_out[DIMENSIONS];
+double magn_out[DIMENSIONS];
 double average_matrix[29];
 
 #define BLINK_INTERVAL 1000
@@ -144,9 +144,33 @@ void loop()
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
+
+
   transform(accel, accel_out);
   transform(gyro, gyro_out);
   transform(magn, magn_out);
+
+    // DEBUGGING OUTPUT
+
+Serial.print("Gyro0:");
+Serial.print(gyro[0]);
+Serial.print(",");
+Serial.print("Gyro1:");
+Serial.print(gyro[1]);
+Serial.print(",");
+Serial.print("Gyro2:");
+Serial.print(gyro[2]);
+Serial.print(",");
+Serial.print("TGyro0:");
+Serial.print(gyro_out[0]);
+Serial.print(",");
+Serial.print("TGyro1:");
+Serial.print(gyro_out[1]);
+Serial.print(",");
+Serial.print("TGyro2:");
+Serial.println(gyro_out[2]);
+
+
 
   // Data Accumulation
   for (int i = 0; i < 20; i++)
@@ -222,12 +246,19 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[2] = Oaccel.z * 100;
 }
 
-short *transform(short *inp, short *out)
+void transform(short *inp, double *out)
 {
-  out[0] = (short)(0.61146138 * inp[0] + 0.09275305 * inp[1] + 0.76278828 * inp[2]);
-  out[1] = (short)(0.09275305 * inp[0] + 0.95878757 * inp[1] + -0.19093815 * inp[2]);
-  out[2] = (short)(-0.76278828 * inp[0] + 0.19093815 * inp[1] + 0.5882438 * inp[2]);
-  return out;
+  // out[0] = (short)(0.61146138 * inp[0] + 0.09275305 * inp[1] + 0.76278828 * inp[2]);
+  // out[1] = (short)(0.09275305 * inp[0] + 0.95878757 * inp[1] + -0.19093815 * inp[2]);
+  // out[2] = (short)(-0.76278828 * inp[0] + 0.19093815 * inp[1] + 0.5882438 * inp[2]);
+
+  double angle = 140;
+  double c = cos(angle / 180.0 * 3.14);
+  double s = sin(angle / 180.0 * 3.14);
+
+  out[0] = (c * inp[0] + 0 * inp[1] + s * inp[2]) / 80;
+  out[1] = (0 * inp[0] + 1 * inp[1] + 0 * inp[2]) / 80;
+  out[2] = (-s * inp[0] + 0 * inp[1] + c * inp[2]) / 80;
 }
 
 void blink()
