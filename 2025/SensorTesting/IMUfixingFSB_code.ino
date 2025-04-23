@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <CAN.h>
 #include <SPI.h>
-#include <BMX160.h>
+#include "DFRobot_BMX160.h"
 #include <math.h>
 
 #include "FSB_CODE.h"
@@ -13,6 +13,19 @@
 #else
 #define printDebug(message)
 #endif
+
+
+
+
+/**
+ * THOUGHTS
+ * Do we need to average at the beginning to account for sampling error on euler calculation
+ */
+
+
+//DEFINE IF WHETHER ZMAG ON (ADJUST FOR YAW TOO)
+bool z_mag_on = false; //turn this on for yaw adjustments via the magnetomter
+bool isRight = true; //need to TEST this
 
 // Initializations
 #define LEDPIN 8
@@ -62,11 +75,11 @@ short g_scale;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
 // accel/gyro sensor definition
-BMX160 bmx160;
+DFRobot_BMX160 bmx160;
 
 float scale = 1000 * ANLG_VRANGE * 1.342 / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
-void calibrate_XY()
+
 
 
 void setup()
@@ -152,9 +165,8 @@ void loop()
 
 
   //Here we want to calibrate the IMU for Roll/Pitch (Yaw possible with magnetometer)
-  bool isRight = true; //need to TEST this
   if (datacount == 1){
-    calibrate_XY(accel, rotation, isRight);
+    calibrate_XY(accel, rotation, isRight, magn);
 
     bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
 
@@ -278,7 +290,7 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
   accel[2] = Oaccel.z * 100;
 }
 
-void calibrate_XY(short *accel, short *RxRy, bool yisRight){
+void calibrate_XY(short *accel, short *RxRy, bool yisRight, short *magn){
   float ax = accel[0]*scale;
   float ay = accel[1]*scale;
   float az = accel[2]*scale;
@@ -304,12 +316,39 @@ void calibrate_XY(short *accel, short *RxRy, bool yisRight){
   RxRy[7] = c_p*s_r;
   RxRy[8] = c_p*c_r;
 
+  if(z_mag_on){
+    float declination = 0.214;
+    float m_x = RxRy[0]*magn[0]+RxRy[1]*magn[1]+RxRy[2]*magn[2];
+    float m_y = RxRy[3]*magn[0]+RxRy[4]*magn[1]+RxRy[5]*magn[2];
+    float psi = atan2f(m_y,m_x)+declination;
+    float c_y = cosf(-psi);
+    float s_y = sinf(-psi);
+
+    for(int i=0; i<9; i++){
+      RxRy[0] =  c_y * c_p;
+      RxRy[1] =  c_y * s_p * s_r + s_y * c_r;
+      RxRy[2] =  c_y * s_p * c_r - s_y * s_r;
+      
+      RxRy[3] = -s_y * c_p;
+      RxRy[4] = -s_y * s_p * s_r + c_y * c_r;
+      RxRy[5] = -s_y * s_p * c_r - c_y * s_r;
+      
+      RxRy[6] = -s_p;
+      RxRy[7] =  c_p * s_r;
+      RxRy[8] =  c_p * c_r;
+    }
+
+    
+  }
+
   //If the board points left for y, flip the sign (can determine with a small lateral movement)
   if(!yisRight){
       RxRy[1] = -RxRy[1];
       RxRy[4] = -RxRy[4];
       RxRy[7] = -RxRy[7];
    }
+
+  
 }
 
 
