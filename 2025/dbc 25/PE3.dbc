@@ -60,8 +60,8 @@ BO_ 2365584200 PE04: 8 PE3
  SG_ AnalogInput8 : 16|16@1- (0.001,0) [0|5] "volts"  DAQ
 
 BO_ 2365584456 PE05: 8 PE3
- SG_ Frequency1 : 0|16@1- (0.001,0) [0|5] "Hz"  DAQ
- SG_ Frequency2 : 16|16@1- (0.001,0) [0|5] "Hz"  DAQ
+ SG_ FRWheelSpeed : 0|16@1- (0.2008,0) [0|120] "mph"  DAQ
+ SG_ FLWheelSpeed: 16|16@1- (0.2008,0) [0|120] "mph"  DAQ
  SG_ RLWheelSpeed : 32|16@1- (0.2008,0) [0|120] "mph"  DAQ
  SG_ RRWheelSpeed : 48|16@1- (0.2008,0) [0|120] "mph"  DAQ
 
