@@ -52,6 +52,7 @@ double positionCommanded = 135;
 
 Servo clutchServo;
 
+
 void setup()
 {
   // setting up CAN
