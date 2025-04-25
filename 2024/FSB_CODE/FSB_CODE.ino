@@ -148,24 +148,6 @@ void loop()
   transform(gyro, gyro_out);
   transform(magn, magn_out);
 
-  Serial.print("Gyro0:");
-Serial.print(gyro[0]);
-Serial.print(",");
-Serial.print("Gyro1:");
-Serial.print(gyro[1]);
-Serial.print(",");
-Serial.print("Gyro2:");
-Serial.print(gyro[2]);
-Serial.print(",");
-Serial.print("TGyro0:");
-Serial.print(gyro_out[0]);
-Serial.print(",");
-Serial.print("TGyro1:");
-Serial.print(gyro_out[1]);
-Serial.print(",");
-Serial.print("TGyro2:");
-Serial.println(gyro_out[2]);
-
   // each column of average_matrix will accumulate the average value over 10 entries
   for (int i = 0; i < 20; i++)
   {
@@ -313,9 +295,7 @@ unsigned short mux(unsigned int index)
   // set multiplexer pins
   if ((index & 0b0001) > 0)
   {
-    digitalWrite(MUX_A0, HIGH);
-    //   Serial.println("A0 high");
-  }
+    digitalWrite(MUX_A0, HIGH);  }
   else
   {
     digitalWrite(MUX_A0, LOW);
@@ -324,7 +304,6 @@ unsigned short mux(unsigned int index)
   if ((index & 0b0010) > 0)
   {
     digitalWrite(MUX_A1, HIGH);
-    // Serial.println("A1 high");
   }
   else
   {
@@ -334,7 +313,6 @@ unsigned short mux(unsigned int index)
   if ((index & 0b0100) > 0)
   {
     digitalWrite(MUX_A2, HIGH);
-    // Serial.println("A2 high");
   }
   else
   {
@@ -344,7 +322,6 @@ unsigned short mux(unsigned int index)
   if ((index & 0b1000) > 0)
   {
     digitalWrite(MUX_A3, HIGH);
-    // Serial.println("A3 high");
   }
   else
   {
