@@ -66,7 +66,6 @@ BMX160 bmx160;
 
 float scale = 1000 * ANLG_VRANGE / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
-void calibrate_XY()
 
 
 void setup()
@@ -145,6 +144,7 @@ void loop()
 
   bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
 
+
   // updating accel, gyro, magn arrays
   accel_update(accel, Oaccel);
   accel_update(gyro, Ogyro);
@@ -185,23 +185,41 @@ void loop()
 
 
 
-  Serial.print("Gyro0:");
-  Serial.print(gyro[0]);
+  // Serial.print("Gyro0:");
+  // Serial.print(gyro[0]);
+  // Serial.print(",");
+  // Serial.print("Gyro1:");
+  // Serial.print(gyro[1]);
+  // Serial.print(",");
+  // Serial.print("Gyro2:");
+  // Serial.print(gyro[2]);
+  // Serial.print(",");
+  // Serial.print("TGyro0:");
+  // Serial.print(gyro_out[0]);
+  // Serial.print(",");
+  // Serial.print("TGyro1:");
+  // Serial.print(gyro_out[1]);
+  // Serial.print(",");
+  // Serial.print("TGyro2:");
+  // Serial.println(gyro_out[2]);
+
+  Serial.print("A0:");
+  Serial.print(accel[0]);
   Serial.print(",");
-  Serial.print("Gyro1:");
-  Serial.print(gyro[1]);
+  Serial.print("A1:");
+  Serial.print(accel[1]);
   Serial.print(",");
-  Serial.print("Gyro2:");
-  Serial.print(gyro[2]);
+  Serial.print("A2:");
+  Serial.print(accel[2]);
+  Serial.print("TA0:");
+  Serial.print(accel_out[0]);
   Serial.print(",");
-  Serial.print("TGyro0:");
-  Serial.print(gyro_out[0]);
+  Serial.print("TA1:");
+  Serial.print(accel_out[1]);
   Serial.print(",");
-  Serial.print("TGyro1:");
-  Serial.print(gyro_out[1]);
-  Serial.print(",");
-  Serial.print("TGyro2:");
-  Serial.println(gyro_out[2]);
+  Serial.print("TA2:");
+  Serial.print(accel_out[2]);
+
 
   // each column of average_matrix will accumulate the average value over 10 entries
   for (int i = 0; i < 20; i++)
@@ -279,6 +297,7 @@ void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 }
 
 void calibrate_XY(short *accel, short *RxRy, bool yisRight){
+  Serial.println("Calibrating");
   float ax = accel[0]*scale;
   float ay = accel[1]*scale;
   float az = accel[2]*scale;

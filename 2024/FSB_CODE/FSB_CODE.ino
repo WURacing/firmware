@@ -121,6 +121,7 @@ void setup()
 
 void loop()
 {
+  blink();
   ++datacount;
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
@@ -144,9 +145,9 @@ void loop()
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
-  transform(accel, accel_out);
-  transform(gyro, gyro_out);
-  transform(magn, magn_out);
+  // transform(accel, accel_out);
+  // transform(gyro, gyro_out);
+  // transform(magn, magn_out);
 
   // each column of average_matrix will accumulate the average value over 10 entries
   for (int i = 0; i < 20; i++)
@@ -157,9 +158,9 @@ void loop()
   // Accelerometer on SB data
   for (int i = 0; i < 3; i++)
   {
-    average_matrix[i + 20] += accel_out[i];
-    average_matrix[i + 23] += gyro_out[i];
-    average_matrix[i + 26] += magn_out[i];
+    average_matrix[i + 20] += accel[i];
+    average_matrix[i + 23] += gyro[i];
+    average_matrix[i + 26] += magn[i];
   }
 
   short avg_send[29];
@@ -219,8 +220,11 @@ void mux_update(short *analogs)
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 {
   accel[0] = Oaccel.x * 100;
+  Serial.println(accel[0]);
   accel[1] = Oaccel.y * 100;
+  Serial.println(accel[1]);
   accel[2] = Oaccel.z * 100;
+  Serial.println(accel[2]);
 }
 
 void transform(short *inp, double *out)
