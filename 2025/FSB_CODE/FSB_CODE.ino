@@ -37,14 +37,15 @@ unsigned long datacount = 0;
 
 // Data storage mechanism
 short analogs[20];
-short accel[DIMENSIONS];
-short gyro[DIMENSIONS];
-short magn[DIMENSIONS];
-double accel_out[DIMENSIONS];
-double gyro_out[DIMENSIONS];
-double magn_out[DIMENSIONS];
+float accel[DIMENSIONS];
+float gyro[DIMENSIONS];
+float magn[DIMENSIONS];
+float accel_out[DIMENSIONS];
+float gyro_out[DIMENSIONS];
+float magn_out[DIMENSIONS];
 double average_matrix[29];
-short rotation[9];
+float rotation[9];
+short avg_send[29];
 
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
@@ -66,6 +67,8 @@ BMX160 bmx160;
 
 float scale = 1000 * ANLG_VRANGE / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
+bool startingUp = true;
+bool zmagcali = true;
 
 
 void setup()
@@ -115,11 +118,7 @@ void setup()
   else
   {
     Serial.println("init true");
-    // Set the accelerometer range to 2G
-    bmx160.setAccelRange(eAccelRange_2G);
-
-    // Set the gyroscope range to 250DPS
-    bmx160.setGyroRange(eGyroRange_250DPS);
+    
   }
   current_millis = millis();
 }
@@ -150,75 +149,77 @@ void loop()
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
+  //PRINTING OUT ACCEL VALUES TO SEE WHAT IS GOING ON
+  // Serial.println("BEFORE");
+  // Serial.print("A0: ");
+  // Serial.println(accel[0]);
+  // Serial.print("A1: ");
+  // Serial.println(accel[1]);
+  // Serial.print("A2: ");
+  // Serial.println(accel[2]);
 
-  //Here we want to calibrate the IMU for Roll/Pitch (Yaw possible with magnetometer)
-  bool isRight = true; //need to TEST this
-  if (datacount == 1){
-    calibrate_XY(accel, rotation, isRight);
+  if(startingUp){
+    startingUp = false;
+    float roll = atan2f(accel[1],accel[2]);
+    float denom = sqrtf(accel[1]*accel[1]+accel[2]*accel[2]);
+    float pitch = atan2f(-accel[0],denom);
+    float s_r = sinf(roll);
+    float c_r = cosf(roll);
+    float s_p = sinf(pitch);
+    float c_p = cosf(pitch);
 
-    bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
+    rotation[0] = c_p;
+    rotation[1] = s_p * s_r;
+    rotation[2] = s_p * c_r;
+    rotation[3] = 0.0f;
+    rotation[4] = c_r;
+    rotation[5] = -s_r;
+    rotation[6] = -s_p;
+    rotation[7] = c_p*s_r;
+    rotation[8] = c_p*c_r;
+    Serial.println("Rotation Matrix Calculated");
+    if(zmagcali){
+      float declination = 0.214;
+      float m_x = rotation[0]*magn[0] + rotation[1]*magn[1] + rotation[2]*magn[2];
+      float m_y = rotation[3]*magn[0] + rotation[4]*magn[1] + rotation[5]*magn[2];
+      float psi = atan2f(m_y,m_x+declination);
+      float c_y = cosf(-psi);
+      float s_y = sinf(-psi);
 
-    // updating accel, gyro, magn arrays
-    accel_update(accel, Oaccel);
-    accel_update(gyro, Ogyro);
-    accel_update(magn, Omagn);
 
-    //transform once according to rotation with a gain
-    transform2(accel, rotation, accel_out, 1.0);
-    g_scale = 1.0/accel_out[2];
+
+      rotation[0] =  c_y * c_p;
+      rotation[1] =  c_y * s_p * s_r + s_y * c_r;
+      rotation[2] =  c_y * s_p * c_r - s_y * s_r;
+      
+      rotation[3] = -s_y * c_p;
+      rotation[4] = -s_y * s_p * s_r + c_y * c_r;
+      rotation[5] = -s_y * s_p * c_r - c_y * s_r;
+      
+      rotation[6] = -s_p;
+      rotation[7] =  c_p * s_r;
+      rotation[8] =  c_p * c_r;
+      
+    }
+    //run the transform, but with a constant of 1.0 to calculate g_scale
+
   }
 
-  //transform once according to rotation with a gain
-  transform2(accel, rotation, accel_out, g_scale);
-
-  //can we assume same scale for gyro, mag?
-  transform2(gyro, rotation, gyro_out, g_scale);
-  transform2(magn, rotation, magn_out, g_scale);
 
 
+  delay(2000);
+  transform2(accel, rotation, accel_out, 1.0);
+  transform2(gyro, rotation, gyro_out, 1.0);
+  transform2(magn, rotation, magn_out, 1.0);
 
 
-  // transform(accel, accel_out);
-  // transform(gyro, gyro_out);
-  // transform(magn, magn_out);
-
-
-
-
-  // Serial.print("Gyro0:");
-  // Serial.print(gyro[0]);
-  // Serial.print(",");
-  // Serial.print("Gyro1:");
-  // Serial.print(gyro[1]);
-  // Serial.print(",");
-  // Serial.print("Gyro2:");
-  // Serial.print(gyro[2]);
-  // Serial.print(",");
-  // Serial.print("TGyro0:");
-  // Serial.print(gyro_out[0]);
-  // Serial.print(",");
-  // Serial.print("TGyro1:");
-  // Serial.print(gyro_out[1]);
-  // Serial.print(",");
-  // Serial.print("TGyro2:");
-  // Serial.println(gyro_out[2]);
-
-  Serial.print("A0:");
-  Serial.print(accel[0]);
-  Serial.print(",");
-  Serial.print("A1:");
-  Serial.print(accel[1]);
-  Serial.print(",");
-  Serial.print("A2:");
-  Serial.print(accel[2]);
-  Serial.print("TA0:");
-  Serial.print(accel_out[0]);
-  Serial.print(",");
-  Serial.print("TA1:");
-  Serial.print(accel_out[1]);
-  Serial.print(",");
-  Serial.print("TA2:");
-  Serial.print(accel_out[2]);
+  Serial.println("AFTER");
+  Serial.print("A0: ");
+  Serial.println(accel_out[0]);
+  Serial.print("A1: ");
+  Serial.println(accel_out[1]);
+  Serial.print("A2: ");
+  Serial.println(accel_out[2]);
 
 
   // each column of average_matrix will accumulate the average value over 10 entries
@@ -230,12 +231,12 @@ void loop()
   // Accelerometer on SB data
   for (int i = 0; i < 3; i++)
   {
-    average_matrix[i + 20] += accel_out[i];
-    average_matrix[i + 23] += gyro_out[i];
-    average_matrix[i + 26] += magn_out[i];
+    average_matrix[i + 20] += (double)accel_out[i];
+    average_matrix[i + 23] += (double)gyro_out[i];
+    average_matrix[i + 26] += (double)magn_out[i];
   }
 
-  short avg_send[29];
+  
 
   // Average out the matrices used and convert to short for CAN
   if (datacount >= NUM_SAMPLES)
@@ -289,67 +290,14 @@ void mux_update(short *analogs)
   printDebug('\n');
 }
 // Add 3 dimensions of accel, gyro, magn to matrix
-void accel_update(short *accel, sBmx160SensorData_t Oaccel)
+void accel_update(float *accel, sBmx160SensorData_t Oaccel)
 {
-  accel[0] = Oaccel.x * 100;
-  accel[1] = Oaccel.y * 100;
-  accel[2] = Oaccel.z * 100;
+  accel[0] = Oaccel.x;
+  accel[1] = Oaccel.y;
+  accel[2] = Oaccel.z;
 }
 
-void calibrate_XY(short *accel, short *RxRy, bool yisRight){
-  Serial.println("Calibrating");
-  float ax = accel[0]*scale;
-  float ay = accel[1]*scale;
-  float az = accel[2]*scale;
-
-  //compute Euler angles we can
-  float roll = atan2f(ay,az);
-  float pitch = atan2f(-ax, sqrtf(ay*ay+az*az));
-  float s_r = sinf(roll);
-  float c_r = cosf(roll);
-  float s_p = sinf(pitch);
-  float c_p = cosf(pitch);
-
-  //0, 1, 2
-  //3, 4, 5
-  //6, 7, 8
-  RxRy[0] = c_p;
-  RxRy[1] = s_p * s_r;
-  RxRy[2] = s_p * c_r;
-  RxRy[3] = 0.0f;
-  RxRy[4] = c_r;
-  RxRy[5] = -s_r;
-  RxRy[6] = -s_p;
-  RxRy[7] = c_p*s_r;
-  RxRy[8] = c_p*c_r;
-
-  //If the board points left for y, flip the sign (can determine with a small lateral movement)
-  if(!yisRight){
-      RxRy[1] = -RxRy[1];
-      RxRy[4] = -RxRy[4];
-      RxRy[7] = -RxRy[7];
-   }
-}
-
-
-
-void transform(short *inp, double *out)
-{
-  // out[0] = (short)(0.61146138 * inp[0] + 0.09275305 * inp[1] + 0.76278828 * inp[2]);
-  // out[1] = (short)(0.09275305 * inp[0] + 0.95878757 * inp[1] + -0.19093815 * inp[2]);
-  // out[2] = (short)(-0.76278828 * inp[0] + 0.19093815 * inp[1] + 0.5882438 * inp[2]);
-
-  double angle = 80;
-  double c = cos(angle / 180.0 * 3.14);
-  double s = sin(angle / 180.0 * 3.14);
-
-  out[0] = (1 * inp[0] + 0 * inp[1] + 0 * inp[2]) / 40;
-  out[1] = (0 * inp[0] + c * inp[1] + (-s) * inp[2]) / 40;
-  out[2] = (0 * inp[0] + s * inp[1] + c * inp[2]) / 40;
-
-}
-
-void transform2(short *inp, short *rotation, double* out, short g_scale){
+void transform2(float *inp, float *rotation, float* out, float g_scale){
   out[0] = rotation[0] * inp[0] + rotation[1] * inp[1] + rotation[2]*inp[2];
   out[1] = rotation[3] * inp[0] + rotation[4] * inp[1] + rotation[5]*inp[2];
   out[2] = rotation[6] * inp[0] + rotation[7] * inp[1] + rotation[8]*inp[2];

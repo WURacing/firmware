@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <CAN.h>
 #include <SPI.h>
-#include "DFRobot_BMX160.h"
+#include "BMX160.h"
 #include <math.h>
 
 #include "FSB_CODE.h"
@@ -77,7 +77,7 @@ short g_scale;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
 // accel/gyro sensor definition
-DFRobot_BMX160 bmx160;
+BMX160 bmx160;
 
 
 float scale = 1000 * ANLG_VRANGE / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
@@ -142,6 +142,8 @@ void setup()
 void loop()
 {
   ++datacount;
+  delay(5000);
+  Serial.println("STUCK IN LOOP");
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
   {
