@@ -44,8 +44,14 @@ float accel_out[DIMENSIONS];
 float gyro_out[DIMENSIONS];
 float magn_out[DIMENSIONS];
 double average_matrix[29];
-float rotation[9];
 short avg_send[29];
+//set rotation to be the identity matrix
+float rotation[9] = {
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1,
+};
+
 
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
@@ -67,8 +73,13 @@ BMX160 bmx160;
 
 float scale = 1000 * ANLG_VRANGE / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
+
+
+//SETTINGS
 bool startingUp = true;
-bool zmagcali = true;
+bool zmagcali = false;
+bool manualcal = false;
+float psi = 0.0f;
 
 
 void setup()
@@ -124,7 +135,7 @@ void setup()
 }
 
 void loop()
-{
+{ 
   ++datacount;
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
@@ -158,11 +169,16 @@ void loop()
   // Serial.print("A2: ");
   // Serial.println(accel[2]);
 
+
+
   if(startingUp){
     startingUp = false;
-    float roll = atan2f(accel[1],accel[2]);
-    float denom = sqrtf(accel[1]*accel[1]+accel[2]*accel[2]);
-    float pitch = atan2f(-accel[0],denom);
+//    float roll = atan2f(accel[1],accel[2]);
+//    float denom = sqrtf(accel[1]*accel[1]+accel[2]*accel[2]);
+//    float pitch = atan2f(-accel[0],denom);
+    float roll = -0.45f+PI;
+    float pitch = 0.0f;  
+    
     float s_r = sinf(roll);
     float c_r = cosf(roll);
     float s_p = sinf(pitch);
@@ -201,25 +217,46 @@ void loop()
       rotation[8] =  c_p * c_r;
       
     }
-    //run the transform, but with a constant of 1.0 to calculate g_scale
+    if(manualcal){
+      float s_z = sinf(psi);
+      float c_z = cosf(psi);
+      float Rz[9] = {
+        c_z, -s_z, 0.0f,
+        s_z,  c_z, 0.0f,
+        0.0f, 0.0f, 1.0f
+      };
+      // multiply: newRot = Rz * rotation
+      float newRot[9];
+      for(int i = 0; i < 3; ++i) {
+        for(int j = 0; j < 3; ++j) {
+          // newRot[i][j] = sum_k Rz[i][k] * rotation[k][j]
+          newRot[3*i + j] =
+            Rz[3*i + 0]*rotation[0*3 + j] +
+            Rz[3*i + 1]*rotation[1*3 + j] +
+            Rz[3*i + 2]*rotation[2*3 + j];
+        }
+      }
+
+      // copy back into rotation[]
+      memcpy(rotation, newRot, 9*sizeof(float));
+
+    }
 
   }
 
 
 
-  delay(2000);
   transform2(accel, rotation, accel_out, 1.0);
   transform2(gyro, rotation, gyro_out, 1.0);
   transform2(magn, rotation, magn_out, 1.0);
 
+//
+//  Serial.println("AFTER");
 
-  Serial.println("AFTER");
-  Serial.print("A0: ");
-  Serial.println(accel_out[0]);
-  Serial.print("A1: ");
-  Serial.println(accel_out[1]);
-  Serial.print("A2: ");
-  Serial.println(accel_out[2]);
+
+  //swap the x and y
+  swapXYInPlace(accel_out);
+
 
 
   // each column of average_matrix will accumulate the average value over 10 entries
@@ -246,6 +283,15 @@ void loop()
       average_matrix[i] = average_matrix[i] / (float)NUM_SAMPLES;
       avg_send[i] = (short)average_matrix[i];
     }
+
+    Serial.print("X:");
+    Serial.print(avg_send[20]);
+    Serial.print('\t');
+    Serial.print("Y:");
+    Serial.print(avg_send[21]);
+    Serial.print('\t');
+    Serial.print("Z:");
+    Serial.println(avg_send[22]);
 
     // Send CAN Frame
     canShortFrame(avg_send, 0, 0x10);
@@ -406,4 +452,13 @@ unsigned short mux(unsigned int index)
   unsigned short reading = analogRead(MUX_OUT);
   digitalWrite(EN, LOW);
   return reading;
+}
+
+
+// Swaps the X and Y components of the vector in place.
+// vec[0]=X, vec[1]=Y, vec[2]=Z
+void swapXYInPlace(float vec[3]) {
+  float tmp   = vec[0];
+  vec[0]       = vec[1];
+  vec[1]       = tmp;
 }
