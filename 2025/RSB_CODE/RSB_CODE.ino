@@ -4,7 +4,7 @@
 #include <BMX160.h>
 #include <math.h>
 
-#include "FSB_CODE.h"
+#include "RSB_CODE.h"
 // #include "GoblinMode.h"
 
 // #define DEBUG
@@ -176,8 +176,8 @@ void loop()
 //    float roll = atan2f(accel[1],accel[2]);
 //    float denom = sqrtf(accel[1]*accel[1]+accel[2]*accel[2]);
 //    float pitch = atan2f(-accel[0],denom);
-    float roll = -0.45f+PI;
-    float pitch = 0.0f;  
+    float roll = 0.0f;
+    float pitch = -0.85f;  
     
     float s_r = sinf(roll);
     float c_r = cosf(roll);
@@ -259,7 +259,13 @@ void loop()
   swapXYInPlace(gyro_out);
   swapXYInPlace(magn_out);
 
+  makeineg(accel_out, 0);
+  makeineg(gyro_out, 0);
+  makeineg(magn_out, 0);
 
+  makeineg(accel_out, 1);
+  makeineg(gyro_out, 1);
+  makeineg(magn_out, 1);
 
   // each column of average_matrix will accumulate the average value over 10 entries
   for (int i = 0; i < 20; i++)
@@ -296,15 +302,16 @@ void loop()
     Serial.println(avg_send[22]);
 
     // Send CAN Frame
-    canShortFrame(avg_send, 0, 0x10);
-    canShortFrame(avg_send, 4, 0x11);
-    canShortFrame(avg_send, 8, 0x12);
-    canShortFrame(avg_send, 12, 0x13);
-    canShortFrame(avg_send, 16, 0x14);
-    canShortFrame(avg_send, 20, 0x15);
-    canShortFrame(avg_send, 24, 0x16);
+    canShortFrame(avg_send, 0, 0x20);
+    canShortFrame(avg_send, 4, 0x21);
+    canShortFrame(avg_send, 8, 0x22);
+    canShortFrame(avg_send, 12, 0x23);
+    canShortFrame(avg_send, 16, 0x24);
+    canShortFrame(avg_send, 20, 0x25);
+    canShortFrame(avg_send, 24, 0x26);
 
-    CAN.beginPacket(0x17);
+    CAN.beginPacket(0x27);
+    canWriteShort(avg_send[28]);
     CAN.endPacket();
 
     // clear the avg_send and average_matrix arrays of all previous values
@@ -463,4 +470,9 @@ void swapXYInPlace(float vec[3]) {
   float tmp   = vec[0];
   vec[0]       = vec[1];
   vec[1]       = tmp;
+}
+
+
+void makeineg(float vec[3], unsigned int i) {
+  vec[i] = -1.0 * vec[i];
 }
