@@ -99,6 +99,11 @@ BO_ 49 CTRLBrd: 5 CTRLB
  SG_ ClutchL : 8|16@1+ (0.00024414,0) [0|1] "" DAQ
  SG_ ClutchR : 24|16@1+ (0.00024414,0) [0|1] "" DAQ
 
+BO_ 50 PDMCur0: 8 PDM
+ SG_ Current0 : 0|32@1+ (1,0) [-20|20] "V" DAQ
+ SG_ Current1 : 32|32@1+ (1,0) [-20|20] "V" DAQ
+
+
 CM_ BU_ FSB "Front sensor board";
 CM_ BU_ RSB "Rear sensor board";
 CM_ BU_ CTRLB "Control board";
