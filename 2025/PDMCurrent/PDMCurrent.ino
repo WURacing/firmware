@@ -66,10 +66,19 @@ void loop() {
       // Serial.println("output");
     }
 
-    Serial.print("Voltage");
+    Serial.print("Current ");
     Serial.print(i);
-    Serial.print(":");
-    Serial.println(curr);
+    Serial.print(": ");
+    Serial.print(curr);
+    if (i == NUM_ADC - 1)
+    {
+      Serial.println();
+    }
+    else
+    {
+      Serial.print("\t");
+    }
+
   }
   CAN.endPacket();
   delay(100);
