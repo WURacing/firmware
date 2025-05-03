@@ -75,9 +75,9 @@ BO_ 35 RSBAnlg4: 8 RSB
 
 BO_ 36 RSBAnlg5: 8 RSB
  SG_ RAnlg16 : 0|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ OutletTempR : 16|16@1+ (0.001,0) [0|5] "V" DAQ
+ SG_ OutletTempR : 16|16@1+ (-0.13101462,375.7208) [375.7208|-279.3523] "F" DAQ
  SG_ RAnlg18 : 32|16@1+ (0.001,0) [0|5] "V" DAQ
- SG_ RAnlg19 : 48|16@1+ (-0.13101462,375.7208) [375.7208|-279.3523] "F" DAQ
+ SG_ RAnlg19 : 48|16@1+ (0.001,0) [0|5] "V" DAQ
 
 BO_ 37 RSBAnlg6: 8 RSB
  SG_ RAccX : 0|16@1- (0.01,0) [-3276|3276] "m/s^2" DAQ
