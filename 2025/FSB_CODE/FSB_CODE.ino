@@ -3,6 +3,7 @@
 #include <SPI.h>
 #include <BMX160.h>
 #include <math.h>
+#include <Wire.h>
 
 #include "FSB_CODE.h"
 // #include "GoblinMode.h"
@@ -51,7 +52,7 @@ float rotation[9] = {
     0, 1, 0,
     0, 0, 1,
 };
-
+const uint32_t I2C_TIMEOUT_MS = 25;
 
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
@@ -107,6 +108,11 @@ void setup()
   strip.setBrightness(BRIGHTNESS);
   strip.show();
 
+
+  //setting up IMU things
+  Wire.setTimeout(25);
+//  Wire.setWireTimeout(25000, true);
+
   // CAN SETUP
   pinMode(PIN_CAN_STANDBY, OUTPUT);
   digitalWrite(PIN_CAN_STANDBY, false);
@@ -118,6 +124,9 @@ void setup()
   {
     Serial.println("Starting CAN failed!");
   }
+  Wire.begin();               // make sure SERCOM is alive
+  Wire.setTimeout(I2C_TIMEOUT_MS);   // hard limit inside Wire*
+
 
   // Accel error message
   if (bmx160.begin() != true)
@@ -152,7 +161,19 @@ void loop()
   // Taking in Accel, Gyro, Magnetometer results
   sBmx160SensorData_t Omagn, Ogyro, Oaccel;
 
+  //PUT BMX HERE
+  // ---------- BMX160 read with wall‑clock watchdog ----------
+  uint32_t t0 = millis();
   bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
+  bool i2c_ok = (millis() - t0) < I2C_TIMEOUT_MS;
+
+  if (!i2c_ok) {                         // >25 ms → bus was stuck
+    Serial.println("I2C‑timeout – continuing loop");
+    recoverI2CBus();                     // comment out if you don't want auto‑reset
+  }
+// -----------------------------------------------------------
+
+  
 
 
   // updating accel, gyro, magn arrays
@@ -463,4 +484,16 @@ void swapXYInPlace(float vec[3]) {
   float tmp   = vec[0];
   vec[0]       = vec[1];
   vec[1]       = tmp;
+}
+
+void recoverI2CBus() {
+  const uint8_t SCL_PIN = 22;   // Feather M4 CAN → SCL = PA13
+  pinMode(SCL_PIN, OUTPUT);
+  for (int i = 0; i < 9; i++) {           // free the slave
+    digitalWrite(SCL_PIN, HIGH); delayMicroseconds(5);
+    digitalWrite(SCL_PIN, LOW);  delayMicroseconds(5);
+  }
+  pinMode(SCL_PIN, INPUT_PULLUP);         // release SCL
+  Wire.end();
+  Wire.begin();                           // re‑init SERCOM
 }
