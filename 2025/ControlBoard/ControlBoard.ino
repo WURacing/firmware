@@ -292,11 +292,11 @@ void loop()
     }
     else if (averagedPosition > 0.93)
     {
-      positionCommanded = 165;
+      positionCommanded = 110;
     }
     else 
     {
-      positionCommanded = 125 * averagedPosition +13.75;
+      positionCommanded = 105.76923 * averagedPosition + 11.63462;
     }
     // S-SHAPED FUNCTION
     // (comment this out to use it)

@@ -194,8 +194,8 @@ void loop()
 //    float roll = atan2f(accel[1],accel[2]);
 //    float denom = sqrtf(accel[1]*accel[1]+accel[2]*accel[2]);
 //    float pitch = atan2f(-accel[0],denom);
-    float roll = -0.45f+PI;
-    float pitch = 0.0f;  
+    float roll = 0.35f+PI;
+    float pitch = 0.05f;  
     
     float s_r = sinf(roll);
     float c_r = cosf(roll);
