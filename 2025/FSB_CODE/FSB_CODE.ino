@@ -108,10 +108,7 @@ void setup()
   strip.setBrightness(BRIGHTNESS);
   strip.show();
 
-
-  //setting up IMU things
-  Wire.setTimeout(25);
-//  Wire.setWireTimeout(25000, true);
+  delay(4000);
 
   // CAN SETUP
   pinMode(PIN_CAN_STANDBY, OUTPUT);
@@ -361,9 +358,9 @@ void mux_update(short *analogs)
 // Add 3 dimensions of accel, gyro, magn to matrix
 void accel_update(float *accel, sBmx160SensorData_t Oaccel)
 {
-  accel[0] = Oaccel.x;
-  accel[1] = Oaccel.y;
-  accel[2] = Oaccel.z;
+  accel[0] = Oaccel.x*100.0;
+  accel[1] = Oaccel.y*100.0;
+  accel[2] = Oaccel.z*100.0;
 }
 
 void transform2(float *inp, float *rotation, float* out, float g_scale){
@@ -487,7 +484,7 @@ void swapXYInPlace(float vec[3]) {
 }
 
 void recoverI2CBus() {
-  const uint8_t SCL_PIN = 22;   // Feather M4 CAN → SCL = PA13
+  const uint8_t SCL_PIN = 21;   // Feather M4 CAN → SCL = PA13
   pinMode(SCL_PIN, OUTPUT);
   for (int i = 0; i < 9; i++) {           // free the slave
     digitalWrite(SCL_PIN, HIGH); delayMicroseconds(5);
