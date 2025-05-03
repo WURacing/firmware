@@ -176,8 +176,8 @@ void loop()
 //    float roll = atan2f(accel[1],accel[2]);
 //    float denom = sqrtf(accel[1]*accel[1]+accel[2]*accel[2]);
 //    float pitch = atan2f(-accel[0],denom);
-    float roll = 0.0f;
-    float pitch = -0.85f;  
+    float roll = 0.05f;
+    float pitch = -0.90f;  
     
     float s_r = sinf(roll);
     float c_r = cosf(roll);
@@ -347,9 +347,9 @@ void mux_update(short *analogs)
 // Add 3 dimensions of accel, gyro, magn to matrix
 void accel_update(float *accel, sBmx160SensorData_t Oaccel)
 {
-  accel[0] = Oaccel.x;
-  accel[1] = Oaccel.y;
-  accel[2] = Oaccel.z;
+  accel[0] = Oaccel.x * 100;
+  accel[1] = Oaccel.y * 100;
+  accel[2] = Oaccel.z * 100;
 }
 
 void transform2(float *inp, float *rotation, float* out, float g_scale){
