@@ -105,7 +105,7 @@ float currSense(int pin)
 
   float voltage = output * (VREF / (float)ADC_RES);
 
-  float current = (voltage) / 0.60;
+  float current = (voltage) * 0.06;
   // return voltage; //* 30.303 - 50; // Linearize
   return current;
   // return output >> 2;
