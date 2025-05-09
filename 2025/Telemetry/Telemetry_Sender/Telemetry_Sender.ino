@@ -220,55 +220,82 @@ void loop() {
 
 void CANFiller(byte packetID, int packetSize, byte* DBC_Matrix){
   //Decimal values associated with the hex code for the CAN address
-  if(packetID == 22){
+/* CAN FRAMES AND THEIR CORRESPONDING DATA POINTS (2025)
+  16: ShockPotFL, ShockPotFR, null, null
+  17: null, null, null, null
+  **18: null, BrkPrsF, null, SteeringPot
+  **19: null, BrakeTempFR, null, BrakeTempFL
+  **20: null, null, null, Pitot
+  **21: FAccX, FAccY, FAccZ, FGyroX
+  **22: FGyroY, FGyroZ, FMagX, FMagY
+  23: FMagZ, FrRideHeight1, FrRideHeight2
+  **32: ShockPotRL, BrakeTempRL, null, null
+  33: InletTemp2R, null, InletTemp1R, null
+  34: null, ShockPotRR, InletTempL, null
+  **35: null, BrakeTempRR, BrkPrsR, null
+  36: OutletTempL, OutletTempR, null, null
+  **37: RAccX, RAccY, RAccZ, RGyroX
+  **38: RGyroY, RGyroZ, RMagX, RMagy
+  39: RMagZ, ReRideHeight1, ReRideHeight2
+  **49: ClutchPos, ClutchL, ClutchR
+  50: null, null, null, null
+  
+*/
+  if(packetID == 18){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG1[i] = CAN.read();
        DBC_Matrix[i] = CAN.read();
     }
   }
-  else if(packetID == 23){
+  else if(packetID == 19){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG2[i] = CAN.read();
        DBC_Matrix[i+8] = CAN.read();
     }
   }
-  else if(packetID == 24){
+  else if(packetID == 20){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG3[i] = CAN.read();
        DBC_Matrix[i+16] = CAN.read();
     }
   }
-  else if(packetID == 25){
+  else if(packetID == 21){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG4[i] = CAN.read();
        DBC_Matrix[i+24] = CAN.read();
     }
   }
-  else if(packetID == 32){
+  else if(packetID == 22){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG5[i] = CAN.read();
        DBC_Matrix[i+32] = CAN.read();
     }
   }
-  else if(packetID == 33){
+  else if(packetID == 32){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG6[i] = CAN.read();
        DBC_Matrix[i+40] = CAN.read();
     }
   }
-  else if(packetID == 34){
+  else if(packetID == 35){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG7[i] = CAN.read();
        DBC_Matrix[i+48] = CAN.read();
     }
   }
-  else if(packetID == 35){
+  else if(packetID == 37){
     for(int i=0; i< packetSize; i=i+1){
 //      ANLG8[i] = CAN.read();
         DBC_Matrix[i+56] = CAN.read();
     }
   }
-  else if(packetID == 73){
+  else if(packetID == 38){
+    for(int i=0; i< packetSize; i=i+1){
+//      CTRLBD[i] = CAN.read();
+       DBC_Matrix[i+64]= CAN.read();
+    }
+  }
+  else if(packetID == 49){
     for(int i=0; i< packetSize; i=i+1){
 //      CTRLBD[i] = CAN.read();
        DBC_Matrix[i+64]= CAN.read();
