@@ -21,6 +21,7 @@ int test = 0;
 unsigned long current_millis = millis();
 int starter = starter_val;
 int value = 0;
+bool printbool = true;
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
@@ -67,6 +68,9 @@ void setup() {
     Serial.println("Starting CAN failed!");
     while(1);
   }
+
+
+  pinMode(LED, OUTPUT);
 }
 
 int16_t packetnum = 0;
@@ -94,24 +98,26 @@ void loop() {
   curTime = millis();
   int packetSize = CAN.parsePacket();
   byte packetID = CAN.packetId();
-  Serial.println(packetID);
-
-
-
+  if (printbool){
+    Serial.println(packetID);
+  }
   
+
   CANFiller(packetID,packetSize, DBC_Matrix);
 
   //Convert bytes to shorts for validation
 
   convertBytesToShorts(DBC_Matrix, s_DBC_Matrix, 72);
 
-  
-  Serial.print("Shorts: ");
-  for (int i = 0; i < 36; i++) {
-    Serial.print(s_DBC_Matrix[i]);
-    Serial.print(",");
+
+  if (printbool){
+     Serial.print("Shorts: ");
+     for (int i = 0; i < 36; i++) {
+        Serial.print(s_DBC_Matrix[i]);
+        Serial.print(",");
   }
   Serial.println(" ");
+  }
   if(curTime-prevTime >= Tel_Period){
     prevTime = curTime;
     //We sending Telemetry baby
@@ -119,7 +125,10 @@ void loop() {
     //it will be for now although if we fill the frames idk
 
     //not sure if we need to typecast or not
-    Serial.println("Sending...");
+    if (printbool){
+      Serial.println("Sending...");
+    }
+    
     rf95.send((uint8_t *)DBC_Matrix, 72);
 
 //    Serial.println("Waiting for packet to complete...");
