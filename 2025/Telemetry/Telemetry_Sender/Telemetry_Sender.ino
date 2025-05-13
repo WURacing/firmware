@@ -85,8 +85,8 @@ int16_t packetnum = 0;
 //byte ANLG8[8];
 //byte CTRLBD[8];
 
-byte DBC_Matrix[72];
-short s_DBC_Matrix[36];
+byte DBC_Matrix[80];
+short s_DBC_Matrix[40];
 byte Test[2];
 
 unsigned long curTime = millis();
@@ -94,6 +94,7 @@ unsigned long prevTime = 0;
 
 void loop() {
   blink();
+  memset(DBC_Matrix, 0, sizeof(DBC_Matrix));
   delay(10);
   curTime = millis();
   int packetSize = CAN.parsePacket();
@@ -107,12 +108,12 @@ void loop() {
 
   //Convert bytes to shorts for validation
 
-  convertBytesToShorts(DBC_Matrix, s_DBC_Matrix, 72);
+  convertBytesToShorts(DBC_Matrix, s_DBC_Matrix, 80);
 
 
   if (printbool){
      Serial.print("Shorts: ");
-     for (int i = 0; i < 36; i++) {
+     for (int i = 0; i < 40; i++) {
         Serial.print(s_DBC_Matrix[i]);
         Serial.print(",");
   }
@@ -129,7 +130,9 @@ void loop() {
       Serial.println("Sending...");
     }
     
-    rf95.send((uint8_t *)DBC_Matrix, 72);
+    rf95.send((uint8_t *)DBC_Matrix, 80);
+
+    
 
 //    Serial.println("Waiting for packet to complete...");
 //    delay(10);
@@ -307,7 +310,7 @@ void CANFiller(byte packetID, int packetSize, byte* DBC_Matrix){
   else if(packetID == 49){
     for(int i=0; i< packetSize; i=i+1){
 //      CTRLBD[i] = CAN.read();
-       DBC_Matrix[i+64]= CAN.read();
+       DBC_Matrix[i+72]= CAN.read();
     }
   }
 }
