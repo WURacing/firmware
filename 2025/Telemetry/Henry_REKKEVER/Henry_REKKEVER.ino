@@ -47,30 +47,21 @@ void setup()
 }
 
 
-void loop()
-{
+void loop() {
   if (!rf95.available()) return;
 
-  uint8_t len = sizeof(rxBytes) ;
+  uint8_t len = sizeof(rxBytes);
   if (!rf95.recv(rxBytes, &len)) return;
-  if (len != 80) return;            // expect full frame
+  if (len != 80) return;                // expect full frame
+
+  Serial.print(F("Values: "));
 
   for (uint8_t i = 0; i < 40; ++i) {
-    Serial.print(i);
-    Serial.print(": BYTE: (");
-    Serial.print(rxBytes[2 * i]);
-    Serial.print(",");
-    Serial.print(rxBytes[2 * i + 1]);
-    Serial.print(" )");
+    uint16_t raw  = (uint16_t)rxBytes[2 * i + 1] << 8 | rxBytes[2 * i];
+    float    phys = raw * factor[i] + offset[i];
 
-
-    uint16_t raw = (uint16_t)rxBytes[2 * i + 1] << 8 | rxBytes[2 * i];
-    float phys = raw * factor[i] + offset[i];
-    Serial.print("       FLOATS: ");
-    Serial.print(phys, 2);        // two decimals
-    if (i < 39) Serial.write(',');
+    Serial.print(phys, 2);              // two-decimal precision
+    if (i < 39) Serial.print(',');      // comma-separate, no trailing comma
   }
   Serial.println();
-
-
 }
