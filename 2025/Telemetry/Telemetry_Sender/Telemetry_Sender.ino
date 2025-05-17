@@ -10,6 +10,9 @@
 #define RFM95_CS  10  // "B"
 #define RFM95_INT  6  // "D"
 
+
+#define LEN 88
+
 //Delta Time Loop Setup
 #define BLINK_INTERVAL 1000
 #define LED 13
@@ -85,9 +88,9 @@ int16_t packetnum = 0;
 //byte ANLG8[8];
 //byte CTRLBD[8];
 
-byte DBC_Matrix[80];
-short s_DBC_Matrix[40];
-byte Test[2];
+byte DBC_Matrix[LEN];
+short s_DBC_Matrix[LEN/2];
+//byte Test[2];
 
 unsigned long curTime = millis();
 unsigned long prevTime = 0;
@@ -103,12 +106,12 @@ void loop() {
 
   //Convert bytes to shorts for validation
 
-  convertBytesToShorts(DBC_Matrix, s_DBC_Matrix, 80);
+  convertBytesToShorts(DBC_Matrix, s_DBC_Matrix, LEN);
 
 
   if (printbool) {
     Serial.print("Shorts: ");
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < LEN/2; i++) {
       Serial.print(s_DBC_Matrix[i]);
       Serial.print(",");
     }
@@ -125,7 +128,7 @@ void loop() {
       Serial.println("Sending...");
     }
 
-    rf95.send((uint8_t *)DBC_Matrix, 80);
+    rf95.send((uint8_t *)DBC_Matrix, LEN);
 
 
 
@@ -246,6 +249,7 @@ void CANFiller(byte packetID, int packetSize, byte* DBC_Matrix) {
     39: RMagZ, ReRideHeight1, ReRideHeight2
     **49: ClutchPos, ClutchL, ClutchR
     50: null, null, null, null
+    69: Endurance (Fuel Pressure, GPS Speed, Throttle Position, Coolant Temp)
 
   */
   if (packetID == 18) {
@@ -314,6 +318,11 @@ void CANFiller(byte packetID, int packetSize, byte* DBC_Matrix) {
     DBC_Matrix[76] = CAN.read();     // LSB
     DBC_Matrix[77] = CAN.read();     // MSB
 
+  }
+  else if (packetID == 105) {
+    for (int i=0; i< packetSize; i = i+1){
+      DBC_Matrix[i+80] = CAN.read();
+    }
   }
 }
 

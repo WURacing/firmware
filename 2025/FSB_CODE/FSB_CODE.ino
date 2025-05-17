@@ -14,7 +14,6 @@
 #else
 #define printDebug(message)
 #endif
-
 // Initializations
 #define LEDPIN 8
 #define LED 13
