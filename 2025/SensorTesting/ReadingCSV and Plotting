@@ -1,0 +1,67 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Read data from CSV file
+csv_file = "sensor_data.csv"  # Update with your actual filename
+try:
+    df = pd.read_csv(csv_file)
+except FileNotFoundError:
+    print(f"Error: File {csv_file} not found!")
+    exit()
+
+# update calibration data with datasheet points for factory fit
+calibration_data = [
+    (-50, 3.277), (-40, 3.160), (-20, 2.899), (0, 2.633),
+    (20, 2.365), (40, 2.095), (60, 1.819), (80, 1.539),
+    (100, 1.257), (120, 0.973), (140, 0.684), (150, 0.538)
+]
+sorted_calibration = sorted(calibration_data, key=lambda x: x[1])
+cal_v = [v for t, v in sorted_calibration]
+cal_t = [t for t, v in sorted_calibration]
+
+# Linear fit parameters
+m = -72.79
+b = 190.95
+
+# Create plot
+plt.figure(figsize=(12, 8))
+
+# Plot original calibration data and lines
+plt.plot(cal_v, cal_t, 'g-', label='Calibration Curve', linewidth=2, alpha=0.7)
+plt.scatter(cal_v, cal_t, color='red', s=80, label='Calibration Points', zorder=3)
+V_fit = np.linspace(min(cal_v), max(cal_v), 100)
+plt.plot(V_fit, m*V_fit + b, 'b--', label=f'Linear Fit: T = {m:.2f}V + {b:.2f}', linewidth=2)
+
+# Plot sensor data from CSV in different colors
+sensor_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', 
+                '#9467bd', '#8c564b']  # Tableau palette colors
+sensor_columns = ['A0', 'A1', 'A2', 'A3', 'A4', 'A5']
+
+for idx, sensor in enumerate(sensor_columns):
+    if sensor in df.columns:
+        sensor_v = df[sensor].values
+        sensor_t = df['Temp'].values
+        plt.scatter(sensor_v, sensor_t, color=sensor_colors[idx], 
+                    s=40, alpha=0.7, label=f'Sensor {sensor}')
+    else:
+        print(f"Warning: Column {sensor} not found in CSV file")
+
+# Formatting
+plt.title('Sensor Voltage vs Temperature', fontsize=14)
+plt.xlabel('Voltage (V)', fontsize=12)
+plt.ylabel('Temperature (°C)', fontsize=12)
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+
+# Set axis limits based on calibration data
+plt.xlim(min(cal_v)-0.1, max(cal_v)+0.1)
+plt.ylim(min(cal_t)-10, max(cal_t)+10)
+
+# Add calibration point labels
+for v, t in zip(cal_v, cal_t):
+    plt.text(v, t, f'({v:.3f}V, {t}°C)', fontsize=8, 
+             ha='left', va='bottom', rotation=45)
+
+plt.show()

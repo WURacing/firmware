@@ -1,7 +1,7 @@
 #include "ControlBoard.h"
 #include <SPI.h>
 #include <Servo.h>
-// #include <CAN.h>
+#include <CAN.h>
 
 //Initializations
 
@@ -24,7 +24,7 @@
 #define CLUTCH_OUT_PIN 9
 #define SMEET_PIN A3
 
-#define CAN_ID 0x100
+#define CAN_ID 0x31
 
 #define CLUTCH_PULLED 0.8
 #define SAMPLE_SIZE 10
@@ -51,6 +51,7 @@ unsigned long runCount = 0;
 double positionCommanded = 135;
 
 Servo clutchServo;
+
 
 void setup()
 {
@@ -80,10 +81,9 @@ void setup()
   digitalWrite(PIN_CAN_BOOSTEN, true);
 
   Serial.begin(9600);
-  // if (!CAN.begin(BAUD_RATE))
-  // {
-  //   Serial.println("Starting CAN failed!");
-  // }
+  if (!CAN.begin(BAUD_RATE)) {
+    Serial.println("Starting CAN failed!");
+  }
 }
 
 /* ----------------------- Methods ----------------------- */
@@ -188,6 +188,21 @@ void modifyBit(unsigned long &d, unsigned short c, bool v)
   d = ((d & ~mask) | (v << c));
 }
 
+// Write a 16-bit short to CAN (split into 2 bytes)
+void canWriteShort(short data) {
+  CAN.write(data & 0xFF);  // Lower byte
+  CAN.write(data >> 8);    // Upper byte
+}
+
+// Send a CAN frame with 4 shorts (8 bytes total)
+void canShortFrame(short *send, int startIndex, int canID) {
+  CAN.beginPacket(canID);
+  for (int j = startIndex; j < startIndex + 4; j++) {
+    canWriteShort(send[j]);
+  }
+  CAN.endPacket();
+}
+
 
 double sum(double *arr, int size)
 {
@@ -211,8 +226,12 @@ void loop()
   // Shift Control
   double clutch1;
   double clutch2;
+  // clutch1 - left, clutch2 - right
   getClutchPaddlePositions(clutch1, clutch2);
   checkShiftPaddles(upData, downData, dataCount);
+  
+  //Serial.println(upData);
+  
 
   if (upData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
   {
@@ -264,22 +283,60 @@ void loop()
     // positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
     // positionCommanded = max(positionCommanded, 26);
 
-    if (averagedPosition < 0.145)
+    // LINEAR FUNCTION
+    // (base case)
+    //
+    if (averagedPosition < 0.37)
     {
-      positionCommanded = 165;
-      // positionCommanded = 0;
+      positionCommanded = 21;
     }
-    else if (averagedPosition > 0.955)
+    else if (averagedPosition > 0.93)
     {
-      positionCommanded = 26;
+      positionCommanded = 110;
     }
-    else
+    else 
     {
-      // positionCommanded = -12.3457 * averagedPosition + 121.79;
-      // positionCommanded = -18.5185 * averagedPosition + 127.685;
-      positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 136.64;
-      // positionCommanded = -50.7697 * pow(averagedPosition, 3) + 120.513 * pow(averagedPosition, 2) + -96.6814 * averagedPosition + 75;
+      positionCommanded = 105.76923 * averagedPosition + 11.63462;
     }
+    // S-SHAPED FUNCTION
+    // (comment this out to use it)
+    //00
+    //     if (averagedPosition < 0.1)
+    // {
+    //     positionCommanded = 21;
+    // }
+    // else if (averagedPosition > 0.9)
+    // {
+    //     positionCommanded = 165;
+    // }
+    // else
+    // {
+    //     // Normalize to 0-1 range
+    //     double normalizedPos = (averagedPosition - 0.145) / (0.735 - 0.145);
+        
+    //     // Create a balanced S-curve that tapers at both ends
+    //     // Using sine function: (sin(π(x-0.5)) + 1) / 2
+    //     double sValue = (sin(PI * (normalizedPos - 0.5)) + 1) / 2;
+        
+    //     // Scale to our clutch range (21 to 165)
+    //     positionCommanded = 21 + (144 * sValue);
+    // }
+
+    // QUINN FUNCTION
+    // (mad weird, use at your own risk)
+    //
+    // if (averagedPosition < 0.145)
+    // {
+    //   positionCommanded = 21;
+    // }
+    // else if (averagedPosition > 0.955)
+    // {
+    //   positionCommanded = 165;
+    // }
+    // else
+    // {
+    //   positionCommanded = -50.7697 * pow(1 - averagedPosition, 3) + 120.513 * pow(1 - averagedPosition, 2) - 96.6814 * (1 - averagedPosition) + 136.64;
+    // }
 
     Serial.print("Clutch paddle: ");
     Serial.print(averagedPosition);
@@ -298,6 +355,21 @@ void loop()
   //   CAN.write((short)positionCommanded);
   //   CAN.endPacket();
   // }
+ // CAN Transmission
+  canCurrentMillis = millis();
+  if (canCurrentMillis - canPreviousMillis >= CAN_INTERVAL) {
+    // Pack data into a short array (like FSB code)
+    short sendData[3] = {
+      (short)positionCommanded,  // Clutch servo position (8-bit → short)
+      (short)clutch1,         // Clutch1 (12-bit → short)
+      (short)clutch2          // Clutch2 (12-bit → short)
+    };
+
+    // Send data in CAN frames (split into 4-byte)
+    canShortFrame(sendData, 0, CAN_ID);
+
+    canPreviousMillis = canCurrentMillis;
+  }
 
   // Data count update
   dataCount++;

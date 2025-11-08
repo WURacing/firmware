@@ -2,8 +2,9 @@
 #include <CAN.h>
 #include <SPI.h>
 #include <BMX160.h>
+#include <math.h>
 
-#include "FSB_CODE.h"
+#include "RSB_CODE.h"
 // #include "GoblinMode.h"
 
 // #define DEBUG
@@ -36,13 +37,21 @@ unsigned long datacount = 0;
 
 // Data storage mechanism
 short analogs[20];
-short accel[DIMENSIONS];
-short gyro[DIMENSIONS];
-short magn[DIMENSIONS];
-double accel_out[DIMENSIONS];
-double gyro_out[DIMENSIONS];
-double magn_out[DIMENSIONS];
+float accel[DIMENSIONS];
+float gyro[DIMENSIONS];
+float magn[DIMENSIONS];
+float accel_out[DIMENSIONS];
+float gyro_out[DIMENSIONS];
+float magn_out[DIMENSIONS];
 double average_matrix[29];
+short avg_send[29];
+//set rotation to be the identity matrix
+float rotation[9] = {
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1,
+};
+
 
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
@@ -54,6 +63,7 @@ unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 bool LEDState = LOW;
 unsigned long current_millis = millis();
+short g_scale;
 
 // LED Setup
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
@@ -62,6 +72,15 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 BMX160 bmx160;
 
 float scale = 1000 * ANLG_VRANGE / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
+
+
+
+//SETTINGS
+bool startingUp = true;
+bool zmagcali = false;
+bool manualcal = false;
+float psi = 0.0f;
+
 
 void setup()
 {
@@ -110,18 +129,13 @@ void setup()
   else
   {
     Serial.println("init true");
-    // Set the accelerometer range to 2G
-    bmx160.setAccelRange(eAccelRange_2G);
-
-    // Set the gyroscope range to 250DPS
-    bmx160.setGyroRange(eGyroRange_250DPS);
+    
   }
   current_millis = millis();
 }
 
 void loop()
-{
-  blink();
+{ 
   ++datacount;
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
@@ -140,14 +154,118 @@ void loop()
 
   bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
 
+
   // updating accel, gyro, magn arrays
   accel_update(accel, Oaccel);
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
-  // transform(accel, accel_out);
-  // transform(gyro, gyro_out);
-  // transform(magn, magn_out);
+  //PRINTING OUT ACCEL VALUES TO SEE WHAT IS GOING ON
+  // Serial.println("BEFORE");
+  // Serial.print("A0: ");
+  // Serial.println(accel[0]);
+  // Serial.print("A1: ");
+  // Serial.println(accel[1]);
+  // Serial.print("A2: ");
+  // Serial.println(accel[2]);
+
+
+
+  if(startingUp){
+    startingUp = false;
+//    float roll = atan2f(accel[1],accel[2]);
+//    float denom = sqrtf(accel[1]*accel[1]+accel[2]*accel[2]);
+//    float pitch = atan2f(-accel[0],denom);
+    float roll = 0.05f;
+    float pitch = -0.90f;  
+    
+    float s_r = sinf(roll);
+    float c_r = cosf(roll);
+    float s_p = sinf(pitch);
+    float c_p = cosf(pitch);
+
+    rotation[0] = c_p;
+    rotation[1] = s_p * s_r;
+    rotation[2] = s_p * c_r;
+    rotation[3] = 0.0f;
+    rotation[4] = c_r;
+    rotation[5] = -s_r;
+    rotation[6] = -s_p;
+    rotation[7] = c_p*s_r;
+    rotation[8] = c_p*c_r;
+    Serial.println("Rotation Matrix Calculated");
+    if(zmagcali){
+      float declination = 0.214;
+      float m_x = rotation[0]*magn[0] + rotation[1]*magn[1] + rotation[2]*magn[2];
+      float m_y = rotation[3]*magn[0] + rotation[4]*magn[1] + rotation[5]*magn[2];
+      float psi = atan2f(m_y,m_x+declination);
+      float c_y = cosf(-psi);
+      float s_y = sinf(-psi);
+
+
+
+      rotation[0] =  c_y * c_p;
+      rotation[1] =  c_y * s_p * s_r + s_y * c_r;
+      rotation[2] =  c_y * s_p * c_r - s_y * s_r;
+      
+      rotation[3] = -s_y * c_p;
+      rotation[4] = -s_y * s_p * s_r + c_y * c_r;
+      rotation[5] = -s_y * s_p * c_r - c_y * s_r;
+      
+      rotation[6] = -s_p;
+      rotation[7] =  c_p * s_r;
+      rotation[8] =  c_p * c_r;
+      
+    }
+    if(manualcal){
+      float s_z = sinf(psi);
+      float c_z = cosf(psi);
+      float Rz[9] = {
+        c_z, -s_z, 0.0f,
+        s_z,  c_z, 0.0f,
+        0.0f, 0.0f, 1.0f
+      };
+      // multiply: newRot = Rz * rotation
+      float newRot[9];
+      for(int i = 0; i < 3; ++i) {
+        for(int j = 0; j < 3; ++j) {
+          // newRot[i][j] = sum_k Rz[i][k] * rotation[k][j]
+          newRot[3*i + j] =
+            Rz[3*i + 0]*rotation[0*3 + j] +
+            Rz[3*i + 1]*rotation[1*3 + j] +
+            Rz[3*i + 2]*rotation[2*3 + j];
+        }
+      }
+
+      // copy back into rotation[]
+      memcpy(rotation, newRot, 9*sizeof(float));
+
+    }
+
+  }
+
+
+
+  transform2(accel, rotation, accel_out, 1.0);
+  transform2(gyro, rotation, gyro_out, 1.0);
+  transform2(magn, rotation, magn_out, 1.0);
+
+//
+//  Serial.println("AFTER");
+
+
+  //swap the x and y
+  swapXYInPlace(accel_out);
+  swapXYInPlace(gyro_out);
+  swapXYInPlace(magn_out);
+
+  makeineg(accel_out, 0);
+  makeineg(gyro_out, 0);
+  makeineg(magn_out, 0);
+
+  makeineg(accel_out, 1);
+  makeineg(gyro_out, 1);
+  makeineg(magn_out, 1);
 
   // each column of average_matrix will accumulate the average value over 10 entries
   for (int i = 0; i < 20; i++)
@@ -158,12 +276,12 @@ void loop()
   // Accelerometer on SB data
   for (int i = 0; i < 3; i++)
   {
-    average_matrix[i + 20] += accel[i];
-    average_matrix[i + 23] += gyro[i];
-    average_matrix[i + 26] += magn[i];
+    average_matrix[i + 20] += (double)accel_out[i];
+    average_matrix[i + 23] += (double)gyro_out[i];
+    average_matrix[i + 26] += (double)magn_out[i];
   }
 
-  short avg_send[29];
+  
 
   // Average out the matrices used and convert to short for CAN
   if (datacount >= NUM_SAMPLES)
@@ -174,16 +292,26 @@ void loop()
       avg_send[i] = (short)average_matrix[i];
     }
 
-    // Send CAN Frame
-    canShortFrame(avg_send, 0, 0x10);
-    canShortFrame(avg_send, 4, 0x11);
-    canShortFrame(avg_send, 8, 0x12);
-    canShortFrame(avg_send, 12, 0x13);
-    canShortFrame(avg_send, 16, 0x14);
-    canShortFrame(avg_send, 20, 0x15);
-    canShortFrame(avg_send, 24, 0x16);
+    Serial.print("X:");
+    Serial.print(avg_send[20]);
+    Serial.print('\t');
+    Serial.print("Y:");
+    Serial.print(avg_send[21]);
+    Serial.print('\t');
+    Serial.print("Z:");
+    Serial.println(avg_send[22]);
 
-    CAN.beginPacket(0x17);
+    // Send CAN Frame
+    canShortFrame(avg_send, 0, 0x20);
+    canShortFrame(avg_send, 4, 0x21);
+    canShortFrame(avg_send, 8, 0x22);
+    canShortFrame(avg_send, 12, 0x23);
+    canShortFrame(avg_send, 16, 0x24);
+    canShortFrame(avg_send, 20, 0x25);
+    canShortFrame(avg_send, 24, 0x26);
+
+    CAN.beginPacket(0x27);
+    canWriteShort(avg_send[28]);
     CAN.endPacket();
 
     // clear the avg_send and average_matrix arrays of all previous values
@@ -217,29 +345,22 @@ void mux_update(short *analogs)
   printDebug('\n');
 }
 // Add 3 dimensions of accel, gyro, magn to matrix
-void accel_update(short *accel, sBmx160SensorData_t Oaccel)
+void accel_update(float *accel, sBmx160SensorData_t Oaccel)
 {
   accel[0] = Oaccel.x * 100;
-  Serial.println(accel[0]);
   accel[1] = Oaccel.y * 100;
-  Serial.println(accel[1]);
   accel[2] = Oaccel.z * 100;
-  Serial.println(accel[2]);
 }
 
-void transform(short *inp, double *out)
-{
-  // out[0] = (short)(0.61146138 * inp[0] + 0.09275305 * inp[1] + 0.76278828 * inp[2]);
-  // out[1] = (short)(0.09275305 * inp[0] + 0.95878757 * inp[1] + -0.19093815 * inp[2]);
-  // out[2] = (short)(-0.76278828 * inp[0] + 0.19093815 * inp[1] + 0.5882438 * inp[2]);
+void transform2(float *inp, float *rotation, float* out, float g_scale){
+  out[0] = rotation[0] * inp[0] + rotation[1] * inp[1] + rotation[2]*inp[2];
+  out[1] = rotation[3] * inp[0] + rotation[4] * inp[1] + rotation[5]*inp[2];
+  out[2] = rotation[6] * inp[0] + rotation[7] * inp[1] + rotation[8]*inp[2];
 
-  double angle = 80;
-  double c = cos(angle / 180.0 * 3.14);
-  double s = sin(angle / 180.0 * 3.14);
-
-  out[0] = (1 * inp[0] + 0 * inp[1] + 0 * inp[2]) / 40;
-  out[1] = (0 * inp[0] + c * inp[1] + (-s) * inp[2]) / 40;
-  out[2] = (0 * inp[0] + s * inp[1] + c * inp[2]) / 40;
+  //scale by g_scale
+  for(int i=0; i<2; ++i){
+    out[i] = g_scale*out[i];
+  }
 }
 
 void blink()
@@ -299,7 +420,9 @@ unsigned short mux(unsigned int index)
   // set multiplexer pins
   if ((index & 0b0001) > 0)
   {
-    digitalWrite(MUX_A0, HIGH);  }
+    digitalWrite(MUX_A0, HIGH);
+    //   Serial.println("A0 high");
+  }
   else
   {
     digitalWrite(MUX_A0, LOW);
@@ -308,6 +431,7 @@ unsigned short mux(unsigned int index)
   if ((index & 0b0010) > 0)
   {
     digitalWrite(MUX_A1, HIGH);
+    // Serial.println("A1 high");
   }
   else
   {
@@ -317,6 +441,7 @@ unsigned short mux(unsigned int index)
   if ((index & 0b0100) > 0)
   {
     digitalWrite(MUX_A2, HIGH);
+    // Serial.println("A2 high");
   }
   else
   {
@@ -326,6 +451,7 @@ unsigned short mux(unsigned int index)
   if ((index & 0b1000) > 0)
   {
     digitalWrite(MUX_A3, HIGH);
+    // Serial.println("A3 high");
   }
   else
   {
@@ -335,4 +461,18 @@ unsigned short mux(unsigned int index)
   unsigned short reading = analogRead(MUX_OUT);
   digitalWrite(EN, LOW);
   return reading;
+}
+
+
+// Swaps the X and Y components of the vector in place.
+// vec[0]=X, vec[1]=Y, vec[2]=Z
+void swapXYInPlace(float vec[3]) {
+  float tmp   = vec[0];
+  vec[0]       = vec[1];
+  vec[1]       = tmp;
+}
+
+
+void makeineg(float vec[3], unsigned int i) {
+  vec[i] = -1.0 * vec[i];
 }

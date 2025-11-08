@@ -1,7 +1,8 @@
 #include <Adafruit_NeoPixel.h>
 #include <CAN.h>
 #include <SPI.h>
-#include <BMX160.h>
+#include "BMX160.h"
+#include <math.h>
 
 #include "FSB_CODE.h"
 // #include "GoblinMode.h"
@@ -12,6 +13,20 @@
 #else
 #define printDebug(message)
 #endif
+
+
+
+
+/**
+ * THOUGHTS
+ * Do we need to average at the beginning to account for sampling error on euler calculation
+ */
+
+
+//DEFINE IF WHETHER ZMAG ON (ADJUST FOR YAW TOO)
+bool z_mag_on = false; //turn this on for yaw adjustments via the magnetomter
+bool isRight = true; //need to TEST this
+bool transferbool = false;
 
 // Initializations
 #define LEDPIN 8
@@ -33,6 +48,7 @@
 #define DIMENSIONS 3
 
 unsigned long datacount = 0;
+bool cali = true;
 
 // Data storage mechanism
 short analogs[20];
@@ -43,6 +59,7 @@ double accel_out[DIMENSIONS];
 double gyro_out[DIMENSIONS];
 double magn_out[DIMENSIONS];
 double average_matrix[29];
+short rotation[9];
 
 #define BLINK_INTERVAL 1000
 #define LEDPIN 8
@@ -54,6 +71,7 @@ unsigned long blinkCurrentMillis = millis();
 unsigned long blinkPreviousMillis = 0;
 bool LEDState = LOW;
 unsigned long current_millis = millis();
+short g_scale;
 
 // LED Setup
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
@@ -61,10 +79,12 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 // accel/gyro sensor definition
 BMX160 bmx160;
 
+
 float scale = 1000 * ANLG_VRANGE / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
 void setup()
 {
+  Serial.println("Starting Debug");
   // Pin Definitions
   pinMode(PIN_NEOPIXEL_POWER, OUTPUT);
   pinMode(A0, INPUT);
@@ -121,8 +141,9 @@ void setup()
 
 void loop()
 {
-  blink();
   ++datacount;
+  delay(5000);
+  Serial.println("STUCK IN LOOP");
   // Wait for the next sample interval
   while (millis() - current_millis < SAMPLE_INTERVAL)
   {
@@ -139,15 +160,93 @@ void loop()
   sBmx160SensorData_t Omagn, Ogyro, Oaccel;
 
   bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
-
   // updating accel, gyro, magn arrays
   accel_update(accel, Oaccel);
   accel_update(gyro, Ogyro);
   accel_update(magn, Omagn);
 
+  Serial.println("BEFORE TRANSFORM)");
+  Serial.println("A0");
+  Serial.println(accel[0]);
+  Serial.println("A1");
+  Serial.println(accel[1]);
+  Serial.println("A2");
+  Serial.println(accel[2]);
+  delay(2000);
+  
+
+
+  //Here we want to calibrate the IMU for Roll/Pitch (Yaw possible with magnetometer)
+  if (cali){
+    cali = false;
+    calibrate_XY(accel, rotation, isRight, magn);
+
+    bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
+
+    // updating accel, gyro, magn arrays
+    accel_update(accel, Oaccel);
+    accel_update(gyro, Ogyro);
+    accel_update(magn, Omagn);
+
+    //transform once according to rotation with a gain
+    transform2(accel, rotation, accel_out, 1.0);
+    //print out the array after the first transform
+    Serial.println("AFTER FIRST TRANSFORM)");
+    Serial.println("A0");
+    Serial.println(accel_out[0]);
+    Serial.println("A1");
+    Serial.println(accel_out[1]);
+    Serial.println("A2");
+    Serial.println(accel_out[2]);
+    delay(2000); 
+    g_scale = 1.0/accel_out[2];
+  }
+
+  //transform once according to rotation with a gain
+  transform2(accel, rotation, accel_out, g_scale);
+
+  //can we assume same scale for gyro, mag?
+  transform2(gyro, rotation, gyro_out, g_scale);
+  transform2(magn, rotation, magn_out, g_scale);
+
+  
+  Serial.println("AFTER SECOND TRANSFORM)");
+  Serial.println("A0");
+  Serial.println(accel_out[0]);
+  Serial.println("A1");
+  Serial.println(accel_out[1]);
+  Serial.println("A2");
+  Serial.println(accel_out[2]);
+  delay(2000);
+  
+
+
+
+
   // transform(accel, accel_out);
   // transform(gyro, gyro_out);
   // transform(magn, magn_out);
+
+
+
+
+//  Serial.print("Gyro0:");
+//  Serial.print(gyro[0]);
+//  Serial.print(",");
+//  Serial.print("Gyro1:");
+//  Serial.print(gyro[1]);
+//  Serial.print(",");
+//  Serial.print("Gyro2:");
+//  Serial.print(gyro[2]);
+//  Serial.print(",");
+//  Serial.print("TGyro0:");
+//  Serial.print(gyro_out[0]);
+//  Serial.print(",");
+//  Serial.print("TGyro1:");
+//  Serial.print(gyro_out[1]);
+//  Serial.print(",");
+//  Serial.print("TGyro2:");
+//  Serial.println(gyro_out[2]);
 
   // each column of average_matrix will accumulate the average value over 10 entries
   for (int i = 0; i < 20; i++)
@@ -158,9 +257,9 @@ void loop()
   // Accelerometer on SB data
   for (int i = 0; i < 3; i++)
   {
-    average_matrix[i + 20] += accel[i];
-    average_matrix[i + 23] += gyro[i];
-    average_matrix[i + 26] += magn[i];
+    average_matrix[i + 20] += accel_out[i];
+    average_matrix[i + 23] += gyro_out[i];
+    average_matrix[i + 26] += magn_out[i];
   }
 
   short avg_send[29];
@@ -172,6 +271,15 @@ void loop()
     {
       average_matrix[i] = average_matrix[i] / (float)NUM_SAMPLES;
       avg_send[i] = (short)average_matrix[i];
+    }
+
+
+    //SENDING THE CAN FRAME ERROR MESSAGE
+    Serial.println("SENDING THE CAN FRAME WITH: ");
+    for(int i=0; i< 29; i++){
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.println(avg_send[i]);
     }
 
     // Send CAN Frame
@@ -220,12 +328,76 @@ void mux_update(short *analogs)
 void accel_update(short *accel, sBmx160SensorData_t Oaccel)
 {
   accel[0] = Oaccel.x * 100;
-  Serial.println(accel[0]);
   accel[1] = Oaccel.y * 100;
-  Serial.println(accel[1]);
   accel[2] = Oaccel.z * 100;
-  Serial.println(accel[2]);
 }
+
+void calibrate_XY(short *accel, short *RxRy, bool yisRight, short *magn){
+  float ax = accel[0]*scale;
+  float ay = accel[1]*scale;
+  float az = accel[2]*scale;
+
+  //compute Euler angles we can
+  float roll = atan2f(ay,az);
+  float pitch = atan2f(-ax, sqrtf(ay*ay+az*az));
+  Serial.println("Roll: ");
+  Serial.println(roll);
+  Serial.println("Pitch: ");
+  Serial.println(pitch);
+  float s_r = sinf(roll);
+  float c_r = cosf(roll);
+  float s_p = sinf(pitch);
+  float c_p = cosf(pitch);
+
+  //0, 1, 2
+  //3, 4, 5
+  //6, 7, 8
+  RxRy[0] = c_p;
+  RxRy[1] = s_p * s_r;
+  RxRy[2] = s_p * c_r;
+  RxRy[3] = 0.0f;
+  RxRy[4] = c_r;
+  RxRy[5] = -s_r;
+  RxRy[6] = -s_p;
+  RxRy[7] = c_p*s_r;
+  RxRy[8] = c_p*c_r;
+
+  if(z_mag_on){
+    float declination = 0.214;
+    float m_x = RxRy[0]*magn[0]+RxRy[1]*magn[1]+RxRy[2]*magn[2];
+    float m_y = RxRy[3]*magn[0]+RxRy[4]*magn[1]+RxRy[5]*magn[2];
+    float psi = atan2f(m_y,m_x)+declination;
+    float c_y = cosf(-psi);
+    float s_y = sinf(-psi);
+
+    for(int i=0; i<9; i++){
+      RxRy[0] =  c_y * c_p;
+      RxRy[1] =  c_y * s_p * s_r + s_y * c_r;
+      RxRy[2] =  c_y * s_p * c_r - s_y * s_r;
+      
+      RxRy[3] = -s_y * c_p;
+      RxRy[4] = -s_y * s_p * s_r + c_y * c_r;
+      RxRy[5] = -s_y * s_p * c_r - c_y * s_r;
+      
+      RxRy[6] = -s_p;
+      RxRy[7] =  c_p * s_r;
+      RxRy[8] =  c_p * c_r;
+    }
+
+    
+  }
+
+  //If the board points left for y, flip the sign (can determine with a small lateral movement)
+  if(!yisRight){
+      RxRy[1] = -RxRy[1];
+      RxRy[4] = -RxRy[4];
+      RxRy[7] = -RxRy[7];
+   }
+
+  
+}
+
+
 
 void transform(short *inp, double *out)
 {
@@ -240,6 +412,18 @@ void transform(short *inp, double *out)
   out[0] = (1 * inp[0] + 0 * inp[1] + 0 * inp[2]) / 40;
   out[1] = (0 * inp[0] + c * inp[1] + (-s) * inp[2]) / 40;
   out[2] = (0 * inp[0] + s * inp[1] + c * inp[2]) / 40;
+
+}
+
+void transform2(short *inp, short *rotation, double* out, short g_scale){
+  out[0] = rotation[0] * inp[0] + rotation[1] * inp[1] + rotation[2]*inp[2];
+  out[1] = rotation[3] * inp[0] + rotation[4] * inp[1] + rotation[5]*inp[2];
+  out[2] = rotation[6] * inp[0] + rotation[7] * inp[1] + rotation[8]*inp[2];
+
+  //scale by g_scale
+  for(int i=0; i<2; ++i){
+    out[i] = g_scale*out[i];
+  }
 }
 
 void blink()
@@ -299,7 +483,9 @@ unsigned short mux(unsigned int index)
   // set multiplexer pins
   if ((index & 0b0001) > 0)
   {
-    digitalWrite(MUX_A0, HIGH);  }
+    digitalWrite(MUX_A0, HIGH);
+    //   Serial.println("A0 high");
+  }
   else
   {
     digitalWrite(MUX_A0, LOW);
@@ -308,6 +494,7 @@ unsigned short mux(unsigned int index)
   if ((index & 0b0010) > 0)
   {
     digitalWrite(MUX_A1, HIGH);
+    // Serial.println("A1 high");
   }
   else
   {
@@ -317,6 +504,7 @@ unsigned short mux(unsigned int index)
   if ((index & 0b0100) > 0)
   {
     digitalWrite(MUX_A2, HIGH);
+    // Serial.println("A2 high");
   }
   else
   {
@@ -326,6 +514,7 @@ unsigned short mux(unsigned int index)
   if ((index & 0b1000) > 0)
   {
     digitalWrite(MUX_A3, HIGH);
+    // Serial.println("A3 high");
   }
   else
   {

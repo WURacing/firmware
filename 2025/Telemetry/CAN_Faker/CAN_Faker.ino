@@ -55,7 +55,8 @@ void loop() {
   CANFrame[6] = short_four & 0xFF;
   CANFrame[7] = short_four >> 8;
 
-  CAN.beginPacket(0x16);
+  CAN.beg
+  inPacket(0x16);
   for(int i=0; i<8; i++){
     CAN.write(CANFrame[i]);
   }
