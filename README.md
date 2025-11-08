@@ -10,3 +10,4 @@ Date: 09/29/23
 - All code should follow the [Google style guide](https://google.github.io/styleguide/)
 - Repository should follow gitflow branching strategy
 - More info can be found [here](https://docs.google.com/document/d/1ARGR6GPORXKE09iwE0viAhfVXgTAP3NhcMlSWubIhwk/edit?usp=sharing)
+- Git Branching standards can be found [here](https://docs.google.com/document/d/1cU14sTj0krPXZDPTGhFVjBzXK2q-rcVdwuLwWWdeILw/edit?usp=sharing)
