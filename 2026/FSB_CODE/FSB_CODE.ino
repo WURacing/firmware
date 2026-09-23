@@ -1,5 +1,5 @@
 #include <Adafruit_NeoPixel.h>
-#include <CAN.h>
+#include <CANSAME5x.h> //added bc of new can library change
 #include <SPI.h>
 #include <BMX160.h>
 #include <math.h>
@@ -64,6 +64,9 @@ unsigned long blinkPreviousMillis = 0;
 bool LEDState = LOW;
 unsigned long current_millis = millis();
 short g_scale;
+
+//add this to set up can with new library change
+CANSAME5x CAN;
 
 // LED Setup
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
