@@ -17,11 +17,11 @@
 
 #define UP_IN_PIN 1
 #define DOWN_IN_PIN 4
-#define UP_OUT_PIN 22
-#define DOWN_OUT_PIN 5
+#define UP_OUT_PIN 5 
+#define DOWN_OUT_PIN 22
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
-#define CLUTCH_OUT_PIN 9
+#define CLUTCH_OUT_PIN A2
 #define SMEET_PIN A3
 
 #define CAN_ID 0x31
@@ -153,6 +153,7 @@ void upshift(int pulse)
   digitalWrite(UP_OUT_PIN, LOW);
   digitalWrite(SMEET_PIN,LOW);
   delay(pulse);
+  Serial.println("Upshift pressed");
 }
 
 void downshift(int pulse)
@@ -161,6 +162,7 @@ void downshift(int pulse)
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
   delay(pulse);
+  Serial.println("other pressed");
 }
 
 double getClutchPaddlePosition()
@@ -338,10 +340,10 @@ void loop()
     //   positionCommanded = -50.7697 * pow(1 - averagedPosition, 3) + 120.513 * pow(1 - averagedPosition, 2) - 96.6814 * (1 - averagedPosition) + 136.64;
     // }
 
-    Serial.print("Clutch paddle: ");
-    Serial.print(averagedPosition);
-    Serial.print("\tClutch position: ");
-    Serial.println(positionCommanded);
+    //Serial.print("Clutch paddle: ");
+    //Serial.print(averagedPosition);
+    //Serial.print("\tClutch position: ");
+    //Serial.println(positionCommanded);
   }
 
   setClutchPosition(positionCommanded);
