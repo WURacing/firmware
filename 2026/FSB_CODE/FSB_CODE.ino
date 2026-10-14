@@ -13,6 +13,10 @@
  * @see FSB_CODE.h for an overview of the board.
  */
 
+// I2C
+#include <Adafruit_VL6180X.h>
+#include <SPI.h>
+
 #include "FSB_CODE.h"
 
 #include <Adafruit_NeoPixel.h>
