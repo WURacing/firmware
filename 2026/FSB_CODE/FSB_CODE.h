@@ -10,7 +10,6 @@
 
 
 #include <Adafruit_NeoPixel.h>
-#include <CAN.h>
 
 class SensorBoard{
   public:
