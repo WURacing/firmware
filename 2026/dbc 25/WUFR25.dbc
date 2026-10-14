@@ -48,8 +48,8 @@ BO_ 22 FSBAnlg7: 8 FSB
 
 BO_ 23 FSBAnlg8: 8 FSB
  SG_ FMagZ : 0|16@1+ (0.01,0) [-3276|3276] "#" DAQ
- SG_ RideHeightFR : 16|16@1+ (1,0) [0,255] "mm" DAQ
- SG_ RideHeightFL : 32|16@1+ (1,0) [0,255] "mm" DAQ
+ SG_ RideHeightFR : 16|16@1+ (1,0) [0|255] "mm" DAQ
+ SG_ RideHeightFL : 32|16@1+ (1,0) [0|255] "mm" DAQ
 
 BO_ 32 RSBAnlg1: 8 RSB
  SG_ ShockPotRL : 0|16@1+ (0.013986,-0.0112) [0|50] "mm" DAQ
