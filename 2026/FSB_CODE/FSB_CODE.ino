@@ -41,6 +41,9 @@
 #define VCSEL_CH_FL         2       // <-- mux channel the FL sensor is plugged into
 #define VCSEL_COUNT         2      // 
 
+// IMU definitions
+#define IMU_MUX_CH          0       // IMU (SEN0373) is on SCL0/SDA0 = I2C mux channel 0
+
 // I2C definitions
 #define REG_MODEL_ID          0x0000   // expect 0xB4
 #define REG_SYSRANGE_START    0x0018
@@ -77,7 +80,7 @@ float rotation[9] = {
 const uint32_t I2C_TIMEOUT_MS = 25;
 Adafruit_VL6180X vl;
 uint8_t tcaAddr = 0;             // 0 = mux not found
-const uint8_t vcselCh[VCSEL_COUNT] = {VCSEL_CH_FR, VCSEL_CH_FL};  // order = CAN slot order
+const uint8_t vcselCh[VCSEL_COUNT] = {VCSEL_CH_FR, VCSEL_CH_FL};
 bool     vcselOk[VCSEL_COUNT]      = {};
 bool     vcselPending[VCSEL_COUNT] = {};
 uint32_t vcselLast[VCSEL_COUNT]     = {0xFFFF, 0xFFFF};
@@ -97,11 +100,10 @@ bool LEDState = LOW;
 unsigned long current_millis = millis();
 short g_scale;
 
-// LED Setup
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(1, LEDPIN, NEO_GRB + NEO_KHZ800);
 
-// accel/gyro sensor definition
 BMX160 bmx160;
+bool imuOk = false;              // set by initImu(); IMU data is zero when false
 
 float scale = 1000 * ANLG_VRANGE / float(ANLG_RES); // Added 1.342 to linearize with weird voltage drop
 
@@ -152,10 +154,23 @@ void setup()
   {
     Serial.println("Starting CAN failed!");
   }
+  // I2C mux address pins: A0 = D4 (also PIN_CAN_BOOSTEN, kept HIGH for CAN),
+  // A1 = D5, A2 = D6. Drive A1/A2 so the mux address can't float mid-run.
+  pinMode(5, OUTPUT); digitalWrite(5, LOW);
+  pinMode(6, OUTPUT); digitalWrite(6, LOW);
+  delay(5);
+
   Wire.begin();               // make sure SERCOM is alive
-  Wire.setTimeout(I2C_TIMEOUT_MS);   // hard limit inside Wire*
-  Wire.setClock(400000);
+  findMux();
+  initImu();
   initVcsels();
+  Wire.setClock(400000);      // bmx160.begin()/vl.begin() re-run Wire.begin(), which resets to 100 kHz
+
+  selectChecked(IMU_MUX_CH);
+  while (1) {
+    Wire.beginTransmission(0x68);
+    Wire.endTransmission();
+  }
 
 // Serial.println("Scanning I2C...");
 // int found = 0;
@@ -207,25 +222,19 @@ void loop()
   // Taking in Accel, Gyro, Magnetometer results
   // sBmx160SensorData_t Omagn, Ogyro, Oaccel;
 
-  //PUT BMX HERE
-  // ---------- BMX160 read with wall‑clock watchdog ----------
-  uint32_t t0 = millis();
-  // bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
-  bool i2c_ok = (millis() - t0) < I2C_TIMEOUT_MS;
+  // IMU read: the IMU is behind the I2C mux, so select its channel first.
+  // Must run before runVcsels(), which switches mux channels.
+  sBmx160SensorData_t Omagn = {}, Ogyro = {}, Oaccel = {};
+  if (imuOk && selectChecked(IMU_MUX_CH))
+  {
+    bmx160.getAllData(&Omagn, &Ogyro, &Oaccel);
+    deselectAll();
+  }
 
-  // if (!i2c_ok) {                         // >25 ms → bus was stuck
-  //   Serial.println("I2C‑timeout – continuing loop");
-  //   recoverI2CBus();                     // comment out if you don't want auto‑reset
-  // }
-// -----------------------------------------------------------
-
-  
-
-
-  // updating accel, gyro, magn arrays [IMU CODE COMMENTED]
-  // accel_update(accel, Oaccel);
-  // accel_update(gyro, Ogyro);
-  // accel_update(magn, Omagn);
+  // updating accel, gyro, magn arrays (x100 to match the DBC's 0.01 scale)
+  imu_update(accel, Oaccel, 98.0f);    // m/s^2 x100 (x0.98 undoes the library's g = 10 at 4 g range)
+  imu_update(gyro,  Ogyro,  100.0f);   // deg/s x100
+  imu_update(magn,  Omagn,  100.0f);   // uT x100
 
   //PRINTING OUT ACCEL VALUES TO SEE WHAT IS GOING ON
   // Serial.println("BEFORE");
@@ -313,9 +322,11 @@ void loop()
 
 
 
-  // transform2(accel, rotation, accel_out, 1.0);
-  // transform2(gyro, rotation, gyro_out, 1.0);
-  // transform2(magn, rotation, magn_out, 1.0);
+  // rotation[] is the identity until the mounting calibration is re-done,
+  // so this sends the IMU's own axes.
+  transform2(accel, rotation, accel_out, 1.0);
+  transform2(gyro, rotation, gyro_out, 1.0);
+  transform2(magn, rotation, magn_out, 1.0);
 
 //
 //  Serial.println("AFTER");
@@ -334,13 +345,13 @@ void loop()
   //   average_matrix[i] += analogs[i];
   // }
 
-  // // Accelerometer on SB data
-  // for (int i = 0; i < 3; i++)
-  // {
-  //   average_matrix[i + 20] += (double)accel_out[i];
-  //   average_matrix[i + 23] += (double)gyro_out[i];
-  //   average_matrix[i + 26] += (double)magn_out[i];
-  // }
+  // Accelerometer on SB data
+  for (int i = 0; i < 3; i++)
+  {
+    average_matrix[i + 20] += (double)accel_out[i];
+    average_matrix[i + 23] += (double)gyro_out[i];
+    average_matrix[i + 26] += (double)magn_out[i];
+  }
 
   runVcsels();
 
@@ -414,24 +425,27 @@ void loop()
 //   // Pin 27 -> A11 -> S12
 //   printDebug('\n');
 // }
-// Add 3 dimensions of accel, gyro, magn to matrix
-// void accel_update(float *accel, sBmx160SensorData_t Oaccel)
-// {
-//   accel[0] = Oaccel.x*100.0;
-//   accel[1] = Oaccel.y*100.0;
-//   accel[2] = Oaccel.z*100.0;
-// }
+}
 
-// void transform2(float *inp, float *rotation, float* out, float g_scale){
-//   out[0] = rotation[0] * inp[0] + rotation[1] * inp[1] + rotation[2]*inp[2];
-//   out[1] = rotation[3] * inp[0] + rotation[4] * inp[1] + rotation[5]*inp[2];
-//   out[2] = rotation[6] * inp[0] + rotation[7] * inp[1] + rotation[8]*inp[2];
+// Copy one BMX160 reading into a 3-element array, scaled for CAN
+void imu_update(float *out, sBmx160SensorData_t d, float scale)
+{
+  out[0] = d.x * scale;
+  out[1] = d.y * scale;
+  out[2] = d.z * scale;
+}
 
-//   //scale by g_scale
-//   for(int i=0; i<2; ++i){
-//     out[i] = g_scale*out[i];
-//   }
-// }
+// Rotate a vector into the car frame: out = rotation * inp, then scale
+void transform2(float *inp, float *rotation, float *out, float g_scale)
+{
+  out[0] = rotation[0] * inp[0] + rotation[1] * inp[1] + rotation[2] * inp[2];
+  out[1] = rotation[3] * inp[0] + rotation[4] * inp[1] + rotation[5] * inp[2];
+  out[2] = rotation[6] * inp[0] + rotation[7] * inp[1] + rotation[8] * inp[2];
+
+  for (int i = 0; i < 3; ++i)   // was i < 2, which skipped z
+  {
+    out[i] = g_scale * out[i];
+  }
 }
 
 // ---------------------------
@@ -595,6 +609,27 @@ bool writeReg(uint16_t reg, uint8_t value) {
   Wire.beginTransmission(SENSOR_ADDRESS);
   Wire.write(uint8_t(reg >> 8)); Wire.write(uint8_t(reg)); Wire.write(value);
   return Wire.endTransmission() == 0;
+}
+
+// The IMU is on mux channel 0, so begin() only sees it with that channel selected.
+// On failure the board keeps running (CAN still sends) instead of hanging.
+void initImu() {
+    for (uint8_t a = 1; a < 127; a++) {
+    Wire.beginTransmission(a);
+    if (Wire.endTransmission() == 0) { Serial.print("CH0 device at 0x"); Serial.println(a, HEX); }
+  }
+
+  if (!selectChecked(IMU_MUX_CH)) { Serial.println("IMU: mux select failed"); return; }
+  if (!bmx160.begin()) {
+    Serial.println("IMU: no ACK at 0x68 on mux CH0");
+    deselectAll();
+    return;
+  }
+  bmx160.setGyroRange(eGyroRange_250DPS);   // chip resets to +/-2000 dps; library scales for 250 unless told
+  bmx160.setAccelRange(eAccelRange_4G);     // default +/-2 g clips under braking/bumps
+  imuOk = true;
+  Serial.println("IMU: OK");
+  deselectAll();
 }
 
 void initVcsels() {
