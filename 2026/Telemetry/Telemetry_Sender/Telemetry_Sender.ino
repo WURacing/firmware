@@ -304,6 +304,124 @@ void CheckReset(uint32_t now) {
   digitalWrite(LED_BUILTIN, lit);
 }
 
+uint32_t read32(const uint8_t* p) {
+  return uint32_t(p[0]) | uint32_t(p[1])<<8 | uint32_t(p[2])<<16 | uint32_t(p[3])<<24;
+}
+void put32(uint8_t* p,uint32_t v) { for(int i=0;i<4;i++) p[i]=uint8_t(v>>(8*i)); }
+double decode(const uint8_t* p,WireType type) {
+  if(type==UINT16_LE) return uint16_t(p[0]) | uint16_t(p[1])<<8;
+  if(type==INT16_LE) { uint16_t n=uint16_t(p[0]) | uint16_t(p[1])<<8; return n&0x8000 ? double(n)-65536 : n; }
+  if(type==INT32_LE) { uint32_t n=read32(p); return n&0x80000000u ? double(n)-4294967296.0 : n; }
+  if(type==FLOAT32_LE) { uint32_t n=read32(p); float f; memcpy(&f,&n,4); return f; }
+  return NAN;
+}
+uint8_t crc8(const uint8_t* p,unsigned n) {
+  uint8_t c=0;
+  while(n--) { c^=*p++; for(int i=0;i<8;i++) c=(c&128)?uint8_t((c<<1)^7):uint8_t(c<<1); }
+  return c;
+}
+bool recent(uint32_t now) {
+  return haveRPM && havePulse && uint32_t(now-rpmAt)<RPM_STALE_MS && uint32_t(now-pulseAt)<PULSE_STALE_MS;
+}
+bool valid(uint32_t now) {
+  return AIM_REBROADCAST_VERIFIED && recent(now) && isfinite(rpm) && rpm>=0 && rpm<=30000 &&
+    isfinite(pulseValue) && pulseValue>=0 && pulseValue*PULSE_VALUE_TO_TRUE_MS<=30 &&
+    rpm*pulseValue*PULSE_VALUE_TO_TRUE_MS<=120000;
+}
+void integrate(uint32_t now) {
+  uint32_t dt=now-lastIntegrate;
+  // Count the held rate only until the older input expires.
+  if(totalReady && valid(lastIntegrate)) {
+    uint32_t remain=RPM_STALE_MS-uint32_t(lastIntegrate-rpmAt);
+    uint32_t other=PULSE_STALE_MS-uint32_t(lastIntegrate-pulseAt);
+    if(remain>other) remain=other;
+    if(dt>remain) dt=remain;
+    liters += FUEL_CONSTANT*rpm*pulseValue*double(dt)/3600000.0;
+  }
+  lastIntegrate=now;
+  rate=valid(now) ? FUEL_CONSTANT*rpm*pulseValue : 0;
+}
+void receiveCAN() {
+  for(int count=0;count<16;count++) {
+    int size=CAN.parsePacket(); if(!size) break;
+    int frame=-1;
+    for(int i=0;i<6;i++) if(CAN.packetId()==frameIDs[i]) frame=i;
+    uint8_t bytes[8]; int n=0;
+    bool good=frame>=0 && size==8 && !CAN.packetExtended() && !CAN.packetRtr();
+    while(CAN.available()) { int b=CAN.read(); if(n<8) bytes[n++]=uint8_t(b); }
+    if(!good || n!=8) {
+      if(frame==1) haveRPM=false;
+      if(frame==5) havePulse=false;
+      continue;
+    }
+    uint32_t now=millis(); integrate(now);
+    memcpy(canData+frame*8,bytes,8);
+    if(frame==1) { rpm=decode(bytes+6,RPM_TYPE); rpmAt=now; haveRPM=true; }
+    if(frame==5) { pulseValue=decode(bytes+4,PULSE_TYPE); pulseAt=now; havePulse=true; }
+  }
+}
+uint32_t scaled(double value,double factor) {
+  if(!isfinite(value) || value<0 || value*factor>=4294967294.5) return UINT32_MAX;
+  return uint32_t(value*factor+0.5);
+}
+void fuelBytes(uint8_t* p) {
+  put32(p,scaled(rate,1000));
+  put32(p+4,totalReady ? scaled(liters,1000000) : UINT32_MAX);
+}
+void canFuelBytes(uint8_t* p) {
+  // Waiting/stale rate is zero. Clamp before conversion; never wrap.
+  uint32_t r=uint32_t(fmin(65535.0,fmax(0.0,round(rate*100.0))));
+  uint32_t t=uint32_t(fmin(16777215.0,fmax(0.0,round(liters*1000.0))));
+  p[0]=uint8_t(r); p[1]=uint8_t(r>>8);
+  p[2]=uint8_t(t); p[3]=uint8_t(t>>8); p[4]=uint8_t(t>>16);
+  p[5]=p[6]=p[7]=0;
+}
+void sendRadio(uint32_t now) {
+  // Original packet unchanged; the added packet contains just two values + missing flag.
+  uint8_t packet[67];
+  packet[0]=0x55; packet[1]=0xAA; packet[2]=sequence;
+  memcpy(packet+3,canData,48); packet[51]=crc8(canData,48);
+  uint8_t* f=packet+52;
+  f[0]=0x55; f[1]=0xAB; f[2]=3; f[3]=10; f[4]=sequence++;
+  fuelBytes(f+5); f[13]=valid(now)?0:1; f[14]=crc8(f+2,12);
+  Serial1.write(packet,sizeof(packet));
+}
+void checkReset(uint32_t now) {
+  static bool released=false,holding=false,allowed=false;
+  static uint32_t holdAt=0,flashAt=0;
+  static uint8_t flashes=0;
+  static uint16_t period=400;
+  if(resetting && !storage.busy()) {
+    bool saved=storage.ok;
+    if(saved) { liters-=resetStartLiters; lastSaved=0; }
+    resetting=false;
+    flashAt=now; flashes=saved?3:6; period=saved?400:160;
+  }
+  static bool first=true,raw=false,stable=false;
+  static uint32_t changedAt=0;
+  bool input=digitalRead(RESET_PIN)==LOW;
+  if(first) { raw=stable=input; changedAt=now; first=false; }
+  if(input!=raw) { raw=input; changedAt=now; }
+  if(uint32_t(now-changedAt)>=50) stable=raw;
+  bool low=stable;
+  bool stopped=AIM_REBROADCAST_VERIFIED && haveRPM && uint32_t(now-rpmAt)<RPM_STALE_MS && rpm==0;
+  if(!low) { if(!raw && uint32_t(now-changedAt)>=50) released=true; holding=false; }
+  else if(released) {
+    if(!holding) { holding=true; holdAt=now; allowed=true; }
+    allowed &= stopped && totalReady && storage.ok && !resetting;
+    if(uint32_t(now-holdAt)>=3000) {
+      released=false; holding=false;
+      resetting=allowed && storage.save(0,now);
+      if(resetting) resetStartLiters=liters;
+      else { flashAt=now; flashes=6; period=160; }
+    }
+  }
+  now=millis();
+  bool lit=false;
+  if(flashes && uint32_t(now-flashAt)<uint32_t(flashes)*period) lit=(now-flashAt)%period<period/2;
+  else { flashes=0; lit=holding && (now/250)%2==0; }
+  digitalWrite(LED_BUILTIN,lit);
+}
 void setup() {
   Serial1.begin(radio_baud_rate);
   pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
