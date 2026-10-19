@@ -1,351 +1,191 @@
-#include <SPI.h>
-#include <RH_RF95.h>
-#include <CAN.h>
+#include <CANSAME5x.h>
+#include <math.h>
+#include "FuelStorage.h"
 
-//CANSAME5x CAN;
+// AiM rebroadcasts the decoded engine channels as integers, confirmed by user.
+enum WireType { NOT_SET, UINT16_LE, INT16_LE, INT32_LE, FLOAT32_LE };
+const WireType RPM_TYPE=UINT16_LE;
+const WireType PULSE_TYPE=INT32_LE; // decoded engine channel, four-byte integer output
+const double PULSE_VALUE_TO_TRUE_MS=0.1; // paper: logged pulse value 55 corresponds to 5.5 actual ms
+// RPM: 0x6A bytes 6-7. FuelOpenTime: 0x6E bytes 4-7.
+// Both little endian, output multiplier 1 and offset 0. GPS floats are separate.
+// Apply the paper coefficient directly to the received pulse channel value.
+const bool AIM_REBROADCAST_VERIFIED=true;
+const uint16_t FUEL_CAN_ID=0x33;       // owned by this Feather, confirmed by user
+const uint8_t RESET_PIN=5;
+const uint32_t RPM_STALE_MS=500, PULSE_STALE_MS=1500, RADIO_MS=200, SAVE_MS=1000;
+const double FUEL_CONSTANT=2.5012e-5; // paper's gain per historical logged PW unit * RPM
 
+CANSAME5x CAN;
+Adafruit_FlashTransport_QSPI flashTransport;
+FuelStorage storage(&flashTransport);
+const uint16_t frameIDs[]={0x69,0x6A,0x6B,0x6C,0x6D,0x6E};
+uint8_t canData[48]={0},sequence=0;
+double rpm=NAN,pulseValue=NAN,liters=0,rate=0,lastSaved=-1;
+uint32_t rpmAt=0,pulseAt=0,lastIntegrate=0,lastRadio=0,lastCAN=0,lastSave=0,lastID=0;
+bool haveRPM=false,havePulse=false,totalReady=false;
+bool resetting=false;
+double resetStartLiters=0;
 
-#define RF95_FREQ 915.0
-#define RFM95_RST 11  // "A"
-#define RFM95_CS  10  // "B"
-#define RFM95_INT  6  // "D"
-
-
-#define LEN 88
-
-//Delta Time Loop Setup
-#define BLINK_INTERVAL 1000
-#define LED 13
-#define starter_val 50
-unsigned long blinkCurrentMillis = millis();
-unsigned long blinkPreviousMillis = 0;
-bool LEDState = LOW;
-int test = 0;
-unsigned long current_millis = millis();
-int starter = starter_val;
-int value = 0;
-bool printbool = true;
-
-RH_RF95 rf95(RFM95_CS, RFM95_INT);
-
-#define Tel_Period 1000
-
-
+uint32_t read32(const uint8_t* p) {
+  return uint32_t(p[0]) | uint32_t(p[1])<<8 | uint32_t(p[2])<<16 | uint32_t(p[3])<<24;
+}
+void put32(uint8_t* p,uint32_t v) { for(int i=0;i<4;i++) p[i]=uint8_t(v>>(8*i)); }
+double decode(const uint8_t* p,WireType type) {
+  if(type==UINT16_LE) return uint16_t(p[0]) | uint16_t(p[1])<<8;
+  if(type==INT16_LE) { uint16_t n=uint16_t(p[0]) | uint16_t(p[1])<<8; return n&0x8000 ? double(n)-65536 : n; }
+  if(type==INT32_LE) { uint32_t n=read32(p); return n&0x80000000u ? double(n)-4294967296.0 : n; }
+  if(type==FLOAT32_LE) { uint32_t n=read32(p); float f; memcpy(&f,&n,4); return f; }
+  return NAN;
+}
+uint8_t crc8(const uint8_t* p,unsigned n) {
+  uint8_t c=0;
+  while(n--) { c^=*p++; for(int i=0;i<8;i++) c=(c&128)?uint8_t((c<<1)^7):uint8_t(c<<1); }
+  return c;
+}
+bool recent(uint32_t now) {
+  return haveRPM && havePulse && uint32_t(now-rpmAt)<RPM_STALE_MS && uint32_t(now-pulseAt)<PULSE_STALE_MS;
+}
+bool valid(uint32_t now) {
+  return AIM_REBROADCAST_VERIFIED && recent(now) && isfinite(rpm) && rpm>=0 && rpm<=30000 &&
+    isfinite(pulseValue) && pulseValue>=0 && pulseValue*PULSE_VALUE_TO_TRUE_MS<=30 &&
+    rpm*pulseValue*PULSE_VALUE_TO_TRUE_MS<=120000;
+}
+void integrate(uint32_t now) {
+  uint32_t dt=now-lastIntegrate;
+  // Count the held rate only until the older input expires.
+  if(totalReady && valid(lastIntegrate)) {
+    uint32_t remain=RPM_STALE_MS-uint32_t(lastIntegrate-rpmAt);
+    uint32_t other=PULSE_STALE_MS-uint32_t(lastIntegrate-pulseAt);
+    if(remain>other) remain=other;
+    if(dt>remain) dt=remain;
+    liters += FUEL_CONSTANT*rpm*pulseValue*double(dt)/3600000.0;
+  }
+  lastIntegrate=now;
+  rate=valid(now) ? FUEL_CONSTANT*rpm*pulseValue : 0;
+}
+void receiveCAN() {
+  for(int count=0;count<16;count++) {
+    int size=CAN.parsePacket(); if(!size) break;
+    int frame=-1;
+    for(int i=0;i<6;i++) if(CAN.packetId()==frameIDs[i]) frame=i;
+    uint8_t bytes[8]; int n=0;
+    bool good=frame>=0 && size==8 && !CAN.packetExtended() && !CAN.packetRtr();
+    while(CAN.available()) { int b=CAN.read(); if(n<8) bytes[n++]=uint8_t(b); }
+    if(!good || n!=8) {
+      if(frame==1) haveRPM=false;
+      if(frame==5) havePulse=false;
+      continue;
+    }
+    uint32_t now=millis(); integrate(now);
+    memcpy(canData+frame*8,bytes,8);
+    if(frame==1) { rpm=decode(bytes+6,RPM_TYPE); rpmAt=now; haveRPM=true; }
+    if(frame==5) { pulseValue=decode(bytes+4,PULSE_TYPE); pulseAt=now; havePulse=true; }
+  }
+}
+uint32_t scaled(double value,double factor) {
+  if(!isfinite(value) || value<0 || value*factor>=4294967294.5) return UINT32_MAX;
+  return uint32_t(value*factor+0.5);
+}
+void fuelBytes(uint8_t* p) {
+  put32(p,scaled(rate,1000));
+  put32(p+4,totalReady ? scaled(liters,1000000) : UINT32_MAX);
+}
+void canFuelBytes(uint8_t* p) {
+  // Waiting/stale rate is zero. Clamp before conversion; never wrap.
+  uint32_t r=uint32_t(fmin(65535.0,fmax(0.0,round(rate*100.0))));
+  uint32_t t=uint32_t(fmin(16777215.0,fmax(0.0,round(liters*1000.0))));
+  p[0]=uint8_t(r); p[1]=uint8_t(r>>8);
+  p[2]=uint8_t(t); p[3]=uint8_t(t>>8); p[4]=uint8_t(t>>16);
+  p[5]=p[6]=p[7]=0;
+}
+void sendRadio(uint32_t now) {
+  // Original packet unchanged; the added packet contains just two values + missing flag.
+  uint8_t packet[67];
+  packet[0]=0x55; packet[1]=0xAA; packet[2]=sequence;
+  memcpy(packet+3,canData,48); packet[51]=crc8(canData,48);
+  uint8_t* f=packet+52;
+  f[0]=0x55; f[1]=0xAB; f[2]=3; f[3]=10; f[4]=sequence++;
+  fuelBytes(f+5); f[13]=valid(now)?0:1; f[14]=crc8(f+2,12);
+  Serial1.write(packet,sizeof(packet));
+}
+void checkReset(uint32_t now) {
+  static bool released=false,holding=false,allowed=false;
+  static uint32_t holdAt=0,flashAt=0;
+  static uint8_t flashes=0;
+  static uint16_t period=400;
+  if(resetting && !storage.busy()) {
+    bool saved=storage.ok;
+    if(saved) { liters-=resetStartLiters; lastSaved=0; }
+    resetting=false;
+    flashAt=now; flashes=saved?3:6; period=saved?400:160;
+  }
+  static bool first=true,raw=false,stable=false;
+  static uint32_t changedAt=0;
+  bool input=digitalRead(RESET_PIN)==LOW;
+  if(first) { raw=stable=input; changedAt=now; first=false; }
+  if(input!=raw) { raw=input; changedAt=now; }
+  if(uint32_t(now-changedAt)>=50) stable=raw;
+  bool low=stable;
+  bool stopped=AIM_REBROADCAST_VERIFIED && haveRPM && uint32_t(now-rpmAt)<RPM_STALE_MS && rpm==0;
+  if(!low) { if(!raw && uint32_t(now-changedAt)>=50) released=true; holding=false; }
+  else if(released) {
+    if(!holding) { holding=true; holdAt=now; allowed=true; }
+    allowed &= stopped && totalReady && storage.ok && !resetting;
+    if(uint32_t(now-holdAt)>=3000) {
+      released=false; holding=false;
+      resetting=allowed && storage.save(0,now);
+      if(resetting) resetStartLiters=liters;
+      else { flashAt=now; flashes=6; period=160; }
+    }
+  }
+  now=millis();
+  bool lit=false;
+  if(flashes && uint32_t(now-flashAt)<uint32_t(flashes)*period) lit=(now-flashAt)%period<period/2;
+  else { flashes=0; lit=holding && (now/250)%2==0; }
+  digitalWrite(LED_BUILTIN,lit);
+}
 void setup() {
-  pinMode(RFM95_RST, OUTPUT);
-  digitalWrite(RFM95_RST, HIGH);
-
-  Serial.begin(115200);
-  //  while (!Serial) delay(1);
-  delay(100);
-
-  // manual reset
-  digitalWrite(RFM95_RST, LOW);
-  delay(10);
-  digitalWrite(RFM95_RST, HIGH);
-  delay(10);
-
-  while (!rf95.init()) {
-    Serial.println("LoRa radio init failed");
-    Serial.println("Uncomment '#define SERIAL_DEBUG' in RH_RF95.cpp for detailed debug info");
-    while (1);
-  }
-
-  Serial.println("LoRa radio init OK!");
-
-  if (!rf95.setFrequency(RF95_FREQ)) {
-    Serial.println("setFrequency failed");
-    while (1);
-  }
-
-  Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
-
-  rf95.setTxPower(23, false);
-
-  pinMode(PIN_CAN_STANDBY, OUTPUT);
-  digitalWrite(PIN_CAN_STANDBY, false);
-  pinMode(PIN_CAN_BOOSTEN, OUTPUT);
-  digitalWrite(PIN_CAN_BOOSTEN, true);
-
-  if (!CAN.begin(1000000)) {
-    Serial.println("Starting CAN failed!");
-    while (1);
-  }
-
-
-  pinMode(LED, OUTPUT);
+  Serial.begin(115200); Serial1.begin(19200);
+  pinMode(RESET_PIN,INPUT_PULLUP); pinMode(LED_BUILTIN,OUTPUT);
+  totalReady=storage.begin(liters);
+  if(totalReady) lastSaved=storage.savedLiters; // no unchanged checkpoint on every boot
+  else { liters=0; totalReady=true; } // allow visible RAM-only counting; never erase foreign flash
+  pinMode(PIN_CAN_STANDBY,OUTPUT); digitalWrite(PIN_CAN_STANDBY,LOW);
+  pinMode(PIN_CAN_BOOSTEN,OUTPUT); digitalWrite(PIN_CAN_BOOSTEN,HIGH);
+  if(!CAN.begin(1000000)) { while(true) { digitalWrite(LED_BUILTIN,HIGH); delay(100); } }
+  CAN.filter(0x68,0x7F8);
+  Serial1.print("\r\nDE KQ9L\r\n");
+  lastIntegrate=lastRadio=lastCAN=lastSave=lastID=millis();
 }
-
-int16_t packetnum = 0;
-
-//byte ANLG1[8];
-//byte ANLG2[8];
-//byte ANLG3[8];
-//byte ANLG4[8];
-//byte ANLG5[8];
-//byte ANLG6[8];
-//byte ANLG7[8];
-//byte ANLG8[8];
-//byte CTRLBD[8];
-
-byte DBC_Matrix[LEN];
-short s_DBC_Matrix[LEN/2];
-//byte Test[2];
-
-unsigned long curTime = millis();
-unsigned long prevTime = 0;
-
 void loop() {
-  blink();
-  //  memset(DBC_Matrix, 0, sizeof(DBC_Matrix));
-  delay(10);
-  curTime = millis();
-  for (int ps = CAN.parsePacket(); ps; ps = CAN.parsePacket()) {
-    CANFiller(CAN.packetId(), ps, DBC_Matrix);
+  receiveCAN();
+  storage.poll(millis()); // one short flash operation; CAN is serviced again next loop
+  uint32_t now=millis(); integrate(now); checkReset(now);
+  now=millis(); integrate(now);
+  if(uint32_t(now-lastCAN)>=100) {
+    lastCAN=now;
+    uint8_t b[8];
+    canFuelBytes(b);
+    CAN.beginPacket(FUEL_CAN_ID,8);
+    CAN.write(b,8);
+    CAN.endPacket();
   }
-
-  //Convert bytes to shorts for validation
-
-  convertBytesToShorts(DBC_Matrix, s_DBC_Matrix, LEN);
-
-
-  if (printbool) {
-    Serial.print("Shorts: ");
-    for (int i = 0; i < LEN/2; i++) {
-      Serial.print(s_DBC_Matrix[i]);
-      Serial.print(",");
-    }
-    Serial.println(" ");
+  if(uint32_t(now-lastRadio)>=RADIO_MS) { lastRadio=now; sendRadio(now); }
+  if(uint32_t(now-lastSave)>=SAVE_MS) {
+    lastSave=now;
+    lastSaved=storage.savedLiters;
+    if(totalReady && !resetting && !storage.busy() && liters!=lastSaved) storage.save(liters,now);
   }
-  if (curTime - prevTime >= Tel_Period) {
-    prevTime = curTime;
-    //We sending Telemetry baby
-    //does the last one have to be zero?
-    //it will be for now although if we fill the frames idk
-
-    //not sure if we need to typecast or not
-    if (printbool) {
-      Serial.println("Sending...");
-    }
-
-    rf95.send((uint8_t *)DBC_Matrix, LEN);
-
-
-
-    //    Serial.println("Waiting for packet to complete...");
-    //    delay(10);
-    //    rf95.waitPacketSent();
-    //    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN]; //251
-    //    uint8_t len = sizeof(buf);
-    //
-    //    Serial.println("Waiting for reply...");
-    //    if (rf95.waitAvailableTimeout(1000)) {
-    //      // Should be a reply message for us now
-    //      if (rf95.recv(buf, &len)) {
-    //        Serial.print("Got reply: ");
-    //        Serial.println((char*)buf);
-    //        Serial.print("RSSI: ");
-    //        Serial.println(rf95.lastRssi(), DEC);
-    //      } else {
-    //      Serial.println("Receive failed");
-    //      }
-    //    } else {
-    //      Serial.println("No reply, is there a listener around?");
-    //    }
-  }
-
-  //  if (rf95.waitAvailableTimeout(1000)) {
-  //    //Should be a reply message for us now
-  //    if (rf95.recv(buf, &len)) {
-  //      Serial.print("Got reply: ");
-  //      Serial.println((char*)buf);
-  //      Serial.print("RSSI: ");
-  //      Serial.println(rf95.lastRssi(), DEC);
-  //    }
-  //    else {
-  //      Serial.println("Receive failed");
-  //    }
-  //  }
-  //  else {
-  //      Serial.println("No reply, is there a listener around?");
-  //  }
-  //}
-
-
-
-
-
-
-  //  curTime = millis();
-  //  Test[0] = packetID;
-  //  Test[1] = (byte)packetSize;
-  //
-  //
-  //  rf95.send((uint8_t *)Test, 2);
-  //  delay(10);
-  //  rf95.waitPacketSent();
-
-
-
-
-
-
-
-
-
-
-
-  //  if(curTime-prevTime >= Tel_Period){
-  //    //We sending Telemetry baby
-  //    //does the last one have to be zero?
-  //    //it will be for now although if we fill the frames idk
-  //
-  //    //not sure if we need to typecast or not
-  //    Serial.println("Sending...");
-  //    rf95.send((uint8_t *)DBC_Matrix, 72);
-  //
-  //    Serial.println("Waiting for packet to complete...");
-  //    delay(10);
-  //    rf95.waitPacketSent();
-  //    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN]; //251
-  //    uint8_t len = sizeof(buf);
-  //
-  //    Serial.println("Waiting for reply...");
-  //    if (rf95.waitAvailableTimeout(1000)) {
-  //      // Should be a reply message for us now
-  //      if (rf95.recv(buf, &len)) {
-  //        Serial.print("Got reply: ");
-  //        Serial.println((char*)buf);
-  //        Serial.print("RSSI: ");
-  //        Serial.println(rf95.lastRssi(), DEC);
-  //      } else {
-  //      Serial.println("Receive failed");
-  //      }
-  //    } else {
-  //      Serial.println("No reply, is there a listener around?");
-  //    }
-  //  }
-}
-
-
-void CANFiller(byte packetID, int packetSize, byte* DBC_Matrix) {
-  //Decimal values associated with the hex code for the CAN address
-  /* CAN FRAMES AND THEIR CORRESPONDING DATA POINTS (2025)
-    16: ShockPotFL, ShockPotFR, null, null
-    17: null, null, null, null
-    **18: null, BrkPrsF, null, SteeringPot
-    **19: null, BrakeTempFR, null, BrakeTempFL
-    **20: null, null, null, Pitot
-    **21: FAccX, FAccY, FAccZ, FGyroX
-    **22: FGyroY, FGyroZ, FMagX, FMagY
-    23: FMagZ, FrRideHeight1, FrRideHeight2
-    **32: ShockPotRL, BrakeTempRL, null, null
-    33: InletTemp2R, null, InletTemp1R, null
-    34: null, ShockPotRR, InletTempL, null
-    **35: null, BrakeTempRR, BrkPrsR, null
-    36: OutletTempL, OutletTempR, null, null
-    **37: RAccX, RAccY, RAccZ, RGyroX
-    **38: RGyroY, RGyroZ, RMagX, RMagy
-    39: RMagZ, ReRideHeight1, ReRideHeight2
-    **49: ClutchPos, ClutchL, ClutchR
-    50: null, null, null, null
-    69: Endurance (Fuel Pressure, GPS Speed, Throttle Position, Coolant Temp)
-
-  */
-  if (packetID == 18) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG1[i] = CAN.read();
-      DBC_Matrix[i] = CAN.read();
-    }
-  }
-  else if (packetID == 19) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG2[i] = CAN.read();
-      DBC_Matrix[i + 8] = CAN.read();
-    }
-  }
-  else if (packetID == 20) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG3[i] = CAN.read();
-      DBC_Matrix[i + 16] = CAN.read();
-    }
-  }
-  else if (packetID == 21) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG4[i] = CAN.read();
-      DBC_Matrix[i + 24] = CAN.read();
-    }
-  }
-  else if (packetID == 22) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG5[i] = CAN.read();
-      DBC_Matrix[i + 32] = CAN.read();
-    }
-  }
-  else if (packetID == 32) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG6[i] = CAN.read();
-      DBC_Matrix[i + 40] = CAN.read();
-    }
-  }
-  else if (packetID == 35) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG7[i] = CAN.read();
-      DBC_Matrix[i + 48] = CAN.read();
-    }
-  }
-  else if (packetID == 37) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      ANLG8[i] = CAN.read();
-      DBC_Matrix[i + 56] = CAN.read();
-    }
-  }
-  else if (packetID == 38) {
-    for (int i = 0; i < packetSize; i = i + 1) {
-      //      CTRLBD[i] = CAN.read();
-      DBC_Matrix[i + 64] = CAN.read();
-    }
-  }
-  else if (packetID == 49) {
-    DBC_Matrix[72] = CAN.read();     // byte 0 : ClutchPosition  (8‑bit)
-    DBC_Matrix[73] = 0;              // byte 1 : PAD
-
-    /* 16‑bit little‑endian ClutchL */
-    DBC_Matrix[74] = CAN.read();     // LSB
-    DBC_Matrix[75] = CAN.read();     // MSB
-
-    /* 16‑bit little‑endian ClutchR */
-    DBC_Matrix[76] = CAN.read();     // LSB
-    DBC_Matrix[77] = CAN.read();     // MSB
-
-  }
-  else if (packetID == 105) {
-    for (int i=0; i< packetSize; i = i+1){
-      DBC_Matrix[i+80] = CAN.read();
-    }
-  }
-}
-
-void convertBytesToShorts(byte* byteArray, short* shortArray, int byteArraySize) {
-  for (int i = 0; i < byteArraySize / 2; i++) {
-    shortArray[i] = (short(byteArray[2 * i + 1]) << 8) | byteArray[2 * i];
-  }
-}
-
-void blink()
-{
-  blinkCurrentMillis = millis();
-  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL)
-  {
-    blinkPreviousMillis = blinkCurrentMillis;
-    if (LEDState == LOW)
-    {
-      LEDState = HIGH;
-    }
-    else
-    {
-      LEDState = LOW;
-    }
-    digitalWrite(LED, LEDState);
+  if(uint32_t(now-lastID)>=540000) { lastID=now; Serial1.print("\r\nDE KQ9L\r\n"); }
+  static uint32_t lastPrint=0;
+  if(Serial && uint32_t(now-lastPrint)>=1000) {
+    lastPrint=now;
+    Serial.print("RPM="); Serial.print(rpm,0);
+    Serial.print(" pulse="); Serial.print(pulseValue,1);
+    Serial.print(" L/h="); Serial.print(rate,4);
+    Serial.print(" total_L="); Serial.print(liters,6);
+    Serial.print(" inputs="); Serial.print(valid(now)?"OK":"WAIT/STALE");
+    Serial.print(" storage="); Serial.println(storage.ok?"OK":"NO - RAM ONLY");
   }
 }
