@@ -68,7 +68,7 @@ class FuelStorage {
       double value;
       memcpy(&value, b + 24, 8);
       if (!isfinite(value) || value < 0) continue;
-      if (!found || static_cast<uint32_t>(number(b + 8) - sequence) > 0) {
+      if (!found || static_cast<int32_t>(number(b + 8) - sequence) > 0) {
         found = true;
         latest = i;
         sequence = number(b + 8);
