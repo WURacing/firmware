@@ -6,18 +6,18 @@
 //Initializations
 
 #define BAUD_RATE 1000000
-#define PULSE 100           // ms
+#define PULSE 100  // ms
 #define N_PULSE 12.5
-#define BLINK_INTERVAL 1000 // ms
-#define BLINK_FAST_INTERVAL 250 // ms
-#define CAN_INTERVAL 1      // ms
+#define BLINK_INTERVAL 1000      // ms
+#define BLINK_FAST_INTERVAL 250  // ms
+#define CAN_INTERVAL 1           // ms
 
 #define ANLG_RES 4096
 #define ANLG_VRANGE 3.3
 
 #define UP_IN_PIN 1
 #define DOWN_IN_PIN 4
-#define UP_OUT_PIN 5 
+#define UP_OUT_PIN 5
 #define DOWN_OUT_PIN 22
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
@@ -53,22 +53,21 @@ double positionCommanded = 135;
 Servo clutchServo;
 
 
-void setup()
-{
+void setup() {
   // setting up CAN
   pinMode(UP_IN_PIN, INPUT);
   pinMode(DOWN_IN_PIN, INPUT);
   pinMode(CLUTCH_IN1_PIN, INPUT);
   pinMode(CLUTCH_IN2_PIN, INPUT);
-  
+
   //setting up Shifting pins
   pinMode(UP_OUT_PIN, OUTPUT);
   pinMode(DOWN_OUT_PIN, OUTPUT);
-  pinMode(SMEET_PIN,OUTPUT);
+  pinMode(SMEET_PIN, OUTPUT);
 
   digitalWrite(UP_OUT_PIN, LOW);
   digitalWrite(DOWN_OUT_PIN, LOW);
-  digitalWrite(SMEET_PIN,LOW);
+  digitalWrite(SMEET_PIN, LOW);
   analogReadResolution(12);
 
   //setting up Clutch pins
@@ -87,77 +86,64 @@ void setup()
 }
 
 /* ----------------------- Methods ----------------------- */
-void blink()
-{
+void blink() {
   blinkCurrentMillis = millis();
-  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL)
-  {
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_INTERVAL) {
     blinkPreviousMillis = blinkCurrentMillis;
-    if (ledState == LOW)
-    {
+    if (ledState == LOW) {
       ledState = HIGH;
-    }
-    else
-    {
+    } else {
       ledState = LOW;
     }
     digitalWrite(LED, ledState);
   }
 }
 
-void blinkFast()
-{
+void blinkFast() {
   blinkCurrentMillis = millis();
-  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_FAST_INTERVAL)
-  {
+  if (blinkCurrentMillis - blinkPreviousMillis >= BLINK_FAST_INTERVAL) {
     blinkPreviousMillis = blinkCurrentMillis;
-    if (ledState == LOW)
-    {
+    if (ledState == LOW) {
       ledState = HIGH;
-    }
-    else
-    {
+    } else {
       ledState = LOW;
     }
     digitalWrite(LED, ledState);
   }
 }
 
-void checkShiftPaddle(){
-  while(digitalRead(UP_IN_PIN) == 0 || digitalRead(DOWN_IN_PIN) == 0){
+void checkShiftPaddle() {
+  while (digitalRead(UP_IN_PIN) == 0 || digitalRead(DOWN_IN_PIN) == 0) {
     blinkFast();
   }
 }
 
-void checkClutchPaddle(){
+void checkClutchPaddle() {
   double clutch1 = (double)analogRead(CLUTCH_IN1_PIN) / 4096;
   double clutch2 = (double)analogRead(CLUTCH_IN2_PIN) / 4096;
-  while(clutch1 >= CLUTCH_PULLED || clutch2 >= CLUTCH_PULLED){
+  while (clutch1 >= CLUTCH_PULLED || clutch2 >= CLUTCH_PULLED) {
     blinkFast();
   }
 }
 
-void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned short &dataCount)
-{
+void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned short &dataCount) {
   bool upStatus = !digitalRead(UP_IN_PIN);
   bool downStatus = !digitalRead(DOWN_IN_PIN);
   modifyBit(upData, dataCount, upStatus);
   modifyBit(downData, dataCount, downStatus);
 }
 
-void upshift(int pulse)
-{
-  digitalWrite(SMEET_PIN,HIGH);
+void upshift(int pulse) {
+  digitalWrite(SMEET_PIN, HIGH);
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
-  digitalWrite(SMEET_PIN,LOW);
+  digitalWrite(SMEET_PIN, LOW);
   delay(pulse);
   Serial.println("Upshift pressed");
 }
 
-void downshift(int pulse)
-{
+void downshift(int pulse) {
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
@@ -165,27 +151,36 @@ void downshift(int pulse)
   Serial.println("other pressed");
 }
 
-double getClutchPaddlePosition()
-{
+double getClutchPaddlePosition() {
   int clutch1 = analogRead(CLUTCH_IN1_PIN);
   int clutch2 = analogRead(CLUTCH_IN2_PIN);
   int value = max(clutch1, clutch2);
   return (double)value / 4096;
 }
 
-void getClutchPaddlePositions(double &clutch1, double &clutch2)
-{
+void getClutchPaddlePositions(double &clutch1, double &clutch2) {
   clutch1 = (double)analogRead(CLUTCH_IN1_PIN) / 4096;
   clutch2 = (double)analogRead(CLUTCH_IN2_PIN) / 4096;
 }
 
-void setClutchPosition(unsigned int position)
-{
+// Clears clutch buffer if driver pulls clutch fast
+void clearClutchBuffer(double currentPosition) {
+  const double MAX_AVERAGING_LAG = 0.08;
+
+  double averagedPosition = sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE;
+
+  if ((currentPosition - averagedPosition) >= MAX_AVERAGING_LAG) {
+    for (int i = 0; i < SAMPLE_SIZE; i++) {
+      position[i] = currentPosition;
+    }
+  }
+}
+
+void setClutchPosition(unsigned int position) {
   clutchServo.write(position);
 }
 
-void modifyBit(unsigned long &d, unsigned short c, bool v)
-{
+void modifyBit(unsigned long &d, unsigned short c, bool v) {
   int mask = 1 << c;
   d = ((d & ~mask) | (v << c));
 }
@@ -206,20 +201,17 @@ void canShortFrame(short *send, int startIndex, int canID) {
 }
 
 
-double sum(double *arr, int size)
-{
+double sum(double *arr, int size) {
   double sum = 0;
-  for (int i = 0; i < size; i++)
-  {
+  for (int i = 0; i < size; i++) {
     sum += arr[i];
   }
   return sum;
 }
 
 /* ----------------------- Main Loop ----------------------- */
-void loop()
-{
-  
+void loop() {
+
   //FOR DEBUGGING
   blink();
   // checkShiftPaddle();
@@ -231,95 +223,68 @@ void loop()
   // clutch1 - left, clutch2 - right
   getClutchPaddlePositions(clutch1, clutch2);
   checkShiftPaddles(upData, downData, dataCount);
-  
-  //Serial.println(upData);
-  
 
-  if (upData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
-  {
+  //Serial.println(upData);
+
+
+  if (upData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)) {
     shifting = true;
     upshift(PULSE);
   }
-  if (upData == 0 && downData == 0)
-  {
+  if (upData == 0 && downData == 0) {
     shifting = false;
   }
 
-  if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED))
-  {
+  if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)) {
     shifting = true;
     downshift(PULSE);
   }
-  if (downData == 0 && upData == 0)
-  {
+  if (downData == 0 && upData == 0) {
     shifting = false;
   }
 
-  if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting)
-  {
+  if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED && downData == ULONG_MAX && !shifting) {
     shifting = true;
     downshift(N_PULSE);
   }
-  if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting)
-  {
+  if (clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED & upData == ULONG_MAX && !shifting) {
     shifting = true;
     upshift(N_PULSE);
   }
-  if (downData == 0 && upData == 0)
-  {
+  if (downData == 0 && upData == 0) {
     shifting = false;
   }
 
   // Clutch Control
-  position[runCount % 10] = getClutchPaddlePosition();
-  if (runCount < 10)
-  {
+  double currentPaddlePosition = max(clutch1, clutch2);
+  clearClutchBuffer(currentPaddlePosition);
+
+  position[runCount % SAMPLE_SIZE] = currentPaddlePosition;
+  if (runCount < 10) {
     runCount++;
-  }
-  else
-  {
+  } else {
     runCount = 0;
     double averagedPosition = (sum(position, SAMPLE_SIZE) / (double)SAMPLE_SIZE);
-    // positionCommand
-    // ed = (-180 / 0.9)  * averagedPosition + 200;
-    // positionCommanded = (-2 * sinh(10 * (averagedPosition - 0.35))) + 100;
-    // positionCommanded = max(positionCommanded, 26);
 
     // LINEAR FUNCTION
     // (base case)
     //
-    if (averagedPosition < 0.37)
-    {
+    if (averagedPosition < 0.37) {
       positionCommanded = 21;
-    }
-    else if (averagedPosition > 0.93)
-    {
-      positionCommanded = 110;
-    }
-    else 
-    {
+    } else if (averagedPosition > 0.90) {
+      positionCommanded = 165;
+    } else {
       positionCommanded = 105.76923 * averagedPosition + 11.63462;
     }
-    // S-SHAPED FUNCTION
-    // (comment this out to use it)
-    //00
-    //     if (averagedPosition < 0.1)
-    // {
-    //     positionCommanded = 21;
-    // }
-    // else if (averagedPosition > 0.9)
-    // {
-    //     positionCommanded = 165;
-    // }
-    // else
-    // {
-    //     // Normalize to 0-1 range
-    //     double normalizedPos = (averagedPosition - 0.145) / (0.735 - 0.145);
-        
+
+    // NEW CUBIC S-CURVE: More forgiving clutch engagement with smooth transitions
+    // Maps paddle (0.09-1.0) to servo (26-165) with eased start and end
+    positionCommanded = 26 + (165 - 26) * (3 * pow(averagedPosition - 0.09, 2) - 2 * pow(averagedPosition - 0.09, 3)) / pow(1.0 - 0.09, 2);
+
     //     // Create a balanced S-curve that tapers at both ends
     //     // Using sine function: (sin(π(x-0.5)) + 1) / 2
     //     double sValue = (sin(PI * (normalizedPos - 0.5)) + 1) / 2;
-        
+
     //     // Scale to our clutch range (21 to 165)
     //     positionCommanded = 21 + (144 * sValue);
     // }
@@ -340,10 +305,13 @@ void loop()
     //   positionCommanded = -50.7697 * pow(1 - averagedPosition, 3) + 120.513 * pow(1 - averagedPosition, 2) - 96.6814 * (1 - averagedPosition) + 136.64;
     // }
 
-    //Serial.print("Clutch paddle: ");
-    //Serial.print(averagedPosition);
-    //Serial.print("\tClutch position: ");
-    //Serial.println(positionCommanded);
+    // Constrain the output to valid servo range (important)
+    positionCommanded = constrain(positionCommanded, 26, 165);
+
+    Serial.print("Clutch paddle: ");
+    Serial.print(averagedPosition);
+    Serial.print("\tClutch position: ");
+    Serial.println(positionCommanded);
   }
 
   setClutchPosition(positionCommanded);
@@ -357,14 +325,15 @@ void loop()
   //   CAN.write((short)positionCommanded);
   //   CAN.endPacket();
   // }
- // CAN Transmission
+  // CAN Transmission
   canCurrentMillis = millis();
   if (canCurrentMillis - canPreviousMillis >= CAN_INTERVAL) {
     // Pack data into a short array (like FSB code)
-    short sendData[3] = {
+    short sendData[4] = {
       (short)positionCommanded,  // Clutch servo position (8-bit → short)
-      (short)clutch1,         // Clutch1 (12-bit → short)
-      (short)clutch2          // Clutch2 (12-bit → short)
+      (short)clutch1,            // Clutch1 (12-bit → short)
+      (short)clutch2,            // Clutch2 (12-bit → short)
+      0
     };
 
     // Send data in CAN frames (split into 4-byte)
@@ -375,8 +344,7 @@ void loop()
 
   // Data count update
   dataCount++;
-  if (dataCount == BIT_NUM)
-  {
+  if (dataCount == BIT_NUM) {
     dataCount = 0;
   }
 }
