@@ -13,6 +13,9 @@ const double PULSE_VALUE_TO_TRUE_MS=0.1; // paper: logged pulse value 55 corresp
 const bool AIM_REBROADCAST_VERIFIED=true;
 const uint16_t FUEL_CAN_ID=0x33;       // owned by this Feather, confirmed by user
 const uint8_t RESET_PIN=5;
+const uint16_t FUEL_RESET_CAN_ID=0x6F; // front board: one byte, released=0 / pressed=1
+bool frontReset=false,frontResetArmed=false;
+uint32_t frontResetAt=0;
 const uint32_t RPM_STALE_MS=500, PULSE_STALE_MS=1500, RADIO_MS=200, SAVE_MS=1000;
 const double FUEL_CONSTANT=2.5012e-5; // paper's gain per historical logged PW unit * RPM
 
@@ -72,6 +75,13 @@ void receiveCAN() {
     uint8_t bytes[8]; int n=0;
     bool good=frame>=0 && size==8 && !CAN.packetExtended() && !CAN.packetRtr();
     while(CAN.available()) { int b=CAN.read(); if(n<8) bytes[n++]=uint8_t(b); }
+    if(CAN.packetId()==FUEL_RESET_CAN_ID && !CAN.packetExtended() &&
+       !CAN.packetRtr() && size==1 && n==1 && bytes[0]<=1) {
+      if(bytes[0]==0) frontResetArmed=true; // require a received release before a hold
+      frontReset=frontResetArmed && bytes[0]==1;
+      frontResetAt=millis();
+      continue;
+    }
     if(!good || n!=8) {
       if(frame==1) haveRPM=false;
       if(frame==5) havePulse=false;
@@ -122,7 +132,8 @@ void checkReset(uint32_t now) {
   }
   static bool first=true,raw=false,stable=false;
   static uint32_t changedAt=0;
-  bool input=digitalRead(RESET_PIN)==LOW;
+  if(uint32_t(now-frontResetAt)>=350) { frontReset=false; frontResetArmed=false; }
+  bool input=digitalRead(RESET_PIN)==LOW || frontReset;
   if(first) { raw=stable=input; changedAt=now; first=false; }
   if(input!=raw) { raw=input; changedAt=now; }
   if(uint32_t(now-changedAt)>=50) stable=raw;
@@ -146,7 +157,7 @@ void checkReset(uint32_t now) {
   digitalWrite(LED_BUILTIN,lit);
 }
 void setup() {
-  Serial.begin(115200); Serial1.begin(19200);
+  Serial1.begin(19200);
   pinMode(RESET_PIN,INPUT_PULLUP); pinMode(LED_BUILTIN,OUTPUT);
   totalReady=storage.begin(liters);
   if(totalReady) lastSaved=storage.savedLiters; // no unchanged checkpoint on every boot
@@ -178,14 +189,4 @@ void loop() {
     if(totalReady && !resetting && !storage.busy() && liters!=lastSaved) storage.save(liters,now);
   }
   if(uint32_t(now-lastID)>=540000) { lastID=now; Serial1.print("\r\nDE KQ9L\r\n"); }
-  static uint32_t lastPrint=0;
-  if(Serial && uint32_t(now-lastPrint)>=1000) {
-    lastPrint=now;
-    Serial.print("RPM="); Serial.print(rpm,0);
-    Serial.print(" pulse="); Serial.print(pulseValue,1);
-    Serial.print(" L/h="); Serial.print(rate,4);
-    Serial.print(" total_L="); Serial.print(liters,6);
-    Serial.print(" inputs="); Serial.print(valid(now)?"OK":"WAIT/STALE");
-    Serial.print(" storage="); Serial.println(storage.ok?"OK":"NO - RAM ONLY");
-  }
 }
