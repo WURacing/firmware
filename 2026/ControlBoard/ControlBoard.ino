@@ -269,25 +269,25 @@ void loop() {
     // LINEAR FUNCTION
     // (base case)
     //
-    if (averagedPosition < 0.37) {
-      positionCommanded = 21;
-    } else if (averagedPosition > 0.90) {
-      positionCommanded = 165;
-    } else {
-      positionCommanded = 105.76923 * averagedPosition + 11.63462;
-    }
+    // if (averagedPosition < 0.37) {
+    //   positionCommanded = 21;
+    // } else if (averagedPosition > 0.90) {
+    //   positionCommanded = 165;
+    // } else {
+    //   positionCommanded = 105.76923 * averagedPosition + 11.63462;
+    // }
 
     // NEW CUBIC S-CURVE: More forgiving clutch engagement with smooth transitions
     // Maps paddle (0.09-1.0) to servo (26-165) with eased start and end
     positionCommanded = 26 + (165 - 26) * (3 * pow(averagedPosition - 0.09, 2) - 2 * pow(averagedPosition - 0.09, 3)) / pow(1.0 - 0.09, 2);
 
-    //     // Create a balanced S-curve that tapers at both ends
-    //     // Using sine function: (sin(π(x-0.5)) + 1) / 2
-    //     double sValue = (sin(PI * (normalizedPos - 0.5)) + 1) / 2;
+        // Create a balanced S-curve that tapers at both ends
+        // Using sine function: (sin(π(x-0.5)) + 1) / 2
+        double sValue = (sin(PI * (normalizedPos - 0.5)) + 1) / 2;
 
-    //     // Scale to our clutch range (21 to 165)
-    //     positionCommanded = 21 + (144 * sValue);
-    // }
+        // Scale to our clutch range (21 to 165)
+        positionCommanded = 21 + (144 * sValue);
+    }
 
     // QUINN FUNCTION
     // (mad weird, use at your own risk)
