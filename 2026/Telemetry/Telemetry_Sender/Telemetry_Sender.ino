@@ -349,6 +349,13 @@ void receiveCAN() {
     uint8_t bytes[8]; int n=0;
     bool good=frame>=0 && size==8 && !CAN.packetExtended() && !CAN.packetRtr();
     while(CAN.available()) { int b=CAN.read(); if(n<8) bytes[n++]=uint8_t(b); }
+    if(CAN.packetId()==FUEL_RESET_CAN_ID && !CAN.packetExtended() &&
+       !CAN.packetRtr() && size==1 && n==1 && bytes[0]<=1) {
+      if(bytes[0]==0) frontResetArmed=true; // require a received release before a hold
+      frontReset=frontResetArmed && bytes[0]==1;
+      frontResetAt=millis();
+      continue;
+    }
     if(!good || n!=8) {
       if(frame==1) haveRPM=false;
       if(frame==5) havePulse=false;
@@ -399,7 +406,8 @@ void checkReset(uint32_t now) {
   }
   static bool first=true,raw=false,stable=false;
   static uint32_t changedAt=0;
-  bool input=digitalRead(RESET_PIN)==LOW;
+  if(uint32_t(now-frontResetAt)>=350) { frontReset=false; frontResetArmed=false; }
+  bool input=digitalRead(RESET_PIN)==LOW || frontReset;
   if(first) { raw=stable=input; changedAt=now; first=false; }
   if(input!=raw) { raw=input; changedAt=now; }
   if(uint32_t(now-changedAt)>=50) stable=raw;
