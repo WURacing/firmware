@@ -109,4 +109,3 @@ public:
     if(!good) { ok=false; stage=0; }
   }
 };
- 
