@@ -17,8 +17,8 @@
 
 #define UP_IN_PIN 1
 #define DOWN_IN_PIN 4
-#define UP_OUT_PIN 5
-#define DOWN_OUT_PIN 22
+#define UP_OUT_PIN 22
+#define DOWN_OUT_PIN 5
 #define CLUTCH_IN1_PIN A0
 #define CLUTCH_IN2_PIN A1
 #define CLUTCH_OUT_PIN A2
