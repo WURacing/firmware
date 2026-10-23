@@ -166,11 +166,12 @@ void setup()
   initVcsels();
   Wire.setClock(400000);      // bmx160.begin()/vl.begin() re-run Wire.begin(), which resets to 100 kHz
 
-  selectChecked(IMU_MUX_CH);
-  while (1) {
-    Wire.beginTransmission(0x68);
-    Wire.endTransmission();
-  }
+  // Debugging code that hangs the rest of the app
+  // selectChecked(IMU_MUX_CH);
+  // while (1) {
+  //   Wire.beginTransmission(0x68);
+  //   Wire.endTransmission();
+  // }
 
 // Serial.println("Scanning I2C...");
 // int found = 0;
