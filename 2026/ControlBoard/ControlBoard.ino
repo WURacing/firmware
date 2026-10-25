@@ -6,7 +6,7 @@
 //Initializations
 
 #define BAUD_RATE 1000000
-#define PULSE 100  // ms
+#define PULSE 115  // ms
 #define N_PULSE 12.5
 #define BLINK_INTERVAL 1000      // ms
 #define BLINK_FAST_INTERVAL 250  // ms
@@ -134,19 +134,21 @@ void checkShiftPaddles(unsigned long &upData, unsigned long &downData, unsigned 
 }
 
 void upshift(int pulse) {
-  digitalWrite(SMEET_PIN, HIGH);
   digitalWrite(UP_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(UP_OUT_PIN, LOW);
-  digitalWrite(SMEET_PIN, LOW);
   delay(pulse);
-  Serial.println("Upshift pressed");
+  Serial.println("Downshift pressed");
 }
 
 void downshift(int pulse) {
+  digitalWrite(SMEET_PIN, HIGH);
+  Serial.println("shiftcut");
   digitalWrite(DOWN_OUT_PIN, HIGH);
   delay(pulse);
   digitalWrite(DOWN_OUT_PIN, LOW);
+  Serial.println("shiftcut end");
+  digitalWrite(SMEET_PIN, LOW);
   delay(pulse);
   Serial.println("other pressed");
 }
@@ -230,6 +232,7 @@ void loop() {
   if (upData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)) {
     shifting = true;
     upshift(PULSE);
+    Serial.println("downshift");
   }
   if (upData == 0 && downData == 0) {
     shifting = false;
@@ -238,6 +241,7 @@ void loop() {
   if (downData == ULONG_MAX && !shifting && !(clutch1 >= CLUTCH_PULLED && clutch2 >= CLUTCH_PULLED)) {
     shifting = true;
     downshift(PULSE);
+    Serial.println("upshift");
   }
   if (downData == 0 && upData == 0) {
     shifting = false;
@@ -271,23 +275,27 @@ void loop() {
     
     if (averagedPosition < 0.37) {
       positionCommanded = 21;
-    } else if (averagedPosition > 0.90) {
-      positionCommanded = 165;
+    } else if (averagedPosition > 0.92) {
+      positionCommanded = 185;
     } else {
-      positionCommanded = 105.76923 * averagedPosition + 11.63462;
+      positionCommanded = 135.76923 * averagedPosition + 18.63462;
     }
 
+    // Serial.print("Paddle position: ");
+    // Serial.println(averagedPosition);
+    // Serial.print("Servo position: ");
+    // Serial.println(positionCommanded);
     // NEW CUBIC S-CURVE: More forgiving clutch engagement with smooth transitions
     // Maps paddle (0.09-1.0) to servo (26-165) with eased start and end
-    positionCommanded = 26 + (165 - 26) * (3 * pow(averagedPosition - 0.09, 2) - 2 * pow(averagedPosition - 0.09, 3)) / pow(1.0 - 0.09, 2);
+    // positionCommanded = 26 + (165 - 26) * (3 * pow(averagedPosition - 0.09, 2) - 2 * pow(averagedPosition - 0.09, 3)) / pow(1.0 - 0.09, 2);
 
-        // // Create a balanced S-curve that tapers at both ends
-        // // Using sine function: (sin(π(x-0.5)) + 1) / 2
-        // double sValue = (sin(PI * (normalizedPos - 0.5)) + 1) / 2;
+    //     // Create a balanced S-curve that tapers at both ends
+    //     // Using sine function: (sin(π(x-0.5)) + 1) / 2
+    //     double sValue = (sin(PI * (normalizedPos - 0.5)) + 1) / 2;
 
-        // // Scale to our clutch range (21 to 165)
-        // positionCommanded = 21 + (144 * sValue);
-    }
+    //     // Scale to our clutch range (21 to 165)
+    //     positionCommanded = 21 + (144 * sValue);
+    // }
 
     // QUINN FUNCTION
     // (mad weird, use at your own risk)
@@ -306,12 +314,12 @@ void loop() {
     // }
 
     // Constrain the output to valid servo range (important)
-    positionCommanded = constrain(positionCommanded, 26, 165);
+    positionCommanded = constrain(positionCommanded, 26, 185);
 
-    Serial.print("Clutch paddle: ");
-    Serial.print(averagedPosition);
-    Serial.print("\tClutch position: ");
-    Serial.println(positionCommanded);
+    // Serial.print("Clutch paddle: ");
+    // Serial.print(averagedPosition);
+    // Serial.print("\tClutch position: ");
+    // Serial.println(positionCommanded);
   }
 
   setClutchPosition(positionCommanded);
