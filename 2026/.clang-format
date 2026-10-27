@@ -1,0 +1,14 @@
+# Formatting rules for all firmware (.ino, .h, .cpp, .c).
+# Google C++ style, per the team Code and GitHub Standards doc.
+# Run `python scripts/format.py` or enable format-on-save in VS Code.
+---
+Language: Cpp
+BasedOnStyle: Google
+ColumnLimit: 80
+IndentWidth: 2
+DerivePointerAlignment: false
+PointerAlignment: Left
+# Keep the Arduino core / library includes apart from our own headers.
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive
+...
