@@ -12,6 +12,8 @@
 #ifndef FSB_CODE_FSB_CODE_H_
 #define FSB_CODE_FSB_CODE_H_
 
+0.88 / 144
+
 #include <Arduino.h>
 
 // Toggles the status LED once per blink interval. Call every loop.

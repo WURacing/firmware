@@ -229,14 +229,18 @@ ClutchPaddles GetClutchPaddlePositions() {
   return paddles;
 }
 
-double LinearClutchMap(double paddle_position) {
+double PiecewiseClutchMap(double paddle_position) {
   if (paddle_position < 0.37) {
     return 21;
   }
   if (paddle_position > 0.93) {
     return 165;
   }
-  return 105.76923 * paddle_position + 11.63462;
+  return (0.88/144) * paddle_position + 11.63462;
+}
+
+double LinearClutchMap(double paddle_position) {
+  return 163.63 * paddle_position + 21;
 }
 
 // S-curve that tapers at both ends: (sin(pi * (x - 0.5)) + 1) / 2, scaled to
