@@ -16,8 +16,8 @@
 
 #include <Arduino.h>
 
-// Toggles the status LED once per blink interval. Call every loop.
-void Blink();
+    // Toggles the status LED once per blink interval. Call every loop.
+    void Blink();
 
 // Reads the four analog inputs that bypass the mux (A0-A3) into
 // `readings[16]` through `readings[19]`, in millivolts.

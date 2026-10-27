@@ -4,7 +4,7 @@
  *
  * Controls clutch and shifting for the car. Contains multiple clutch functions.
  * © WashU Racing FSAE
- * 
+ *
  * @see ControlBoard.h for an overview of the board.
  */
 
@@ -24,7 +24,7 @@ constexpr int CLUTCH_IN1_PIN = A0;  // Left paddle.
 constexpr int CLUTCH_IN2_PIN = A1;  // Right paddle.
 constexpr int CLUTCH_OUT_PIN = A2;
 // Held high for the duration of each upshift pulse.
-constexpr int SMEET_PIN = A3; // Shiftcut signal
+constexpr int SMEET_PIN = A3;  // Shiftcut signal
 
 // Timing.
 constexpr uint32_t blink_interval_ms = 1000;
@@ -236,7 +236,7 @@ double PiecewiseClutchMap(double paddle_position) {
   if (paddle_position > 0.93) {
     return 165;
   }
-  return (0.88/144) * paddle_position + 11.63462;
+  return 115.76923 * paddle_position + 11.63462;
 }
 
 double LinearClutchMap(double paddle_position) {

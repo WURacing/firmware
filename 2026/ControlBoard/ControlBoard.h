@@ -44,7 +44,7 @@ ClutchPaddles GetClutchPaddlePositions();
 // LinearClutchMap is the one in use; SCurveClutchMap is kept for tuning.
 double LinearClutchMap(double paddle_position);
 double SCurveClutchMap(double paddle_position);
-
+double PiecewiseClutchMap(double paddle_position);
 // Moves the clutch servo to `angle` degrees.
 void SetClutchPosition(unsigned int angle);
 
