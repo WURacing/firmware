@@ -2,10 +2,9 @@
  * @file ControlBoard.ino
  * @brief Control Board firmware implementation, WUFR26.
  *
- * Shift paddles are debounced in software: a paddle registers as pressed only
- * after reading pressed for history_bits consecutive loops. Each press fires a
- * single shift, and both paddles must be released before the next one.
- *
+ * Controls clutch and shifting for the car. Contains multiple clutch functions.
+ * © WashU Racing FSAE
+ * 
  * @see ControlBoard.h for an overview of the board.
  */
 
@@ -25,12 +24,12 @@ constexpr int CLUTCH_IN1_PIN = A0;  // Left paddle.
 constexpr int CLUTCH_IN2_PIN = A1;  // Right paddle.
 constexpr int CLUTCH_OUT_PIN = A2;
 // Held high for the duration of each upshift pulse.
-constexpr int SMEET_PIN = A3;
+constexpr int SMEET_PIN = A3; // Shiftcut signal
 
 // Timing.
 constexpr uint32_t blink_interval_ms = 1000;
 constexpr uint32_t can_interval_ms = 1;
-constexpr int shift_pulse_ms = 100;
+constexpr int shift_pulse_ms = 115;
 // Short pulse used with the clutch pulled, to find neutral. Upshift() and
 // Downshift() take whole milliseconds, so the original 12.5 ran as 12.
 constexpr int neutral_shift_pulse_ms = 12;
@@ -212,7 +211,7 @@ void Downshift(int pulse_ms) {
   delay(pulse_ms);
   digitalWrite(DOWN_OUT_PIN, LOW);
   delay(pulse_ms);
-  Serial.println("other pressed");
+  Serial.println("Downshift pressed");
 }
 
 double GetClutchPaddlePosition() {
@@ -235,7 +234,7 @@ double LinearClutchMap(double paddle_position) {
     return 21;
   }
   if (paddle_position > 0.93) {
-    return 110;
+    return 165;
   }
   return 105.76923 * paddle_position + 11.63462;
 }

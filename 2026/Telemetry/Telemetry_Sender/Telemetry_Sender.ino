@@ -154,7 +154,7 @@ void ReadPacket(int offset, int packet_size, uint8_t* dbc_matrix) {
   }
 }
 
-// TODO(henry): packet_id is 8 bits, so CAN IDs above 0xFF wrap around (e.g.
+// TODO: packet_id is 8 bits, so CAN IDs above 0xFF wrap around (e.g.
 // 0x112 is read as 18).
 void CanFiller(uint8_t packet_id, int packet_size, uint8_t* dbc_matrix) {
   if (packet_id == 18) {
@@ -176,7 +176,7 @@ void CanFiller(uint8_t packet_id, int packet_size, uint8_t* dbc_matrix) {
   } else if (packet_id == 38) {
     ReadPacket(64, packet_size, dbc_matrix);
   } else if (packet_id == 49) {
-    // TODO(henry): The Control Board sends ClutchPos as 2 bytes, so reading
+    // TODO: The Control Board sends ClutchPos as 2 bytes, so reading
     // it as 1 byte shifts ClutchL and ClutchR by one byte.
     dbc_matrix[72] = CAN.read();  // ClutchPos (8-bit).
     dbc_matrix[73] = 0;           // Padding.

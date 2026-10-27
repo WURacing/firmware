@@ -119,9 +119,8 @@ void loop() {
   }
   current_millis = millis();
 
-  // TODO(henry): Only the averaging step is guarded by the sample count, so
-  // frames go out every loop and data_count is never reset. Kept as-is to
-  // keep this refactor behavior-neutral; fix on fix/henry-FSB_CAN.
+  // TODO(henry): Potential issue with data_count here -- may be the
+  // cause of vcsel data dropping
   if (data_count >= num_samples) {
     for (int i = 0; i < num_can_values; ++i) {
       average_matrix[i] = average_matrix[i] / static_cast<float>(num_samples);
@@ -132,7 +131,6 @@ void loop() {
   for (int frame = 0; frame * shorts_per_frame < num_can_values - 1; ++frame) {
     CanShortFrame(avg_send, frame * shorts_per_frame, can_base_id + frame);
   }
-  // Last frame is sent empty on this board (RSB sends avg_send[28] here).
   CAN.beginPacket(can_base_id + 7);
   CAN.endPacket();
 
@@ -198,7 +196,6 @@ void SwapXyInPlace(float* vec) {
 
 void RecoverI2cBus() {
   pinMode(SCL_PIN, OUTPUT);
-  // Nine clock pulses let any peripheral finish the byte it is holding.
   for (int i = 0; i < 9; ++i) {
     digitalWrite(SCL_PIN, HIGH);
     delayMicroseconds(5);
