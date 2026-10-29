@@ -15,6 +15,7 @@
 0.88 / 144
 
 #include <Arduino.h>
+#include <Adafruit_NeoPixel.h>
 
     // Toggles the status LED once per blink interval. Call every loop.
     void Blink();

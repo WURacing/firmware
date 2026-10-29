@@ -204,4 +204,43 @@ void Blink() {
     led_state = (led_state == LOW) ? HIGH : LOW;
     digitalWrite(LED_PIN, led_state);
   }
+  now=millis();
+  bool lit=false;
+  if(flashes && uint32_t(now-flashAt)<uint32_t(flashes)*period) lit=(now-flashAt)%period<period/2;
+  else { flashes=0; lit=holding && (now/250)%2==0; }
+  digitalWrite(LED_BUILTIN,lit);
+}
+void setup() {
+  Serial1.begin(19200);
+  pinMode(RESET_PIN,INPUT_PULLUP); pinMode(LED_BUILTIN,OUTPUT);
+  totalReady=storage.begin(liters);
+  if(totalReady) lastSaved=storage.savedLiters; // no unchanged checkpoint on every boot
+  else { liters=0; totalReady=true; } // allow visible RAM-only counting; never erase foreign flash
+  pinMode(PIN_CAN_STANDBY,OUTPUT); digitalWrite(PIN_CAN_STANDBY,LOW);
+  pinMode(PIN_CAN_BOOSTEN,OUTPUT); digitalWrite(PIN_CAN_BOOSTEN,HIGH);
+  if(!CAN.begin(1000000)) { while(true) { digitalWrite(LED_BUILTIN,HIGH); delay(100); } }
+  CAN.filter(0x68,0x7F8);
+  Serial1.print("\r\nDE KQ9L\r\n");
+  lastIntegrate=lastRadio=lastCAN=lastSave=lastID=millis();
+}
+void loop() {
+  receiveCAN();
+  storage.poll(millis()); // one short flash operation; CAN is serviced again next loop
+  uint32_t now=millis(); integrate(now); checkReset(now);
+  now=millis(); integrate(now);
+  if(uint32_t(now-lastCAN)>=100) {
+    lastCAN=now;
+    uint8_t b[8];
+    canFuelBytes(b);
+    CAN.beginPacket(FUEL_CAN_ID,8);
+    CAN.write(b,8);
+    CAN.endPacket();
+  }
+  if(uint32_t(now-lastRadio)>=RADIO_MS) { lastRadio=now; sendRadio(now); }
+  if(uint32_t(now-lastSave)>=SAVE_MS) {
+    lastSave=now;
+    lastSaved=storage.savedLiters;
+    if(totalReady && !resetting && !storage.busy() && liters!=lastSaved) storage.save(liters,now);
+  }
+  if(uint32_t(now-lastID)>=540000) { lastID=now; Serial1.print("\r\nDE KQ9L\r\n"); }
 }

@@ -16,8 +16,10 @@
 #include <CANSAME5x.h>
 #include <SPI.h>
 #include <Wire.h>
+#include <math.h>
+#include <Adafruit_VL6180X.h>
 
-// Uncomment to print every analog reading over serial.
+
 // #define DEBUG
 #ifdef DEBUG
 #define PRINT_DEBUG(message) Serial.print(message)
@@ -126,6 +128,12 @@ void loop() {
       average_matrix[i] = average_matrix[i] / static_cast<float>(num_samples);
       avg_send[i] = static_cast<int16_t>(average_matrix[i]);
     }
+
+    for (int i=0; i<32; i++) {
+      avg_send[i] = 0;
+    }
+
+    datacount = 0;
   }
 
   for (int frame = 0; frame * shorts_per_frame < num_can_values - 1; ++frame) {
