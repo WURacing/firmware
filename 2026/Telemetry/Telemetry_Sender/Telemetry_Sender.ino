@@ -1,4 +1,5 @@
-/**
+
+/*
  * @file Telemetry_Sender.ino
  * @brief Telemetry Sender firmware implementation, WUFR26.
  *

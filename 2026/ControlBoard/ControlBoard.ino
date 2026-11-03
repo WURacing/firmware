@@ -29,10 +29,10 @@ constexpr int SMEET_PIN = A3;  // Shiftcut signal
 // Timing.
 constexpr uint32_t blink_interval_ms = 1000;
 constexpr uint32_t can_interval_ms = 1;
-constexpr int shift_pulse_ms = 115;
+constexpr int shift_pulse_ms = 65;
 // Short pulse used with the clutch pulled, to find neutral. Upshift() and
 // Downshift() take whole milliseconds, so the original 12.5 ran as 12.
-constexpr int neutral_shift_pulse_ms = 12;
+constexpr int neutral_shift_pulse_ms = 14;
 
 // Communication.
 constexpr uint32_t serial_baud_rate = 9600;
@@ -115,7 +115,7 @@ void UpdateShifting(const ClutchPaddles& paddles) {
 
   if (up_history == paddle_held && !shifting && !both_clutches_pulled) {
     shifting = true;
-    Upshift(shift_pulse_ms);
+    Downshift(shift_pulse_ms);
   }
   if (up_history == paddle_released && down_history == paddle_released) {
     shifting = false;
@@ -123,7 +123,7 @@ void UpdateShifting(const ClutchPaddles& paddles) {
 
   if (down_history == paddle_held && !shifting && !both_clutches_pulled) {
     shifting = true;
-    Downshift(shift_pulse_ms);
+    Upshift(shift_pulse_ms);
   }
   if (down_history == paddle_released && up_history == paddle_released) {
     shifting = false;
@@ -233,14 +233,17 @@ double PiecewiseClutchMap(double paddle_position) {
   if (paddle_position < 0.37) {
     return 21;
   }
-  if (paddle_position > 0.93) {
-    return 165;
+  if (paddle_position > 0.87) {
+    return 185;
   }
-  return 115.76923 * paddle_position + 11.63462;
+  return 145.76923 * paddle_position + 11.63462;
 }
 
 double LinearClutchMap(double paddle_position) {
-  return 163.63 * paddle_position + 21;
+  if (paddle_position < 0.25) {
+    return 21;
+  }
+  return 173.63 * paddle_position + 21;
 }
 
 // S-curve that tapers at both ends: (sin(pi * (x - 0.5)) + 1) / 2, scaled to
@@ -249,12 +252,12 @@ double SCurveClutchMap(double paddle_position) {
   if (paddle_position < 0.1) {
     return 21;
   }
-  if (paddle_position > 0.9) {
-    return 165;
+  if (paddle_position > 0.87) {
+    return 185;
   }
   const double normalized = (paddle_position - 0.145) / (0.735 - 0.145);
   const double s_value = (sin(PI * (normalized - 0.5)) + 1) / 2;
-  return 21 + (144 * s_value);
+  return 21 + (164 * s_value);
 }
 
 void SetClutchPosition(unsigned int angle) { clutch_servo.write(angle); }
