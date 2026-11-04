@@ -1,0 +1,32 @@
+# Builds the firmware for this machine against the fake Arduino core and runs
+# the GoogleTest host tests (see 2026/tests). Runs on every push.
+
+name: Firmware tests
+
+on:
+  push:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the older, now-stale run.
+concurrency:
+  group: firmware-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    name: Host tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and run host tests
+        run: python scripts/test.py
