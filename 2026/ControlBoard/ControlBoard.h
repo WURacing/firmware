@@ -20,18 +20,6 @@ struct ClutchPaddles {
   double right;
 };
 
-// Fires at most one shift per paddle press, using the short neutral pulse
-// when both clutch paddles are pulled. Call every loop.
-void UpdateShifting(const ClutchPaddles& paddles);
-
-// Averages the clutch paddle position over several loops and moves the clutch
-// servo to match. Call every loop.
-void UpdateClutch();
-
-// Sends the commanded clutch angle and paddle positions on CAN once per CAN
-// interval. Call every loop.
-void SendClutchState(const ClutchPaddles& paddles);
-
 // Toggles the status LED once per blink interval. Call every loop.
 void Blink();
 
