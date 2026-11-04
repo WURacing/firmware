@@ -116,27 +116,37 @@ _LINKER_ERROR = re.compile(r"(multiple definition of|undefined reference to)"
                            r" [`'‘]([^'’]+)['’]")
 
 
+_INCLUDED_FROM = re.compile(
+    r"^(?:In file included from|\s+from) (?P<file>.+?):(?P<line>\d+)[,:]$")
+
+
 class CompilerError:
-    """One compiler or linker error. `file` is repo-relative, or "" when the
-    error is outside the repo (a library or system header) or from the
-    linker."""
+    """One compiler or linker error.
+
+    `file` and `line` are where to point the developer: the repo file with
+    the error, or, for an error inside a library or fake header, the line in
+    our code that included it (`library` then names the header). Both are ""
+    for linker errors and for errors with no repo file involved, which keep
+    the raw location in `outside`.
+    """
 
     def __init__(self, file: str, line: str, col: str, message: str,
-                 outside: str = ""):
+                 outside: str = "", library: str = ""):
         self.file, self.line, self.col = file, line, col
-        self.message, self.outside = message, outside
-
-    @property
-    def in_fake(self) -> bool:
-        return "/tests/fakes/" in f"/{self.file}"
+        self.message, self.outside, self.library = message, outside, library
 
     @property
     def in_tests(self) -> bool:
-        return "/tests/" in f"/{self.file}" and not self.in_fake
+        return "/tests/" in f"/{self.file}"
+
+    @property
+    def double_include(self) -> bool:
+        return bool(self.library) and self.message.startswith("redefinition")
 
     def __str__(self) -> str:
         if self.file:
-            return f"{self.file}:{self.line}: {self.message}"
+            via = f" (in {self.library})" if self.library else ""
+            return f"{self.file}:{self.line}{via}: {self.message}"
         return f"{self.outside}: {self.message}" if self.outside else (
             self.message)
 
@@ -151,31 +161,57 @@ def repo_relative(path: str) -> str:
         rel = candidate.resolve().relative_to(REPO_ROOT)
     except (ValueError, OSError):
         return ""
-    rel_text = rel.as_posix()
     if rel.parts and rel.parts[0] == "build" or not (REPO_ROOT / rel).exists():
         return ""
-    return rel_text
+    return rel.as_posix()
+
+
+def _is_library(rel: str) -> bool:
+    """True for headers we didn't write: outside the repo, or test fakes."""
+    return not rel or "/tests/fakes/" in f"/{rel}"
 
 
 def parse_compiler_errors(output: str) -> list[CompilerError]:
     """Returns the distinct errors in compiler or linker `output`."""
     errors, seen = [], set()
+    chain: list[tuple[str, str]] = []  # Innermost include first.
     for raw in output.splitlines():
-        match = _COMPILER_MESSAGE.match(raw.strip())
-        if match and match["level"] != "warning":
-            file = repo_relative(match["file"])
+        text = raw.strip() if raw.startswith(" ") and " from " not in raw else (
+            raw)
+        included = _INCLUDED_FROM.match(text)
+        if included:
+            chain.append((included["file"], included["line"]))
+            continue
+        match = _COMPILER_MESSAGE.match(text.strip())
+        if match:
+            includes, chain = chain, []
+            if match["level"] == "warning":
+                continue
+            rel = repo_relative(match["file"])
             message = match["message"]
-            if "/tests/fakes/" in f"/{file}" and message.startswith(
-                    "redefinition"):
-                # A fake library header without an include guard, like the
-                # real one, included twice by the sketch.
-                message += (" (the sketch includes this library header twice,"
-                            " e.g. <CAN.h> and <CANSAME5x.h>; the Arduino IDE"
-                            " fails the same way)")
-            error = CompilerError(
-                file, match["line"], match["col"] or "", message,
-                "" if file else f"{match['file']}:{match['line']}")
+            if not _is_library(rel):
+                error = CompilerError(rel, match["line"], match["col"] or "",
+                                      message)
+            else:
+                header = rel or match["file"]
+                header_line = f"{pathlib.PurePath(header).name}:{match['line']}"
+                via = next(((repo_relative(f), n) for f, n in includes
+                            if not _is_library(repo_relative(f))), None)
+                if message.startswith("redefinition"):
+                    message += (" (this library header has no include guard"
+                                " and the sketch includes it twice, e.g."
+                                " <CAN.h> and <CANSAME5x.h>; include only"
+                                " one)")
+                if via:
+                    error = CompilerError(via[0], via[1], "", message,
+                                          library=header_line)
+                else:
+                    error = CompilerError("", "", "", message,
+                                          f"{header}:{match['line']}")
         else:
+            if not text.startswith(("In function", "In member")) and (
+                    "|" not in text):
+                chain = []
             linker = _LINKER_ERROR.search(raw)
             if not linker:
                 continue
@@ -196,18 +232,22 @@ def parse_compiler_errors(output: str) -> list[CompilerError]:
 
 
 def ranked_errors(errors: list[CompilerError]) -> list[CompilerError]:
-    """Orders errors firmware first, then test code, then everything else.
+    """Orders errors so the ones to fix first come first.
 
-    Errors outside the repo are usually follow-ons from an earlier error in
-    our code, so they only matter when there is nothing else.
+    Firmware errors (including a library header included twice), then test
+    code, then link errors, then other errors inside library headers (shown
+    at the line that included them; usually follow-ons), then errors with no
+    repo file at all, which only matter when there is nothing else.
     """
-    # Errors in a fake library header come from how the sketch uses the
-    # library, so they rank with the firmware.
-    firmware = [e for e in errors if e.file and not e.in_tests]
-    tests = [e for e in errors if e.file and e.in_tests]
+    firmware = [e for e in errors
+                if e.file and not e.in_tests and (not e.library or
+                                                  e.double_include)]
+    tests = [e for e in errors if e.file and e.in_tests and not e.library]
     linker = [e for e in errors if not e.file and not e.outside]
+    via_library = [e for e in errors if e.file and e.library and
+                   not (not e.in_tests and e.double_include)]
     outside = [e for e in errors if e.outside]
-    ours = firmware + tests + linker
+    ours = firmware + tests + linker + via_library
     return ours if ours else outside
 
 
