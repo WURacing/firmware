@@ -65,6 +65,22 @@ python scripts/test.py -R Clutch    # only tests with "Clutch" in the name
 You need CMake 3.16+ and a C++ compiler (Xcode command line tools on macOS,
 Visual Studio Build Tools on Windows). CI runs the tests on every push.
 
+Tests exist for ControlBoard, FSB_CODE, and Telemetry_Sender. The fakes also
+cover I2C (`Wire`, with a TCA9548A-style mux and devices behind it), the
+BMX160, the VL6180X, NeoPixels, CAN receive and filters, and QSPI flash.
+`CANSAME5x.h` and `BMX160.h` have no include guard, like the real libraries,
+so including one twice (for example `<CAN.h>` and `<CANSAME5x.h>`) fails in
+the tests just as it does in the Arduino IDE.
+
+## Compile check
+
+Fakes only behave like the real libraries where someone made them. CI also
+compiles each tested board with `arduino-cli`, the real Adafruit SAMD core,
+and the real libraries (`.github/workflows/firmware-compile.yml`), so a sketch
+that won't build in the Arduino IDE fails CI too. Library versions are pinned
+there; update them in that file, and add a board to its list when you add
+tests for it.
+
 `tests/ControlBoard/control_board_test.cpp` is the example to copy. Tests
 compare against pin numbers written out in the test, not the sketch's
 constants, so a wrong pin edit in a sketch fails a test. If you change the
