@@ -1,7 +1,9 @@
-# Compiles each 2026 board sketch for the Feather M4 CAN with the real
-# Adafruit core and libraries, the same way the Arduino IDE does. This
-# catches problems the host tests' fakes can't: real library headers,
-# missing or duplicate includes, and code that only the ARM compiler sees.
+# Compiles every sketch in each season folder with the real Adafruit core
+# and libraries, the same way the Arduino IDE does (scripts/compile.py).
+# This catches problems the host tests' fakes can't: real library headers,
+# missing or duplicate includes and definitions, and code that only the ARM
+# compiler sees. All sketches are built even when some fail; each error is
+# annotated on the commit and summarized on the run page.
 
 name: Firmware compile
 
@@ -18,23 +20,20 @@ permissions:
   contents: read
 
 env:
-  FQBN: adafruit:samd:adafruit_feather_m4_can
   ADAFRUIT_INDEX: https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
 
 jobs:
   compile:
-    name: Compile ${{ matrix.sketch }}
+    name: Compile sketches
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        sketch:
-          - 2026/ControlBoard
-          - 2026/FSB_CODE
-          - 2026/Telemetry/Telemetry_Sender
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Set up arduino-cli
         uses: arduino/setup-arduino-cli@v2
@@ -65,10 +64,12 @@ jobs:
             "Adafruit SSD1306@2.5.17" \
             "Adafruit SPIFlash@5.1.1" \
             "SdFat - Adafruit Fork@2.3.103"
+          # PROBE: find the exact names and versions, then pin them above.
+          arduino-cli lib search RadioHead --names || true
+          arduino-cli lib search VL6180 --names || true
+          arduino-cli lib install --no-deps "RadioHead" || true
+          arduino-cli lib install --no-deps "SparkFun VL6180 Sensor" || true
           arduino-cli lib list
 
-      - name: Compile
-        # BMX160 isn't in the Library Manager; the team's copy is in 2024/.
-        run: |
-          arduino-cli compile --fqbn "$FQBN" --warnings default \
-            --library 2024/BMX160 "${{ matrix.sketch }}"
+      - name: Compile every sketch
+        run: python scripts/compile.py

@@ -4,6 +4,9 @@
 # what scripts/format.py and scripts/lint.py do locally:
 #   - pushes to dev are compared against master (what dev would merge into)
 #   - pushes to any other branch are compared against dev
+# Run it by hand (Actions > Firmware style > Run workflow) to compare against
+# another branch, or to check every file.
+# Problems are annotated on the commit and listed per file on the run page.
 # See 2026/CODE_STANDARDS.md for how to fix failures locally.
 
 name: Firmware style
@@ -11,6 +14,15 @@ name: Firmware style
 on:
   push:
   workflow_dispatch:
+    inputs:
+      base:
+        description: Branch to compare against (blank = the usual rule)
+        required: false
+        default: ""
+      all:
+        description: Check every file, not just changed ones
+        type: boolean
+        default: false
 
 # A newer push to the same branch cancels the older, now-stale run.
 concurrency:
@@ -38,14 +50,24 @@ jobs:
 
       - name: Pick base branch
         id: base
+        env:
+          BASE_INPUT: ${{ inputs.base }}
+          ALL_INPUT: ${{ inputs.all }}
         run: |
-          if [ "$GITHUB_REF_NAME" = "$DEV_BRANCH" ]; then
+          if [ "$ALL_INPUT" = "true" ]; then
+            echo "args=--all" >> "$GITHUB_OUTPUT"
+            echo "Checking every file." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ -n "$BASE_INPUT" ]; then
+            base="$BASE_INPUT"
+          elif [ "$GITHUB_REF_NAME" = "$DEV_BRANCH" ]; then
             base="$MAIN_BRANCH"
           else
             base="$DEV_BRANCH"
           fi
           git fetch --no-tags origin "+refs/heads/$base:refs/remotes/origin/$base"
-          echo "ref=origin/$base" >> "$GITHUB_OUTPUT"
+          echo "args=origin/$base" >> "$GITHUB_OUTPUT"
           echo "Comparing \`$GITHUB_REF_NAME\` against \`$base\`." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Python
@@ -58,10 +80,40 @@ jobs:
       - name: Install pinned style tools
         run: python -m pip install -r scripts/requirements.txt
 
-      - name: Check formatting (clang-format)
-        run: python scripts/format.py --check "${{ steps.base.outputs.ref }}"
+      - name: Show problems as annotations
+        run: echo "::add-matcher::.github/problem-matchers/style.json"
 
-      # Runs even if formatting failed, so one push reports both problems.
+      - name: Check formatting (clang-format)
+        run: |
+          set -o pipefail
+          python scripts/format.py --check ${{ steps.base.outputs.args }} \
+            2>&1 | tee format.log
+
+      # Runs even if formatting failed, so one push reports both.
       - name: Lint (cpplint)
         if: success() || failure()
-        run: python scripts/lint.py "${{ steps.base.outputs.ref }}"
+        run: |
+          set -o pipefail
+          python scripts/lint.py ${{ steps.base.outputs.args }} \
+            2>&1 | tee lint.log
+
+      - name: Summarize problems per file
+        if: failure()
+        run: |
+          {
+            echo "## Firmware style problems"
+            echo
+            echo "| File | Formatting errors | Lint errors |"
+            echo "| --- | --- | --- |"
+            touch format.log lint.log
+            (grep -hoE '^[^:]+\.(ino|h|hpp|c|cpp):[0-9]+' \
+              format.log lint.log || true) | cut -d: -f1 | sort -u |
+            while IFS= read -r f; do
+              fmt=$(grep -cF "$f:" format.log || true)
+              lint=$(grep -F "$f:" lint.log | grep -c '\] \[[0-9]\]$' || true)
+              echo "| \`$f\` | $fmt | $lint |"
+            done
+            echo
+            echo "Fix formatting with \`python scripts/format.py\`; see each"
+            echo "lint message in the log or the annotations above."
+          } >> "$GITHUB_STEP_SUMMARY"

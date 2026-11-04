@@ -1,0 +1,28 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "host-compiler",
+      "pattern": [
+        {
+          "regexp": "^(.+?):(\\d+):(\\d+): (?:fatal )?(error|warning): (.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      ]
+    },
+    {
+      "owner": "googletest",
+      "pattern": [
+        {
+          "regexp": "^(.+?):(\\d+): (Failure)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        }
+      ]
+    }
+  ]
+}
