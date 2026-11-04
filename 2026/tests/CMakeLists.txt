@@ -24,25 +24,42 @@ FetchContent_MakeAvailable(googletest)
 add_library(fake_hardware STATIC fakes/fake_hardware.cpp)
 # Listed first so <Arduino.h>, <CAN.h>, etc. resolve to the fakes.
 target_include_directories(fake_hardware PUBLIC fakes)
+# The library's global `CAN` object, for sketches that don't declare their own.
+add_library(fake_can_object STATIC fakes/can_object.cpp)
+target_link_libraries(fake_can_object PUBLIC fake_hardware)
 
 include(GoogleTest)
 enable_testing()
 
 # Adds a test executable for one sketch folder. The test .cpp includes the
 # sketch's .ino directly, so the real firmware is what gets tested.
-function(add_sketch_test name sketch_dir)
-  add_executable(${name} ${ARGN})
-  target_include_directories(${name} PRIVATE ${sketch_dir})
+#   add_sketch_test(<name> SKETCH_DIR <dir> SOURCES <test.cpp>...
+#                   [SKETCH_DEFINES_CAN])
+# Pass SKETCH_DEFINES_CAN when the sketch declares its own `CANSAME5x CAN;`.
+function(add_sketch_test name)
+  cmake_parse_arguments(TEST "SKETCH_DEFINES_CAN" "SKETCH_DIR" "SOURCES"
+                        ${ARGN})
+  add_executable(${name} ${TEST_SOURCES})
+  target_include_directories(${name} PRIVATE ${TEST_SKETCH_DIR})
   target_link_libraries(${name} PRIVATE fake_hardware GTest::gtest_main)
+  if(NOT TEST_SKETCH_DEFINES_CAN)
+    target_link_libraries(${name} PRIVATE fake_can_object)
+  endif()
   if(MSVC)
     target_compile_options(${name} PRIVATE /W4)
   else()
     target_compile_options(${name} PRIVATE -Wall -Wextra)
   endif()
-  # Each test runs in its own process, so sketch globals start fresh.
+  # ctest runs each test in its own process, so sketch globals (including
+  # function-local statics) start fresh.
   gtest_discover_tests(${name})
 endfunction()
 
 add_sketch_test(control_board_test
-  ${CMAKE_CURRENT_SOURCE_DIR}/../ControlBoard
-  ControlBoard/control_board_test.cpp)
+  SKETCH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ControlBoard
+  SOURCES ControlBoard/control_board_test.cpp)
+
+add_sketch_test(fsb_test
+  SKETCH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../FSB_CODE
+  SOURCES FSB_CODE/fsb_test.cpp)
+
