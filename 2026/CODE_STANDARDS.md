@@ -75,11 +75,34 @@ the tests just as it does in the Arduino IDE.
 ## Compile check
 
 Fakes only behave like the real libraries where someone made them. CI also
-compiles each tested board with `arduino-cli`, the real Adafruit SAMD core,
-and the real libraries (`.github/workflows/firmware-compile.yml`), so a sketch
-that won't build in the Arduino IDE fails CI too. Library versions are pinned
-there; update them in that file, and add a board to its list when you add
-tests for it.
+compiles every sketch in the season folder with `arduino-cli`, the real
+Adafruit SAMD core, and the real libraries (`scripts/compile.py`, run by
+`.github/workflows/firmware-compile.yml`), so a sketch that won't build in the
+Arduino IDE fails CI too. Library versions are pinned in that workflow file.
+
+- A sketch is a folder holding a `.ino` of the same name. A loose `.ino`
+  anywhere else fails the check, because the IDE can't open it either.
+- Sketches build for the Feather M4 CAN. A sketch for another board says so
+  in a `sketch.yaml` next to it (`default_fqbn: adafruit:samd:adafruit_feather_m0`),
+  which the Arduino IDE 2 also reads.
+- Team libraries kept in the repo (`2024/BMX160`, `2026/VCSEL Sensor/Recursive
+  Update lib`) are listed in `scripts/compile.py`.
+
+## Reading a red CI run
+
+Each check lists its errors on the run page (Summary) and annotates them on
+the commit or PR, at the file and line to fix. Errors in our code come first;
+errors inside a library header are shown at the line of ours that included
+it. The full output is in each step's log, grouped per sketch or board.
+
+| Check | What it catches | Reproduce locally |
+| --- | --- | --- |
+| Firmware style | Formatting and lint in files you changed | `python scripts/format.py` and `python scripts/lint.py` |
+| Firmware tests | Wrong behavior: pins, timing, CAN frames, sensor handling | `python scripts/test.py` |
+| Firmware compile | Anything that won't build in the Arduino IDE | `python scripts/compile.py <sketch folder>` |
+
+A compiler stops a file at the first missing `#include` or link error, so
+after fixing one, push again: more errors in the same sketch can appear.
 
 `tests/ControlBoard/control_board_test.cpp` is the example to copy. Tests
 compare against pin numbers written out in the test, not the sketch's
