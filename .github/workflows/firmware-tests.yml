@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Show compiler errors and test failures as annotations
+      - name: Show test failures as annotations
         run: echo "::add-matcher::.github/problem-matchers/host-tests.json"
 
       - name: Build and run host tests

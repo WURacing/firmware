@@ -73,14 +73,17 @@ def main() -> int:
         for target in _test_targets(cmake_lists):
             _start_group(f"Build {target}")
             result = _run(["cmake", "--build", str(build), "--config", _CONFIG,
-                           "--parallel", "--target", target])
+                           "--parallel", "--target", target], capture=True)
+            print(result.stdout + result.stderr, flush=True)
             _end_group()
             if result.returncode:
                 build_failures.append(target)
-                print(f"::error title=Host tests::{target} does not compile; "
-                      f"see the 'Build {target}' log group."
-                      if _GITHUB else f"{target} does not compile.",
-                      flush=True)
+                # Errors in the firmware first: errors in test code and
+                # library headers often just follow from them.
+                firmware_tools.report_errors(
+                    firmware_tools.parse_compiler_errors(
+                        result.stdout + result.stderr),
+                    f"{target} does not compile")
 
         ctest = ["ctest", "--test-dir", str(build), "-C", _CONFIG,
                  "--output-on-failure"]

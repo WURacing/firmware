@@ -7,6 +7,7 @@ clang-format and cpplint tools. Works on Windows and macOS.
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import re
 import shutil
@@ -102,3 +103,139 @@ def cpplint_command() -> list[str]:
     except ImportError:
         sys.exit(f"cpplint not found. {INSTALL_HINT}")
     return [sys.executable, "-m", "cpplint"]
+
+
+# Compiler and linker output, shared by compile.py and test.py.
+
+GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") == "true"
+
+_COMPILER_MESSAGE = re.compile(
+    r"^(?P<file>[^:\s][^:]*?):(?P<line>\d+):(?:(?P<col>\d+):)? "
+    r"(?P<level>fatal error|error|warning): (?P<message>.*)$")
+_LINKER_ERROR = re.compile(r"(multiple definition of|undefined reference to)"
+                           r" [`'‘]([^'’]+)['’]")
+
+
+class CompilerError:
+    """One compiler or linker error. `file` is repo-relative, or "" when the
+    error is outside the repo (a library or system header) or from the
+    linker."""
+
+    def __init__(self, file: str, line: str, col: str, message: str,
+                 outside: str = ""):
+        self.file, self.line, self.col = file, line, col
+        self.message, self.outside = message, outside
+
+    @property
+    def in_fake(self) -> bool:
+        return "/tests/fakes/" in f"/{self.file}"
+
+    @property
+    def in_tests(self) -> bool:
+        return "/tests/" in f"/{self.file}" and not self.in_fake
+
+    def __str__(self) -> str:
+        if self.file:
+            return f"{self.file}:{self.line}: {self.message}"
+        return f"{self.outside}: {self.message}" if self.outside else (
+            self.message)
+
+
+def repo_relative(path: str) -> str:
+    """Returns `path` relative to the repo, or "" if it's outside it or in a
+    build folder."""
+    candidate = pathlib.Path(path)
+    if not candidate.is_absolute():
+        candidate = REPO_ROOT / candidate
+    try:
+        rel = candidate.resolve().relative_to(REPO_ROOT)
+    except (ValueError, OSError):
+        return ""
+    rel_text = rel.as_posix()
+    if rel.parts and rel.parts[0] == "build" or not (REPO_ROOT / rel).exists():
+        return ""
+    return rel_text
+
+
+def parse_compiler_errors(output: str) -> list[CompilerError]:
+    """Returns the distinct errors in compiler or linker `output`."""
+    errors, seen = [], set()
+    for raw in output.splitlines():
+        match = _COMPILER_MESSAGE.match(raw.strip())
+        if match and match["level"] != "warning":
+            file = repo_relative(match["file"])
+            message = match["message"]
+            if "/tests/fakes/" in f"/{file}" and message.startswith(
+                    "redefinition"):
+                # A fake library header without an include guard, like the
+                # real one, included twice by the sketch.
+                message += (" (the sketch includes this library header twice,"
+                            " e.g. <CAN.h> and <CANSAME5x.h>; the Arduino IDE"
+                            " fails the same way)")
+            error = CompilerError(
+                file, match["line"], match["col"] or "", message,
+                "" if file else f"{match['file']}:{match['line']}")
+        else:
+            linker = _LINKER_ERROR.search(raw)
+            if not linker:
+                continue
+            what, symbol = linker.group(1), linker.group(2)
+            message = f"link error: {what} `{symbol}`"
+            if what == "multiple definition of":
+                message += (" (defined in the sketch and again in a library or"
+                            " another file")
+                message += ("; CAN Adafruit Fork already defines `CAN`, so "
+                            "delete the sketch's `CANSAME5x CAN;`)"
+                            if symbol == "CAN" else ")")
+            error = CompilerError("", "", "", message)
+        key = str(error)
+        if key not in seen:
+            seen.add(key)
+            errors.append(error)
+    return errors
+
+
+def ranked_errors(errors: list[CompilerError]) -> list[CompilerError]:
+    """Orders errors firmware first, then test code, then everything else.
+
+    Errors outside the repo are usually follow-ons from an earlier error in
+    our code, so they only matter when there is nothing else.
+    """
+    # Errors in a fake library header come from how the sketch uses the
+    # library, so they rank with the firmware.
+    firmware = [e for e in errors if e.file and not e.in_tests]
+    tests = [e for e in errors if e.file and e.in_tests]
+    linker = [e for e in errors if not e.file and not e.outside]
+    outside = [e for e in errors if e.outside]
+    ours = firmware + tests + linker
+    return ours if ours else outside
+
+
+def annotate(level: str, message: str, title: str, file: str = "",
+             line: str = "", col: str = "") -> None:
+    """Prints a GitHub Actions annotation (does nothing outside Actions)."""
+    if not GITHUB_ACTIONS:
+        return
+    fields = [f"file={file}" if file else "", f"line={line}" if line else "",
+              f"col={col}" if col else "", f"title={title}"]
+    message = message.replace("%", "%25").replace("\r", "").replace(
+        "\n", "%0A")
+    print(f"::{level} {','.join(f for f in fields if f)}::{message}",
+          flush=True)
+
+
+def report_errors(errors: list[CompilerError], title: str,
+                  fallback_file: str = "", limit: int = 15) -> None:
+    """Prints the ranked errors as a short list and annotates them."""
+    ranked = ranked_errors(errors)
+    if not ranked:
+        return
+    print(f"\n{title}: {len(ranked)} error(s) in our code"
+          if ranked[0].file or not ranked[0].outside else
+          f"\n{title}: errors only in libraries", flush=True)
+    for error in ranked[:limit]:
+        print(f"  {error}", flush=True)
+        annotate("error", error.message if error.file else str(error), title,
+                 error.file or fallback_file, error.line, error.col)
+    if len(ranked) > limit:
+        print(f"  ... and {len(ranked) - limit} more", flush=True)

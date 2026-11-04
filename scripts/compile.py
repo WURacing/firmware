@@ -34,13 +34,7 @@ LOCAL_LIBRARIES = [
     "2026/VCSEL Sensor/Recursive Update lib",
 ]
 
-_COMPILER_MESSAGE = re.compile(
-    r"^(?P<file>[^:\s][^:]*):(?P<line>\d+):(?:(?P<col>\d+):)? "
-    r"(?P<level>fatal error|error|warning): (?P<message>.*)$")
-_LINKER_ERROR = re.compile(
-    r"(multiple definition of|undefined reference to) .*")
-
-GITHUB = os.environ.get("GITHUB_ACTIONS") == "true"
+GITHUB = firmware_tools.GITHUB_ACTIONS
 
 
 def find_sketches(selected: list[str]) -> tuple[list[pathlib.Path],
@@ -73,24 +67,7 @@ def board_for(sketch: pathlib.Path) -> str:
 
 def relative(path: str) -> str:
     """Makes `path` repo-relative when it's inside the repo."""
-    try:
-        return str(pathlib.Path(path).resolve().relative_to(
-            firmware_tools.REPO_ROOT)).replace(os.sep, "/")
-    except ValueError:
-        return path
-
-
-def annotate(level: str, message: str, title: str, file: str = "",
-             line: str = "", col: str = "") -> None:
-    if not GITHUB:
-        return
-    where = ",".join(part for part in (
-        f"file={file}" if file else "", f"line={line}" if line else "",
-        f"col={col}" if col else "", f"title={title}") if part)
-    # Annotations are one line; escape what GitHub would otherwise parse.
-    message = message.replace("%", "%25").replace("\r", "").replace(
-        "\n", "%0A")
-    print(f"::{level} {where}::{message}", flush=True)
+    return firmware_tools.repo_relative(path) or path
 
 
 def compile_sketch(sketch: pathlib.Path, fqbn: str) -> list[str]:
@@ -117,34 +94,15 @@ def compile_sketch(sketch: pathlib.Path, fqbn: str) -> list[str]:
     if result.returncode == 0:
         return []
 
-    errors = []
-    title = f"Compile {name}"
-    for raw in output.splitlines():
-        match = _COMPILER_MESSAGE.match(raw)
-        if match:
-            level = "warning" if match["level"] == "warning" else "error"
-            file = relative(match["file"])
-            # Errors inside a library point at the sketch that pulled it in.
-            if not (firmware_tools.REPO_ROOT / file).exists():
-                file, line, col = main_file, "", ""
-                message = f"{match['file']}:{match['line']}: {match['message']}"
-            else:
-                line, col, message = match["line"], match["col"] or "", match[
-                    "message"]
-            annotate(level, message, title, file, line, col)
-            if level == "error":
-                errors.append(f"{file}:{line}: {message}" if line else message)
-            continue
-        linker = _LINKER_ERROR.search(raw)
-        if linker:
-            annotate("error", f"Link error: {linker.group(0)}", title,
-                     main_file)
-            errors.append(f"link: {linker.group(0)}")
+    errors = firmware_tools.ranked_errors(
+        firmware_tools.parse_compiler_errors(output))
     if not errors:
-        tail = "\n".join(output.strip().splitlines()[-5:])
-        annotate("error", tail or "arduino-cli failed", title, main_file)
-        errors.append(tail.splitlines()[-1] if tail else "arduino-cli failed")
-    return errors
+        tail = output.strip().splitlines()[-5:] or ["arduino-cli failed"]
+        firmware_tools.annotate("error", "\n".join(tail), f"Compile {name}",
+                                main_file)
+        return [tail[-1]]
+    firmware_tools.report_errors(errors, f"Compile {name}", main_file)
+    return [str(error) for error in errors]
 
 
 def write_summary(rows: list[tuple[str, str, list[str]]],
@@ -181,7 +139,7 @@ def main() -> int:
 
     sketches, strays = find_sketches(args.sketches)
     for stray in strays:
-        annotate("error",
+        firmware_tools.annotate("error",
                  "Not built: a sketch's .ino must be in a folder of the same "
                  "name, or the Arduino IDE and arduino-cli can't open it. "
                  "Move it into its own folder or delete it.",

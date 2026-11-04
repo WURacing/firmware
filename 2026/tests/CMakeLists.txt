@@ -9,6 +9,9 @@ project(firmware_2026_tests CXX)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# arduino_preprocess.py prepares each sketch for the build.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -40,7 +43,24 @@ function(add_sketch_test name)
   cmake_parse_arguments(TEST "SKETCH_DEFINES_CAN" "SKETCH_DIR" "SOURCES"
                         ${ARGN})
   add_executable(${name} ${TEST_SOURCES})
-  target_include_directories(${name} PRIVATE ${TEST_SKETCH_DIR})
+  # The test includes <Sketch>.ino; it gets a copy prepared the way the
+  # Arduino builder prepares it (see arduino_preprocess.py), found before
+  # the original because its folder is listed first.
+  get_filename_component(sketch_name ${TEST_SKETCH_DIR} NAME)
+  file(GLOB sketch_inos CONFIGURE_DEPENDS "${TEST_SKETCH_DIR}/*.ino")
+  set(prepared_dir ${CMAKE_CURRENT_BINARY_DIR}/${name}_sketch)
+  set(prepared_ino ${prepared_dir}/${sketch_name}.ino)
+  add_custom_command(
+    OUTPUT ${prepared_ino}
+    COMMAND Python3::Interpreter
+            ${CMAKE_CURRENT_SOURCE_DIR}/arduino_preprocess.py
+            ${TEST_SKETCH_DIR} ${prepared_ino}
+    DEPENDS ${sketch_inos} ${CMAKE_CURRENT_SOURCE_DIR}/arduino_preprocess.py
+    COMMENT "Preparing ${sketch_name}.ino like the Arduino builder")
+  add_custom_target(${name}_sketch DEPENDS ${prepared_ino})
+  add_dependencies(${name} ${name}_sketch)
+  target_include_directories(${name} PRIVATE ${prepared_dir}
+                                             ${TEST_SKETCH_DIR})
   target_link_libraries(${name} PRIVATE fake_hardware GTest::gtest_main)
   if(NOT TEST_SKETCH_DEFINES_CAN)
     target_link_libraries(${name} PRIVATE fake_can_object)
