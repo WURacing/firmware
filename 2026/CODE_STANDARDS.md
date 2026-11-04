@@ -35,6 +35,19 @@ Both only look at files that differ from `origin/dev`, so you are never asked
 to fix code you didn't touch. Pass a branch name to compare against something
 else (`python scripts/lint.py master`), or `--all` to check everything.
 
+## CI
+
+GitHub Actions runs the same two checks on every push
+(`.github/workflows/firmware-style.yml`). Pushes to `dev` are compared against
+`master`, and pushes to any other branch are compared against `dev`. A red ❌
+on your commit means one of them failed. Open the run to see which lines, then
+fix them locally:
+
+```bash
+python scripts/format.py origin/dev   # on dev, use origin/master
+python scripts/lint.py origin/dev
+```
+
 ## The rules we follow
 
 These are the sections of the Google guide called out in the standards doc.
