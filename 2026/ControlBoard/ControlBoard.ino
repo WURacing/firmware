@@ -18,8 +18,8 @@
 constexpr int LED_PIN = 13;
 constexpr int UP_IN_PIN = 1;
 constexpr int DOWN_IN_PIN = 4;
-constexpr int UP_OUT_PIN = 5;
-constexpr int DOWN_OUT_PIN = 22;
+constexpr int UP_OUT_PIN = 22;
+constexpr int DOWN_OUT_PIN = 5;
 constexpr int CLUTCH_IN1_PIN = A0;  // Left paddle.
 constexpr int CLUTCH_IN2_PIN = A1;  // Right paddle.
 constexpr int CLUTCH_OUT_PIN = A2;
@@ -115,7 +115,7 @@ void UpdateShifting(const ClutchPaddles& paddles) {
 
   if (up_history == paddle_held && !shifting && !both_clutches_pulled) {
     shifting = true;
-    Downshift(shift_pulse_ms);
+    Upshift(shift_pulse_ms);
   }
   if (up_history == paddle_released && down_history == paddle_released) {
     shifting = false;
@@ -123,7 +123,7 @@ void UpdateShifting(const ClutchPaddles& paddles) {
 
   if (down_history == paddle_held && !shifting && !both_clutches_pulled) {
     shifting = true;
-    Upshift(shift_pulse_ms);
+    Downshift(shift_pulse_ms);
   }
   if (down_history == paddle_released && up_history == paddle_released) {
     shifting = false;
