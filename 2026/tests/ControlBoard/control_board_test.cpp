@@ -16,7 +16,7 @@
 
 namespace {
 
-// Expected wiring. Change these only when the car's wiring changes.
+// Match these pins with the pins seen on the Arduino schematic
 constexpr int UP_PADDLE_PIN = 1;
 constexpr int DOWN_PADDLE_PIN = 4;
 constexpr int UPSHIFT_SOLENOID_PIN = 5;     // Driven by Upshift().
