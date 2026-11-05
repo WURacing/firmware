@@ -19,8 +19,8 @@ namespace {
 // Match these pins with the pins seen on the Arduino schematic
 constexpr int UP_PADDLE_PIN = 1;
 constexpr int DOWN_PADDLE_PIN = 4;
-constexpr int UPSHIFT_SOLENOID_PIN = 5;     // Driven by Upshift().
-constexpr int DOWNSHIFT_SOLENOID_PIN = 22;  // Driven by Downshift().
+constexpr int UPSHIFT_SOLENOID_PIN = 22;     // Driven by Upshift().
+constexpr int DOWNSHIFT_SOLENOID_PIN = 5;  // Driven by Downshift().
 constexpr int LEFT_CLUTCH_PADDLE_PIN = A0;
 constexpr int RIGHT_CLUTCH_PADDLE_PIN = A1;
 constexpr int CLUTCH_SERVO_PIN = A2;
