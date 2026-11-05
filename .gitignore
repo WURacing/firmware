@@ -1,1 +1,3 @@
 .DS_Store
+# Host test builds from scripts/test.py.
+/build/

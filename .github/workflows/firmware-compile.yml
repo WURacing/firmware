@@ -1,0 +1,72 @@
+# Compiles every sketch in each season folder with the real Adafruit core
+# and libraries, the same way the Arduino IDE does (scripts/compile.py).
+# This catches problems the host tests' fakes can't: real library headers,
+# missing or duplicate includes and definitions, and code that only the ARM
+# compiler sees. All sketches are built even when some fail; each error is
+# annotated on the commit and summarized on the run page.
+
+name: Firmware compile
+
+on:
+  push:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the older, now-stale run.
+concurrency:
+  group: firmware-compile-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  ADAFRUIT_INDEX: https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
+
+jobs:
+  compile:
+    name: Compile sketches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up arduino-cli
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Cache cores and libraries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.arduino15
+            ~/Arduino/libraries
+          key: arduino-${{ hashFiles('.github/workflows/firmware-compile.yml') }}
+
+      - name: Install the Adafruit SAMD core and libraries
+        run: |
+          arduino-cli config init --overwrite \
+            --additional-urls "$ADAFRUIT_INDEX"
+          arduino-cli core update-index
+          arduino-cli core install adafruit:samd@1.7.17
+          # Pinned, dependencies included, so every run builds the same way.
+          # Servo is not installed: the Library Manager's Servo only supports
+          # the SAMD21, and the core's bundled SAMD51 Servo must be used.
+          arduino-cli lib install --no-deps \
+            "CAN Adafruit Fork@1.2.1" \
+            "Adafruit NeoPixel@1.15.5" \
+            "Adafruit_VL6180X@1.4.4" \
+            "Adafruit BusIO@1.17.4" \
+            "Adafruit GFX Library@1.13.0" \
+            "Adafruit SSD1306@2.5.17" \
+            "Adafruit SPIFlash@5.1.1" \
+            "SdFat - Adafruit Fork@2.3.103" \
+            "RadioHead@1.143.1" \
+            "SparkFun VL6180 Sensor@1.1.3"
+          arduino-cli lib list
+
+      - name: Compile every sketch
+        run: python scripts/compile.py

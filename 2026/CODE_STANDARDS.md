@@ -35,6 +35,83 @@ Both only look at files that differ from `origin/dev`, so you are never asked
 to fix code you didn't touch. Pass a branch name to compare against something
 else (`python scripts/lint.py master`), or `--all` to check everything.
 
+## CI
+
+GitHub Actions runs the same two checks on every push
+(`.github/workflows/firmware-style.yml`). Pushes to `dev` are compared against
+`master`, and pushes to any other branch are compared against `dev`. A red ❌
+on your commit means one of them failed. Open the run to see which lines, then
+fix them locally:
+
+```bash
+python scripts/format.py origin/dev   # on dev, use origin/master
+python scripts/lint.py origin/dev
+```
+
+## Host tests
+
+`tests/` builds the real sketches for your computer against fake versions of
+`Arduino.h`, `CAN.h`, `Servo.h`, and `SPI.h` (in `tests/fakes/`). A test sets
+the inputs (paddle pins, analog readings), calls `setup()` and `loop()`, and
+checks what came out: which pins went HIGH and for how long, what angle the
+servo was told, and which CAN frames were sent. Time only moves when the
+sketch calls `delay()` or the test advances it, so timing checks are exact.
+
+```bash
+python scripts/test.py              # build and run all tests
+python scripts/test.py -R Clutch    # only tests with "Clutch" in the name
+```
+
+You need CMake 3.16+ and a C++ compiler (Xcode command line tools on macOS,
+Visual Studio Build Tools on Windows). CI runs the tests on every push.
+
+Tests exist for ControlBoard, FSB_CODE, and Telemetry_Sender. The fakes also
+cover I2C (`Wire`, with a TCA9548A-style mux and devices behind it), the
+BMX160, the VL6180X, NeoPixels, CAN receive and filters, and QSPI flash.
+`CANSAME5x.h` and `BMX160.h` have no include guard, like the real libraries,
+so including one twice (for example `<CAN.h>` and `<CANSAME5x.h>`) fails in
+the tests just as it does in the Arduino IDE.
+
+## Compile check
+
+Fakes only behave like the real libraries where someone made them. CI also
+compiles every sketch in the season folder with `arduino-cli`, the real
+Adafruit SAMD core, and the real libraries (`scripts/compile.py`, run by
+`.github/workflows/firmware-compile.yml`), so a sketch that won't build in the
+Arduino IDE fails CI too. Library versions are pinned in that workflow file.
+
+- A sketch is a folder holding a `.ino` of the same name. A loose `.ino`
+  anywhere else fails the check, because the IDE can't open it either.
+- Sketches build for the Feather M4 CAN. A sketch for another board says so
+  in a `sketch.yaml` next to it (`default_fqbn: adafruit:samd:adafruit_feather_m0`),
+  which the Arduino IDE 2 also reads.
+- Team libraries kept in the repo (`2024/BMX160`, `2026/VCSEL Sensor/Recursive
+  Update lib`) are listed in `scripts/compile.py`.
+
+## Reading a red CI run
+
+Each check lists its errors on the run page (Summary) and annotates them on
+the commit or PR, at the file and line to fix. Errors in our code come first;
+errors inside a library header are shown at the line of ours that included
+it. The full output is in each step's log, grouped per sketch or board.
+
+| Check | What it catches | Reproduce locally |
+| --- | --- | --- |
+| Firmware style | Formatting and lint in files you changed | `python scripts/format.py` and `python scripts/lint.py` |
+| Firmware tests | Wrong behavior: pins, timing, CAN frames, sensor handling | `python scripts/test.py` |
+| Firmware compile | Anything that won't build in the Arduino IDE | `python scripts/compile.py <sketch folder>` |
+
+A compiler stops a file at the first missing `#include` or link error, so
+after fixing one, push again: more errors in the same sketch can appear.
+
+`tests/ControlBoard/control_board_test.cpp` is the example to copy. Tests
+compare against pin numbers written out in the test, not the sketch's
+constants, so a wrong pin edit in a sketch fails a test. If you change the
+wiring on purpose, update the test in the same PR. To test another board, add
+a `tests/<Board>/` folder and an `add_sketch_test()` line to
+`tests/CMakeLists.txt`. A test can only call functions declared in the
+board's `.h`, which the header rules above require anyway.
+
 ## The rules we follow
 
 These are the sections of the Google guide called out in the standards doc.
@@ -142,6 +219,6 @@ A few Arduino-specific exceptions:
 
 ## New season
 
-Copy `.clang-format`, `.editorconfig`, `CPPLINT.cfg`, and `CODE_STANDARDS.md`
-into the new season folder. The scripts pick up any folder with a
+Copy `.clang-format`, `.editorconfig`, `CPPLINT.cfg`, `CODE_STANDARDS.md`, and
+`tests/` into the new season folder. The scripts pick up any folder with a
 `CPPLINT.cfg` automatically.
