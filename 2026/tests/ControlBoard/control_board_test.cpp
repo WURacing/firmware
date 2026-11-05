@@ -16,11 +16,12 @@
 
 namespace {
 
-// Match these pins with the pins seen on the Arduino schematic
+// Match these pins with the pins seen on the Arduino schematic. The shifting
+// behavior below was validated on the car (dev, November 2026).
 constexpr int UP_PADDLE_PIN = 1;
 constexpr int DOWN_PADDLE_PIN = 4;
-constexpr int UPSHIFT_SOLENOID_PIN = 22;     // Driven by Upshift().
-constexpr int DOWNSHIFT_SOLENOID_PIN = 5;  // Driven by Downshift().
+constexpr int UPSHIFT_SOLENOID_PIN = 22;
+constexpr int DOWNSHIFT_SOLENOID_PIN = 5;
 constexpr int LEFT_CLUTCH_PADDLE_PIN = A0;
 constexpr int RIGHT_CLUTCH_PADDLE_PIN = A1;
 constexpr int CLUTCH_SERVO_PIN = A2;
@@ -33,6 +34,10 @@ constexpr int clutch_pulled_reading = 4000;
 // Loops a shift paddle must be held before a shift fires (one per history
 // bit).
 constexpr int debounce_loops = 32;
+// Solenoid pulse lengths: a normal shift, and the short pulse used with both
+// clutch paddles pulled to find neutral.
+constexpr uint32_t shift_pulse_length_ms = 65;
+constexpr uint32_t neutral_pulse_length_ms = 14;
 // Loops before the clutch average first updates the servo.
 constexpr int clutch_average_loops = 11;
 
@@ -131,30 +136,31 @@ TEST_F(ControlBoardTest, NoShiftWithoutPaddlePress) {
   RunLoops(500);
   EXPECT_TRUE(fake::HighPulses(UPSHIFT_SOLENOID_PIN).empty());
   EXPECT_TRUE(fake::HighPulses(DOWNSHIFT_SOLENOID_PIN).empty());
+  EXPECT_TRUE(fake::HighPulses(SHIFTCUT_PIN).empty());
 }
 
-TEST_F(ControlBoardTest, UpPaddleFiresDownshiftSolenoidFor65Ms) {
+TEST_F(ControlBoardTest, UpPaddleFiresUpshiftSolenoid) {
   PressPaddle(UP_PADDLE_PIN, debounce_loops);
-
-  const std::vector<fake::Pulse> pulses =
-      fake::HighPulses(DOWNSHIFT_SOLENOID_PIN);
-  ASSERT_EQ(pulses.size(), 1u);
-  EXPECT_EQ(pulses[0].length_ms(), 65u);
-  EXPECT_TRUE(fake::HighPulses(UPSHIFT_SOLENOID_PIN).empty());
-}
-
-TEST_F(ControlBoardTest, DownPaddleFiresUpshiftSolenoidFor65Ms) {
-  PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
 
   const std::vector<fake::Pulse> pulses =
       fake::HighPulses(UPSHIFT_SOLENOID_PIN);
   ASSERT_EQ(pulses.size(), 1u);
-  EXPECT_EQ(pulses[0].length_ms(), 65u);
+  EXPECT_EQ(pulses[0].length_ms(), shift_pulse_length_ms);
   EXPECT_TRUE(fake::HighPulses(DOWNSHIFT_SOLENOID_PIN).empty());
 }
 
-TEST_F(ControlBoardTest, ShiftcutIsHeldForTheWholeUpshiftPulse) {
+TEST_F(ControlBoardTest, DownPaddleFiresDownshiftSolenoid) {
   PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
+
+  const std::vector<fake::Pulse> pulses =
+      fake::HighPulses(DOWNSHIFT_SOLENOID_PIN);
+  ASSERT_EQ(pulses.size(), 1u);
+  EXPECT_EQ(pulses[0].length_ms(), shift_pulse_length_ms);
+  EXPECT_TRUE(fake::HighPulses(UPSHIFT_SOLENOID_PIN).empty());
+}
+
+TEST_F(ControlBoardTest, ShiftcutIsHeldForTheWholeUpshiftPulse) {
+  PressPaddle(UP_PADDLE_PIN, debounce_loops);
 
   const std::vector<fake::Pulse> solenoid =
       fake::HighPulses(UPSHIFT_SOLENOID_PIN);
@@ -165,8 +171,9 @@ TEST_F(ControlBoardTest, ShiftcutIsHeldForTheWholeUpshiftPulse) {
   EXPECT_GE(shiftcut[0].end_ms, solenoid[0].end_ms);
 }
 
-TEST_F(ControlBoardTest, DownshiftDoesNotTriggerShiftcut) {
-  PressPaddle(UP_PADDLE_PIN, debounce_loops);
+TEST_F(ControlBoardTest, DownshiftDoesNotCutIgnition) {
+  PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
+  ASSERT_EQ(fake::HighPulses(DOWNSHIFT_SOLENOID_PIN).size(), 1u);
   EXPECT_TRUE(fake::HighPulses(SHIFTCUT_PIN).empty());
 }
 
@@ -177,40 +184,64 @@ TEST_F(ControlBoardTest, ShortPaddleBlipDoesNotShift) {
   EXPECT_TRUE(fake::HighPulses(DOWNSHIFT_SOLENOID_PIN).empty());
 }
 
-TEST_F(ControlBoardTest, HoldingPaddleShiftsOnlyOnce) {
+TEST_F(ControlBoardTest, HoldingUpPaddleUpshiftsOnlyOnce) {
   PressPaddle(UP_PADDLE_PIN, 1000);
+  EXPECT_EQ(fake::HighPulses(UPSHIFT_SOLENOID_PIN).size(), 1u);
+  EXPECT_EQ(fake::HighPulses(SHIFTCUT_PIN).size(), 1u);
+}
+
+TEST_F(ControlBoardTest, HoldingDownPaddleDownshiftsOnlyOnce) {
+  PressPaddle(DOWN_PADDLE_PIN, 1000);
   EXPECT_EQ(fake::HighPulses(DOWNSHIFT_SOLENOID_PIN).size(), 1u);
 }
 
 TEST_F(ControlBoardTest, EachSeparatePressShiftsAgain) {
   PressPaddle(UP_PADDLE_PIN, debounce_loops);
   PressPaddle(UP_PADDLE_PIN, debounce_loops);
-  PressPaddle(UP_PADDLE_PIN, debounce_loops);
+  PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
+  PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
+  PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
+  EXPECT_EQ(fake::HighPulses(UPSHIFT_SOLENOID_PIN).size(), 2u);
   EXPECT_EQ(fake::HighPulses(DOWNSHIFT_SOLENOID_PIN).size(), 3u);
 }
 
-TEST_F(ControlBoardTest, BothClutchesPulledUsesShortNeutralPulse) {
+TEST_F(ControlBoardTest, OneClutchPulledStillGivesFullPulse) {
+  // Either clutch paddle alone, in either direction.
+  for (const int left : {clutch_pulled_reading, 0}) {
+    SetClutchPaddles(left, clutch_pulled_reading - left);
+    fake::ClearDigitalWrites();
+    PressPaddle(UP_PADDLE_PIN, debounce_loops);
+    PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
+
+    const std::vector<fake::Pulse> up = fake::HighPulses(UPSHIFT_SOLENOID_PIN);
+    const std::vector<fake::Pulse> down =
+        fake::HighPulses(DOWNSHIFT_SOLENOID_PIN);
+    ASSERT_EQ(up.size(), 1u) << (left ? "left" : "right") << " clutch";
+    ASSERT_EQ(down.size(), 1u) << (left ? "left" : "right") << " clutch";
+    EXPECT_EQ(up[0].length_ms(), shift_pulse_length_ms);
+    EXPECT_EQ(down[0].length_ms(), shift_pulse_length_ms);
+  }
+}
+
+TEST_F(ControlBoardTest, BothClutchesPulledUpshiftsWithNeutralPulse) {
   SetClutchPaddles(clutch_pulled_reading, clutch_pulled_reading);
   PressPaddle(UP_PADDLE_PIN, debounce_loops);
+
+  const std::vector<fake::Pulse> up = fake::HighPulses(UPSHIFT_SOLENOID_PIN);
+  ASSERT_EQ(up.size(), 1u);
+  EXPECT_EQ(up[0].length_ms(), neutral_pulse_length_ms);
+  EXPECT_TRUE(fake::HighPulses(DOWNSHIFT_SOLENOID_PIN).empty());
+}
+
+TEST_F(ControlBoardTest, BothClutchesPulledDownshiftsWithNeutralPulse) {
+  SetClutchPaddles(clutch_pulled_reading, clutch_pulled_reading);
   PressPaddle(DOWN_PADDLE_PIN, debounce_loops);
 
   const std::vector<fake::Pulse> down =
       fake::HighPulses(DOWNSHIFT_SOLENOID_PIN);
-  const std::vector<fake::Pulse> up = fake::HighPulses(UPSHIFT_SOLENOID_PIN);
   ASSERT_EQ(down.size(), 1u);
-  ASSERT_EQ(up.size(), 1u);
-  EXPECT_EQ(down[0].length_ms(), 14u);
-  EXPECT_EQ(up[0].length_ms(), 14u);
-}
-
-TEST_F(ControlBoardTest, OneClutchPulledStillUsesFullPulse) {
-  SetClutchPaddles(clutch_pulled_reading, 0);
-  PressPaddle(UP_PADDLE_PIN, debounce_loops);
-
-  const std::vector<fake::Pulse> pulses =
-      fake::HighPulses(DOWNSHIFT_SOLENOID_PIN);
-  ASSERT_EQ(pulses.size(), 1u);
-  EXPECT_EQ(pulses[0].length_ms(), 65u);
+  EXPECT_EQ(down[0].length_ms(), neutral_pulse_length_ms);
+  EXPECT_TRUE(fake::HighPulses(UPSHIFT_SOLENOID_PIN).empty());
 }
 
 // Clutch.

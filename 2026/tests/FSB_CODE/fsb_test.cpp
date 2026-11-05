@@ -143,8 +143,11 @@ class FsbTest : public ::testing::Test {
     for (int i = 0; i < 9; ++i) {
       rotation[i] = (i % 4 == 0) ? 1 : 0;
     }
+    for (int16_t& value : analogs) {
+      value = 0;
+    }
     vl = Adafruit_VL6180X();
-    i2c_mux_address = 0;
+    tca_address = 0;
     for (int i = 0; i < 2; ++i) {
       vcsel_ok[i] = false;
       vcsel_pending[i] = false;
