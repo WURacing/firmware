@@ -5,7 +5,7 @@
  * Runs the real Telemetry_Sender.ino and FuelStorage.h against the fake
  * Arduino core, CAN bus, and QSPI flash chip. Tests feed it AiM RPM and
  * injector-pulse frames and check the fuel total, the 0x33 CAN frame, the
- * radio packets on Serial1, the flash journal, and the reset button.
+ * 53-byte radio packet on Serial1, the flash journal, and the reset button.
  *
  * Expected IDs, layouts, and formulas are written out below, not taken from
  * the sketch, so a wrong edit in the sketch fails a test.
@@ -38,7 +38,11 @@ constexpr double test_rpm = 6000;
 constexpr int32_t test_pulse = 55;  // 5.5 ms.
 constexpr double test_rate_lph = fuel_gain * test_rpm * test_pulse;
 
-constexpr size_t radio_packet_size = 67;
+// Radio packet: 55 AA, version, sequence, AiM frames 0x69-0x6D, fuel frame
+// 0x33, CRC over bytes 2-51. GetDataFromCar.py reads the same layout.
+constexpr size_t radio_packet_size = 53;
+constexpr uint8_t radio_packet_version = 1;
+constexpr size_t fuel_slot_offset = 4 + 5 * 8;
 
 // Flash journal format (FuelStorage.h): 2048 64-byte records at the end of
 // flash.
@@ -104,31 +108,31 @@ class TelemetrySenderTest : public ::testing::Test {
   }
 
   // Puts the sketch's globals back to their starting values, for when every
-  // test runs in one process. checkReset()'s function-local statics can't be
+  // test runs in one process. CheckReset()'s function-local statics can't be
   // reset here; ctest runs each test in its own process for that reason.
   // Keep in sync with Telemetry_Sender.ino.
   static void ResetSketchGlobals() {
-    frontReset = false;
-    frontResetArmed = false;
-    frontResetAt = 0;
-    storage = FuelStorage(&flashTransport);
-    memset(canData, 0, sizeof(canData));
+    front_reset = false;
+    front_reset_armed = false;
+    front_reset_at = 0;
+    storage = FuelStorage(&flash_transport);
+    memset(aim_data, 0, sizeof(aim_data));
     sequence = 0;
     rpm = NAN;
-    pulseValue = NAN;
+    pulse_value = NAN;
     liters = 0;
     rate = 0;
-    lastSaved = -1;
-    rpmAt = pulseAt = lastIntegrate = lastRadio = lastCAN = lastSave = lastID =
-        0;
-    haveRPM = false;
-    havePulse = false;
-    totalReady = false;
+    last_saved = -1;
+    rpm_at = pulse_at = last_integrate = last_radio = last_fuel_frame =
+        last_save = last_callsign = 0;
+    have_rpm = false;
+    have_pulse = false;
+    total_ready = false;
     resetting = false;
-    resetStartLiters = 0;
+    reset_start_liters = 0;
   }
 
-  // Simulates a power cycle: RAM is lost, flash is kept. checkReset()'s
+  // Simulates a power cycle: RAM is lost, flash is kept. CheckReset()'s
   // function-local statics survive this, unlike on the car, so don't use it
   // in reset-button tests.
   static void Reboot() {
@@ -304,7 +308,7 @@ TEST_F(TelemetrySenderTest, MalformedRpmFrameStopsCounting) {
   RunEngine(1000);
   SendFrame(aim_rpm_frame_id, {0, 0, 0, 0, 0, 0, 0x70});  // 7 bytes.
   Run(1);
-  EXPECT_FALSE(haveRPM);
+  EXPECT_FALSE(have_rpm);
   EXPECT_EQ(rate, 0);
 }
 
@@ -313,8 +317,8 @@ TEST_F(TelemetrySenderTest, ExtendedAndRemoteFramesAreIgnored) {
   SendFrame(aim_rpm_frame_id, RpmFrame(test_rpm), /*extended=*/true);
   SendFrame(aim_pulse_frame_id, PulseFrame(test_pulse), false, /*rtr=*/true);
   Run(10);
-  EXPECT_FALSE(haveRPM);
-  EXPECT_FALSE(havePulse);
+  EXPECT_FALSE(have_rpm);
+  EXPECT_FALSE(have_pulse);
 }
 
 TEST_F(TelemetrySenderTest, FramesOutside0x68To0x6FNeverArrive) {
@@ -325,7 +329,7 @@ TEST_F(TelemetrySenderTest, FramesOutside0x68To0x6FNeverArrive) {
     SendFrame(aim_pulse_frame_id, PulseFrame(test_pulse));
     Run(100);
   }
-  EXPECT_FALSE(haveRPM);
+  EXPECT_FALSE(have_rpm);
   EXPECT_EQ(liters, 0);
 }
 
@@ -365,37 +369,54 @@ TEST_F(TelemetrySenderTest, SendsRadioPacketEvery200Ms) {
   for (size_t i = 0; i < packets.size(); ++i) {
     EXPECT_EQ(packets[i][0], 0x55);
     EXPECT_EQ(packets[i][1], 0xAA);
-    EXPECT_EQ(packets[i][2], static_cast<uint8_t>(i));  // Sequence.
+    EXPECT_EQ(packets[i][2], radio_packet_version);
+    EXPECT_EQ(packets[i][3], static_cast<uint8_t>(i));  // Sequence.
   }
 }
 
-TEST_F(TelemetrySenderTest, RadioPacketCarriesAimFramesAndFuelWithCrcs) {
+TEST_F(TelemetrySenderTest, RadioPacketCarriesAimFramesAndFuelFrame) {
   setup();
+  const std::vector<uint8_t> frame_0x69 = {1, 2, 3, 4, 5, 6, 7, 8};
+  SendFrame(0x69, frame_0x69);
   RunEngine(1001);  // Ends right after the 1000 ms packet.
   const std::vector<uint8_t> packet = RadioPackets().back();
 
-  // Bytes 3-50: the six AiM frames 0x69-0x6E, then their CRC.
+  // Bytes 4-43: AiM frames 0x69-0x6D in order.
+  EXPECT_TRUE(
+      std::equal(frame_0x69.begin(), frame_0x69.end(), packet.begin() + 4));
   const std::vector<uint8_t> rpm_frame = RpmFrame(test_rpm);
   EXPECT_TRUE(std::equal(rpm_frame.begin(), rpm_frame.end(),
-                         packet.begin() + 3 + 8));  // 0x6A is frame 1.
-  EXPECT_EQ(packet[51], Crc8(packet.data() + 3, 48));
+                         packet.begin() + 4 + 8));  // 0x6A is frame 1.
 
-  // Bytes 52-66: fuel sub-packet.
-  const uint8_t* fuel = packet.data() + 52;
-  EXPECT_EQ(fuel[0], 0x55);
-  EXPECT_EQ(fuel[1], 0xAB);
-  EXPECT_EQ(fuel[4], packet[2]);  // Same sequence number.
-  EXPECT_EQ(Le32(fuel + 5), static_cast<uint32_t>(test_rate_lph * 1000 + 0.5));
-  EXPECT_NEAR(Le32(fuel + 9), liters * 1e6, 1);
-  EXPECT_EQ(fuel[13], 0);  // Inputs are valid.
-  EXPECT_EQ(fuel[14], Crc8(fuel + 2, 12));
+  // Bytes 44-51: the same bytes as the latest 0x33 CAN frame.
+  const std::vector<uint8_t> fuel = FuelFrames().back().data;
+  EXPECT_TRUE(
+      std::equal(fuel.begin(), fuel.end(), packet.begin() + fuel_slot_offset));
+  const int total_ml = packet[fuel_slot_offset + 2] |
+                       packet[fuel_slot_offset + 3] << 8 |
+                       packet[fuel_slot_offset + 4] << 16;
+  EXPECT_NEAR(total_ml, liters * 1000, 1);
+
+  // Byte 52: CRC over version, sequence, and data.
+  EXPECT_EQ(packet[52], Crc8(packet.data() + 2, 50));
 }
 
-TEST_F(TelemetrySenderTest, RadioPacketFlagsMissingInputs) {
+TEST_F(TelemetrySenderTest, RadioPacketLeavesPulseFrame0x6EOnBoard) {
+  setup();
+  SendFrame(aim_pulse_frame_id, {9, 9, 9, 9, 9, 9, 9, 9});
+  Run(201);
+  const std::vector<uint8_t> packet = RadioPackets().back();
+  ASSERT_EQ(packet.size(), radio_packet_size);
+  for (size_t i = 4; i < fuel_slot_offset; ++i) {
+    EXPECT_NE(packet[i], 9) << "byte " << i;
+  }
+}
+
+TEST_F(TelemetrySenderTest, RadioPacketShowsZeroRateWithoutInputs) {
   setup();
   Run(1000);
   const std::vector<uint8_t> packet = RadioPackets().back();
-  EXPECT_EQ(packet[52 + 13], 1);
+  EXPECT_EQ(packet[fuel_slot_offset] | packet[fuel_slot_offset + 1] << 8, 0);
 }
 
 TEST_F(TelemetrySenderTest, CallsignRepeatsEveryNineMinutes) {
