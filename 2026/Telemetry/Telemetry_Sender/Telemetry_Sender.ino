@@ -11,7 +11,7 @@
 
 #include "Telemetry_Sender.h"
 
-#include <CANSAME5x.h>
+#include <CAN.h>
 #include <math.h>
 
 #include "FuelStorage.h"
@@ -49,7 +49,6 @@ constexpr char callsign[] = "\r\nDE KQ9L\r\n";
 constexpr uint32_t radio_baud_rate = 19200;
 constexpr int32_t can_baud_rate = 1000000;
 
-CANSAME5x CAN;
 Adafruit_FlashTransport_QSPI flash_transport;
 FuelStorage storage(&flash_transport);
 

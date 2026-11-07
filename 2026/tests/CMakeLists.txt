@@ -86,5 +86,4 @@ add_sketch_test(fsb_test
 
 add_sketch_test(telemetry_sender_test
   SKETCH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Telemetry/Telemetry_Sender
-  SOURCES Telemetry_Sender/telemetry_sender_test.cpp
-  SKETCH_DEFINES_CAN)
+  SOURCES Telemetry_Sender/telemetry_sender_test.cpp)
