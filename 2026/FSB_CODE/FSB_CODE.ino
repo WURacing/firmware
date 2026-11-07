@@ -34,8 +34,8 @@
 
 // VCSEL definitions
 #define SENSOR_ADDRESS      0x29
-#define MAX_CONVERGENCE_MS  60      // <-- tested from protoboard
-#define VCSEL_TIMEOUT_MS    100      // abandon a measurement cycle after this long
+#define MAX_CONVERGENCE_MS  70      // <-- tested from protoboard
+#define VCSEL_TIMEOUT_MS    120      // abandon a measurement cycle after this long
 #define VCSEL_STALE_MS      200
 #define VCSEL_CH_FR         1       // <-- mux channel the FR sensor is plugged into
 #define VCSEL_CH_FL         2       // <-- mux channel the FL sensor is plugged into
@@ -664,50 +664,34 @@ void runVcsels() {
   uint32_t now = millis();
 
   if (!vcselCycleActive) {
-    // Start a clean sequential measurement cycle
+    for (uint8_t i = 0; i < VCSEL_COUNT; i++) {
+      uint8_t st;
+      vcselPending[i] = vcselOk[i]
+                     && selectChecked(vcselCh[i])
+                     && readReg(REG_RANGE_STATUS, st) && (st & 0x01)   // device ready
+                     && writeReg(REG_INT_CLEAR, 0x07)                  // clear any stale result
+                     && writeReg(REG_SYSRANGE_START, 0x01);
+    }
     vcselCycleActive = true;
     vcselCycleStart = now;
-    
-    for (uint8_t i = 0; i < VCSEL_COUNT; i++) {
-      vcselPending[i] = false;
-      if (!vcselOk[i]) continue;
-
-      // Select channel, clear interrupts, and start a single-shot range
-      if (selectChecked(vcselCh[i])) {
-        writeReg(REG_INT_CLEAR, 0x07);
-        if (writeReg(REG_SYSRANGE_START, 0x01)) {
-          vcselPending[i] = true;
-        }
-      }
-    }
     deselectAll();
     return;
   }
 
-  // Check pending sensors
   bool allDone = true;
   for (uint8_t i = 0; i < VCSEL_COUNT; i++) {
     if (!vcselPending[i]) continue;
-
-    uint8_t intStatus = 0;
+    uint8_t intStatus;
     if (!selectChecked(vcselCh[i]) || !readReg(REG_INT_STATUS, intStatus)) {
-      vcselPending[i] = false; // I2C glitch, drop it
+      vcselPending[i] = false;               // I2C hiccup: drop this sample
       continue;
     }
+    if (!(intStatus & 0x04)) { allDone = false; continue; }   // still ranging
 
-    // Bit 2 (0x04) indicates range measurement is complete
-    if (!(intStatus & 0x04)) { 
-      allDone = false; 
-      continue; 
-    }
-
-    uint8_t mm = 0, st = 0;
+    uint8_t mm, st;
     bool ok = readReg(REG_RANGE_VAL, mm) && readReg(REG_RANGE_STATUS, st);
-    
-    // Clear the interrupt immediately after reading
     writeReg(REG_INT_CLEAR, 0x07);
-
-    if (ok && (st >> 4) == 0) { // Error code 0 = valid range
+    if (ok && (st >> 4) == 0) {              // error code 0 = valid range
       vcselLast[i] = mm;
       vcselLastMs[i] = now;
     }
@@ -715,10 +699,7 @@ void runVcsels() {
   }
   deselectAll();
 
-  // If everything finished or we hit our safety timeout, reset the cycle flag
-  if (allDone || (now - vcselCycleStart > VCSEL_TIMEOUT_MS)) {
-    vcselCycleActive = false;
-  }
+  if (allDone || now - vcselCycleStart > VCSEL_TIMEOUT_MS) vcselCycleActive = false;
 }
 
 void recoverI2CBus() {
