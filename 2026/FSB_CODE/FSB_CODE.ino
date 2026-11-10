@@ -133,7 +133,6 @@ float rotation[9] = {
 Adafruit_NeoPixel strip(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 BMX160 bmx160;
 Adafruit_VL6180X vl;
-CANSAME5x CAN;
 
 bool imu_ok = false;      // Set by InitImu(); IMU data is zero when false.
 uint8_t tca_address = 0;  // 0 = I2C mux not found.
