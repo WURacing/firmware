@@ -1,4 +1,4 @@
- /**
+/**
  * @file FSB_CODE.ino
  * @brief Front Sensor Board (FSB) firmware implementation, WUFR26.
  *
@@ -11,7 +11,7 @@
  *       values 0-19 are always 0.
  *
  * @see FSB_CODE.h for an overview of the board.
- */
+*/
 
 #include "FSB_CODE.h"
 
