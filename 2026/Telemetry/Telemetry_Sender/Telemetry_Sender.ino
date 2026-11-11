@@ -1,247 +1,370 @@
-
-/*
+/**
  * @file Telemetry_Sender.ino
- * @brief Telemetry Sender firmware implementation, WUFR26.
+ * @brief Telemetry Sender firmware implementation, WUFR27.
  *
- * CAN frames on the bus and their data points (2025 layout). Frames marked
- * "yes" are copied into the telemetry buffer by CanFiller().
+ * Fuel rate (L/h) = fuel_gain x RPM x injector pulse value. The total is
+ * integrated every loop, held for at most the stale time of the older input,
+ * and saved to flash once per second by FuelStorage.
  *
- *   ID  Sent  Data points
- *   16        ShockPotFL, ShockPotFR, null, null
- *   17        null, null, null, null
- *   18  yes   null, BrkPrsF, null, SteeringPot
- *   19  yes   null, BrakeTempFR, null, BrakeTempFL
- *   20  yes   null, null, null, Pitot
- *   21  yes   FAccX, FAccY, FAccZ, FGyroX
- *   22  yes   FGyroY, FGyroZ, FMagX, FMagY
- *   23        FMagZ, FrRideHeight1, FrRideHeight2
- *   32  yes   ShockPotRL, BrakeTempRL, null, null
- *   33        InletTemp2R, null, InletTemp1R, null
- *   34        null, ShockPotRR, InletTempL, null
- *   35  yes   null, BrakeTempRR, BrkPrsR, null
- *   36        OutletTempL, OutletTempR, null, null
- *   37  yes   RAccX, RAccY, RAccZ, RGyroX
- *   38  yes   RGyroY, RGyroZ, RMagX, RMagy
- *   39        RMagZ, ReRideHeight1, ReRideHeight2
- *   49  yes   ClutchPos, ClutchL, ClutchR
- *   50        null, null, null, null
- *   69        Endurance (Fuel Pressure, GPS Speed, Throttle Position,
- *             Coolant Temp)
- *
- * @see Telemetry_Sender.h for an overview of the board.
+ * @see Telemetry_Sender.h for an overview of the board and the radio packet.
  */
 
 #include "Telemetry_Sender.h"
 
 #include <CAN.h>
-#include <RH_RF95.h>
-#include <SPI.h>
+#include <math.h>
 
-// Pins. Letters are the RFM95 FeatherWing jumper labels.
-constexpr int RFM95_RST_PIN = 11;  // "A"
-constexpr int RFM95_CS_PIN = 10;   // "B"
-constexpr int RFM95_INT_PIN = 6;   // "D"
-constexpr int LED_PIN = 13;
+#include "FuelStorage.h"
+
+// Pins.
+constexpr int RESET_BUTTON_PIN = 5;
+
+// CAN IDs. The AiM dash rebroadcasts the PE3's engine channels as 0x69-0x6E.
+constexpr int aim_frame_ids[] = {0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E};
+constexpr int aim_frame_count = 6;
+constexpr int rpm_frame_index = 1;          // 0x6A: RPM in bytes 6-7, uint16.
+constexpr int pulse_frame_index = 5;        // 0x6E: pulse in bytes 4-7, int32.
+constexpr int fuel_frame_id = 0x33;         // Sent by this board.
+constexpr int front_reset_frame_id = 0x6F;  // One byte: 0 released, 1 held.
+
+// Fuel calculation.
+constexpr double fuel_gain = 2.5012e-5;  // L/h per RPM per pulse unit.
+constexpr double pulse_unit_ms = 0.1;    // Pulse value 55 means 5.5 ms.
 
 // Timing.
-constexpr uint32_t blink_interval_ms = 1000;
-constexpr uint32_t tel_period_ms = 1000;
-constexpr uint32_t loop_delay_ms = 10;
-constexpr uint32_t radio_reset_delay_ms = 10;
-constexpr uint32_t serial_start_delay_ms = 100;
+constexpr uint32_t rpm_stale_ms = 500;
+constexpr uint32_t pulse_stale_ms = 1500;
+constexpr uint32_t fuel_frame_period_ms = 100;
+constexpr uint32_t radio_period_ms = 200;
+constexpr uint32_t save_period_ms = 1000;
+constexpr uint32_t callsign_period_ms = 540000;  // Every 9 minutes.
+
+// Radio packet. See Telemetry_Sender.h for the layout.
+constexpr uint8_t radio_packet_version = 1;
+constexpr int radio_sent_aim_frames = 5;  // 0x69-0x6D; 0x6E stays on board.
+constexpr int radio_packet_len = 53;
+constexpr char callsign[] = "\r\nDE KQ9L\r\n";
 
 // Communication.
-constexpr uint32_t serial_baud_rate = 115200;
-constexpr int can_baud_rate = 1000000;
-constexpr double rf95_freq = 915.0;  // MHz
-constexpr int8_t rf95_tx_power_dbm = 23;
+constexpr uint32_t radio_baud_rate = 19200;
+constexpr int32_t can_baud_rate = 1000000;
 
-// Bytes of telemetry sent per radio packet.
-constexpr int dbc_matrix_len = 88;
+Adafruit_FlashTransport_QSPI flash_transport;
+FuelStorage storage(&flash_transport);
 
-// Prints every converted value over serial.
-constexpr bool print_bool = true;
+uint8_t aim_data[aim_frame_count * 8] = {0};
+uint8_t sequence = 0;
+double rpm = NAN;
+double pulse_value = NAN;
+double liters = 0;
+double rate = 0;
+double last_saved = -1;
+uint32_t rpm_at = 0;
+uint32_t pulse_at = 0;
+uint32_t last_integrate = 0;
+uint32_t last_radio = 0;
+uint32_t last_fuel_frame = 0;
+uint32_t last_save = 0;
+uint32_t last_callsign = 0;
+bool have_rpm = false;
+bool have_pulse = false;
+bool total_ready = false;
+bool resetting = false;
+double reset_start_liters = 0;
+bool front_reset = false;
+bool front_reset_armed = false;
+uint32_t front_reset_at = 0;
 
-uint32_t blink_previous_millis = 0;
-bool led_state = LOW;
-uint32_t cur_time = millis();
-uint32_t prev_time = 0;
+uint8_t Crc8(const uint8_t* data, unsigned length) {
+  uint8_t crc = 0;
+  for (unsigned i = 0; i < length; ++i) {
+    crc ^= data[i];
+    for (int bit = 0; bit < 8; ++bit) {
+      crc = (crc & 0x80) ? static_cast<uint8_t>((crc << 1) ^ 0x07)
+                         : static_cast<uint8_t>(crc << 1);
+    }
+  }
+  return crc;
+}
 
-uint8_t dbc_matrix[dbc_matrix_len];
-int16_t s_dbc_matrix[dbc_matrix_len / 2];
+// Both inputs arrived recently enough to trust.
+bool InputsFresh(uint32_t now) {
+  return have_rpm && have_pulse && now - rpm_at < rpm_stale_ms &&
+         now - pulse_at < pulse_stale_ms;
+}
 
-RH_RF95 rf95(RFM95_CS_PIN, RFM95_INT_PIN);
+// Inputs are fresh and physically plausible.
+bool InputsValid(uint32_t now) {
+  return InputsFresh(now) && isfinite(rpm) && rpm >= 0 && rpm <= 30000 &&
+         isfinite(pulse_value) && pulse_value >= 0 &&
+         pulse_value * pulse_unit_ms <= 30 &&
+         rpm * pulse_value * pulse_unit_ms <= 120000;
+}
+
+void Integrate(uint32_t now) {
+  uint32_t elapsed = now - last_integrate;
+  if (total_ready && InputsValid(last_integrate)) {
+    // Count the held rate only until the older input goes stale.
+    uint32_t remaining = rpm_stale_ms - (last_integrate - rpm_at);
+    const uint32_t pulse_remaining =
+        pulse_stale_ms - (last_integrate - pulse_at);
+    if (remaining > pulse_remaining) {
+      remaining = pulse_remaining;
+    }
+    if (elapsed > remaining) {
+      elapsed = remaining;
+    }
+    liters += fuel_gain * rpm * pulse_value * elapsed / 3600000.0;
+  }
+  last_integrate = now;
+  rate = InputsValid(now) ? fuel_gain * rpm * pulse_value : 0;
+}
+
+// Returns the index of `id` in aim_frame_ids, or -1.
+int AimFrameIndex(int32_t id) {
+  for (int i = 0; i < aim_frame_count; ++i) {
+    if (id == aim_frame_ids[i]) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void ReceiveCan() {
+  for (int count = 0; count < 16; ++count) {
+    const int size = CAN.parsePacket();
+    if (size == 0) {
+      break;
+    }
+    const int32_t id = CAN.packetId();
+    const bool standard = !CAN.packetExtended() && !CAN.packetRtr();
+    uint8_t bytes[8];
+    int length = 0;
+    while (CAN.available()) {
+      const int value = CAN.read();
+      if (length < 8) {
+        bytes[length++] = static_cast<uint8_t>(value);
+      }
+    }
+
+    if (id == front_reset_frame_id && standard && size == 1 && length == 1 &&
+        bytes[0] <= 1) {
+      // A release must be seen before a hold counts.
+      if (bytes[0] == 0) {
+        front_reset_armed = true;
+      }
+      front_reset = front_reset_armed && bytes[0] == 1;
+      front_reset_at = millis();
+      continue;
+    }
+
+    const int index = AimFrameIndex(id);
+    if (index < 0 || !standard || size != 8 || length != 8) {
+      if (index == rpm_frame_index) {
+        have_rpm = false;
+      }
+      if (index == pulse_frame_index) {
+        have_pulse = false;
+      }
+      continue;
+    }
+
+    const uint32_t now = millis();
+    Integrate(now);
+    memcpy(aim_data + index * 8, bytes, 8);
+    if (index == rpm_frame_index) {
+      rpm = static_cast<uint16_t>(bytes[6] | bytes[7] << 8);
+      rpm_at = now;
+      have_rpm = true;
+    }
+    if (index == pulse_frame_index) {
+      const uint32_t raw = static_cast<uint32_t>(bytes[4]) |
+                           static_cast<uint32_t>(bytes[5]) << 8 |
+                           static_cast<uint32_t>(bytes[6]) << 16 |
+                           static_cast<uint32_t>(bytes[7]) << 24;
+      pulse_value = static_cast<int32_t>(raw);
+      pulse_at = now;
+      have_pulse = true;
+    }
+  }
+}
+
+void FuelFrameBytes(uint8_t* frame) {
+  // Clamp before converting so a value never wraps. Stale rate is zero.
+  const uint32_t rate_x100 =
+      static_cast<uint32_t>(fmin(65535.0, fmax(0.0, round(rate * 100.0))));
+  const uint32_t total_ml =
+      static_cast<uint32_t>(fmin(16777215.0, fmax(0.0, round(liters * 1000))));
+  frame[0] = static_cast<uint8_t>(rate_x100);
+  frame[1] = static_cast<uint8_t>(rate_x100 >> 8);
+  frame[2] = static_cast<uint8_t>(total_ml);
+  frame[3] = static_cast<uint8_t>(total_ml >> 8);
+  frame[4] = static_cast<uint8_t>(total_ml >> 16);
+  frame[5] = 0;
+  frame[6] = 0;
+  frame[7] = 0;
+}
+
+void BuildRadioPacket(uint8_t* packet) {
+  packet[0] = 0x55;
+  packet[1] = 0xAA;
+  packet[2] = radio_packet_version;
+  packet[3] = sequence++;
+  memcpy(packet + 4, aim_data, radio_sent_aim_frames * 8);
+  FuelFrameBytes(packet + 4 + radio_sent_aim_frames * 8);
+  packet[radio_packet_len - 1] = Crc8(packet + 2, radio_packet_len - 3);
+}
+
+void SendRadio() {
+  uint8_t packet[radio_packet_len];
+  BuildRadioPacket(packet);
+  Serial1.write(packet, sizeof(packet));
+}
+
+void CheckReset(uint32_t now) {
+  static bool released = false;
+  static bool holding = false;
+  static bool allowed = false;
+  static uint32_t hold_at = 0;
+  static uint32_t flash_at = 0;
+  static uint8_t flashes = 0;
+  static uint16_t flash_period_ms = 400;
+  static bool first = true;
+  static bool raw = false;
+  static bool stable = false;
+  static uint32_t changed_at = 0;
+
+  if (resetting && !storage.busy()) {
+    const bool saved = storage.ok;
+    if (saved) {
+      liters -= reset_start_liters;
+      last_saved = 0;
+    }
+    resetting = false;
+    flash_at = now;
+    flashes = saved ? 3 : 6;  // 3 slow flashes: done. 6 fast: refused.
+    flash_period_ms = saved ? 400 : 160;
+  }
+
+  // Debounce the button (or the front board's held frame) for 50 ms.
+  if (now - front_reset_at >= 350) {
+    front_reset = false;
+    front_reset_armed = false;
+  }
+  const bool input = digitalRead(RESET_BUTTON_PIN) == LOW || front_reset;
+  if (first) {
+    raw = input;
+    stable = input;
+    changed_at = now;
+    first = false;
+  }
+  if (input != raw) {
+    raw = input;
+    changed_at = now;
+  }
+  if (now - changed_at >= 50) {
+    stable = raw;
+  }
+
+  const bool stopped = have_rpm && now - rpm_at < rpm_stale_ms && rpm == 0;
+  if (!stable) {
+    if (!raw && now - changed_at >= 50) {
+      released = true;
+    }
+    holding = false;
+  } else if (released) {
+    if (!holding) {
+      holding = true;
+      hold_at = now;
+      allowed = true;
+    }
+    allowed &= stopped && total_ready && storage.ok && !resetting;
+    if (now - hold_at >= 3000) {
+      released = false;
+      holding = false;
+      resetting = allowed && storage.save(0, now);
+      if (resetting) {
+        reset_start_liters = liters;
+      } else {
+        flash_at = now;
+        flashes = 6;
+        flash_period_ms = 160;
+      }
+    }
+  }
+
+  const uint32_t led_now = millis();
+  bool lit = false;
+  if (flashes && led_now - flash_at < flashes * flash_period_ms) {
+    lit = (led_now - flash_at) % flash_period_ms < flash_period_ms / 2;
+  } else {
+    flashes = 0;
+    lit = holding && (led_now / 250) % 2 == 0;
+  }
+  digitalWrite(LED_BUILTIN, lit);
+}
 
 void setup() {
-  pinMode(RFM95_RST_PIN, OUTPUT);
-  digitalWrite(RFM95_RST_PIN, HIGH);
+  Serial1.begin(radio_baud_rate);
+  pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
 
-  Serial.begin(serial_baud_rate);
-  delay(serial_start_delay_ms);
-
-  // Manual radio reset.
-  digitalWrite(RFM95_RST_PIN, LOW);
-  delay(radio_reset_delay_ms);
-  digitalWrite(RFM95_RST_PIN, HIGH);
-  delay(radio_reset_delay_ms);
-
-  while (!rf95.init()) {
-    Serial.println("LoRa radio init failed");
-    Serial.println(
-        "Uncomment '#define SERIAL_DEBUG' in RH_RF95.cpp for detailed debug "
-        "info");
-    while (true) {
-    }
+  total_ready = storage.begin(liters);
+  if (total_ready) {
+    last_saved = storage.savedLiters;  // Don't rewrite an unchanged total.
+  } else {
+    // Count in RAM only; never erase flash we don't recognize.
+    liters = 0;
+    total_ready = true;
   }
-  Serial.println("LoRa radio init OK!");
-
-  if (!rf95.setFrequency(rf95_freq)) {
-    Serial.println("setFrequency failed");
-    while (true) {
-    }
-  }
-  Serial.print("Set Freq to: ");
-  Serial.println(rf95_freq);
-
-  rf95.setTxPower(rf95_tx_power_dbm, false);
 
   pinMode(PIN_CAN_STANDBY, OUTPUT);
-  digitalWrite(PIN_CAN_STANDBY, false);
+  digitalWrite(PIN_CAN_STANDBY, LOW);
   pinMode(PIN_CAN_BOOSTEN, OUTPUT);
-  digitalWrite(PIN_CAN_BOOSTEN, true);
+  digitalWrite(PIN_CAN_BOOSTEN, HIGH);
   if (!CAN.begin(can_baud_rate)) {
-    Serial.println("Starting CAN failed!");
     while (true) {
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(100);
     }
   }
+  CAN.filter(0x68, 0x7F8);  // Only 0x68-0x6F.
 
-  pinMode(LED_PIN, OUTPUT);
+  Serial1.print(callsign);
+  last_integrate = last_radio = last_fuel_frame = last_save = last_callsign =
+      millis();
 }
 
 void loop() {
-  Blink();
-  delay(loop_delay_ms);
-  cur_time = millis();
-  for (int packet_size = CAN.parsePacket(); packet_size;
-       packet_size = CAN.parsePacket()) {
-    CanFiller(CAN.packetId(), packet_size, dbc_matrix);
-  }
+  ReceiveCan();
+  storage.poll(millis());  // One short flash step; CAN is read again next loop.
+  uint32_t now = millis();
+  Integrate(now);
+  CheckReset(now);
+  now = millis();
+  Integrate(now);
 
-  // Convert to shorts so the values can be checked over serial.
-  ConvertBytesToShorts(dbc_matrix, s_dbc_matrix, dbc_matrix_len);
-  if (print_bool) {
-    Serial.print("Shorts: ");
-    for (int i = 0; i < dbc_matrix_len / 2; ++i) {
-      Serial.print(s_dbc_matrix[i]);
-      Serial.print(",");
-    }
-    Serial.println(" ");
-  }
-
-  if (cur_time - prev_time >= tel_period_ms) {
-    prev_time = cur_time;
-    if (print_bool) {
-      Serial.println("Sending...");
-    }
-    rf95.send(dbc_matrix, dbc_matrix_len);
-  }
-}
-
-// Reads all `packet_size` bytes of the current CAN packet into `dbc_matrix`,
-// starting at `offset`.
-void ReadPacket(int offset, int packet_size, uint8_t* dbc_matrix) {
-  for (int i = 0; i < packet_size; ++i) {
-    dbc_matrix[offset + i] = CAN.read();
-  }
-}
-
-// TODO: packet_id is 8 bits, so CAN IDs above 0xFF wrap around (e.g.
-// 0x112 is read as 18).
-void CanFiller(uint8_t packet_id, int packet_size, uint8_t* dbc_matrix) {
-  if (packet_id == 18) {
-    ReadPacket(0, packet_size, dbc_matrix);
-  } else if (packet_id == 19) {
-    ReadPacket(8, packet_size, dbc_matrix);
-  } else if (packet_id == 20) {
-    ReadPacket(16, packet_size, dbc_matrix);
-  } else if (packet_id == 21) {
-    ReadPacket(24, packet_size, dbc_matrix);
-  } else if (packet_id == 22) {
-    ReadPacket(32, packet_size, dbc_matrix);
-  } else if (packet_id == 32) {
-    ReadPacket(40, packet_size, dbc_matrix);
-  } else if (packet_id == 35) {
-    ReadPacket(48, packet_size, dbc_matrix);
-  } else if (packet_id == 37) {
-    ReadPacket(56, packet_size, dbc_matrix);
-  } else if (packet_id == 38) {
-    ReadPacket(64, packet_size, dbc_matrix);
-  } else if (packet_id == 49) {
-    // TODO: The Control Board sends ClutchPos as 2 bytes, so reading
-    // it as 1 byte shifts ClutchL and ClutchR by one byte.
-    dbc_matrix[72] = CAN.read();  // ClutchPos (8-bit).
-    dbc_matrix[73] = 0;           // Padding.
-    dbc_matrix[74] = CAN.read();  // ClutchL LSB.
-    dbc_matrix[75] = CAN.read();  // ClutchL MSB.
-    dbc_matrix[76] = CAN.read();  // ClutchR LSB.
-    dbc_matrix[77] = CAN.read();  // ClutchR MSB.
-  } else if (packet_id == 105) {
-    ReadPacket(80, packet_size, dbc_matrix);
-  }
-}
-
-void ConvertBytesToShorts(const uint8_t* byte_array, int16_t* short_array,
-                          int byte_array_size) {
-  for (int i = 0; i < byte_array_size / 2; ++i) {
-    short_array[i] =
-        (static_cast<int16_t>(byte_array[2 * i + 1]) << 8) | byte_array[2 * i];
-  }
-}
-
-void Blink() {
-  const uint32_t now = millis();
-  if (now - blink_previous_millis >= blink_interval_ms) {
-    blink_previous_millis = now;
-    led_state = (led_state == LOW) ? HIGH : LOW;
-    digitalWrite(LED_PIN, led_state);
-  }
-  now=millis();
-  bool lit=false;
-  if(flashes && uint32_t(now-flashAt)<uint32_t(flashes)*period) lit=(now-flashAt)%period<period/2;
-  else { flashes=0; lit=holding && (now/250)%2==0; }
-  digitalWrite(LED_BUILTIN,lit);
-}
-void setup() {
-  Serial1.begin(19200);
-  pinMode(RESET_PIN,INPUT_PULLUP); pinMode(LED_BUILTIN,OUTPUT);
-  totalReady=storage.begin(liters);
-  if(totalReady) lastSaved=storage.savedLiters; // no unchanged checkpoint on every boot
-  else { liters=0; totalReady=true; } // allow visible RAM-only counting; never erase foreign flash
-  pinMode(PIN_CAN_STANDBY,OUTPUT); digitalWrite(PIN_CAN_STANDBY,LOW);
-  pinMode(PIN_CAN_BOOSTEN,OUTPUT); digitalWrite(PIN_CAN_BOOSTEN,HIGH);
-  if(!CAN.begin(1000000)) { while(true) { digitalWrite(LED_BUILTIN,HIGH); delay(100); } }
-  CAN.filter(0x68,0x7F8);
-  Serial1.print("\r\nDE KQ9L\r\n");
-  lastIntegrate=lastRadio=lastCAN=lastSave=lastID=millis();
-}
-void loop() {
-  receiveCAN();
-  storage.poll(millis()); // one short flash operation; CAN is serviced again next loop
-  uint32_t now=millis(); integrate(now); checkReset(now);
-  now=millis(); integrate(now);
-  if(uint32_t(now-lastCAN)>=100) {
-    lastCAN=now;
-    uint8_t b[8];
-    canFuelBytes(b);
-    CAN.beginPacket(FUEL_CAN_ID,8);
-    CAN.write(b,8);
+  if (now - last_fuel_frame >= fuel_frame_period_ms) {
+    last_fuel_frame = now;
+    uint8_t frame[8];
+    FuelFrameBytes(frame);
+    CAN.beginPacket(fuel_frame_id, 8);
+    CAN.write(frame, 8);
     CAN.endPacket();
   }
-  if(uint32_t(now-lastRadio)>=RADIO_MS) { lastRadio=now; sendRadio(now); }
-  if(uint32_t(now-lastSave)>=SAVE_MS) {
-    lastSave=now;
-    lastSaved=storage.savedLiters;
-    if(totalReady && !resetting && !storage.busy() && liters!=lastSaved) storage.save(liters,now);
+  if (now - last_radio >= radio_period_ms) {
+    last_radio = now;
+    SendRadio();
   }
-  if(uint32_t(now-lastID)>=540000) { lastID=now; Serial1.print("\r\nDE KQ9L\r\n"); }
+  if (now - last_save >= save_period_ms) {
+    last_save = now;
+    last_saved = storage.savedLiters;
+    if (total_ready && !resetting && !storage.busy() && liters != last_saved) {
+      storage.save(liters, now);
+    }
+  }
+  if (now - last_callsign >= callsign_period_ms) {
+    last_callsign = now;
+    Serial1.print(callsign);
+  }
 }
