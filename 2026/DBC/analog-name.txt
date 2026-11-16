@@ -1,0 +1,21 @@
+
+
+FAnalog A00 - ShockPotFL
+FAnalog A01 - ShockPotFR
+FAnalog A09 - BrkPrsF
+FAnalog A11 - SteeringPot: not sure if linearization correct
+FAnalog A13 - BrakeTempFR
+FAnalog A15 - BrakeTempFL
+
+RAnalog A00 - ShockPotRL
+RAnalog A01 - BrakeTempRL
+RAnalog A09 - ShockPotRR
+RAnalog A10 - InletTempL
+RAnalog A13 - BrakeTempRR
+RAnalog A19 - OutletTempR
+RAnalog A06 - InletTemp1R
+RAnalog A03 - OutletTempL
+RAnalog A17 - flowrate : no linearization (no sensor ordered yet)
+RAnalog A04 - InletTemp2R
+RSB A14 - BrkPrsR
+
