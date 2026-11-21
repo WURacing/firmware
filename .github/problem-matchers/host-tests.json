@@ -1,0 +1,15 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "googletest",
+      "pattern": [
+        {
+          "regexp": "^(.+?):(\\d+): (Failure)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        }
+      ]
+    }
+  ]
+}
