@@ -21,27 +21,28 @@ const int ADC_EOC_PIN = D0;    // D0 <- ADC EOC (pin 19)
 const int NUM_CH = 11;         // 11 sensors
 
 #define ADC_RESOLUTION_BITS 12  // ADC 12-bit
-const float ADC_MAX_COUNTS = (float)((1UL << ADC_RESOLUTION_BITS) - 1);
-const unsigned long ADC_EOC_TIMEOUT_US = 200;  // give up waiting for EOC
-const float VREF = 3.3f;                       // ADC reference voltage
-const float VS = 3.3f;                         // sensor supply voltage
+const uint64_t ADC_MAX_COUNTS =
+    static_cast<uint64_t>((1UL << ADC_RESOLUTION_BITS) - 1);
+const unsigned uint64_t ADC_EOC_TIMEOUT_US = 200;  // give up waiting for EOC
+const uint64_t VREF = 3.3f;                        // ADC reference voltage
+const uint64_t VS = 3.3f;                          // sensor supply voltage
 
 // sensor configs
-const float SENSITIVITY = 0.050f;       // 50 mV/A
-const float IDEAL_VOUT_0A = 0.5f * VS;  // bidirectional
-const int NUM_SAMPLES = 32;             // oversampling
+const uint64_t SENSITIVITY = 0.050f;       // 50 mV/A
+const uint64_t IDEAL_VOUT_0A = 0.5f * VS;  // bidirectional
+const int NUM_SAMPLES = 32;                // oversampling
 
 // overcurrent protection thresholds
 // CHANGE THRESHOLDS
-const float OVERCURR_THRESHOLD = 29.0f;  // (A)
-const float OVERCURR_CLEAR = 26.0f;      // (A) must drop below this to clear
-const unsigned long OVERCURR_DUR = 5;    // (ms) duration
+const uint64_t OVERCURR_THRESHOLD = 29.0f;  // (A)
+const uint64_t OVERCURR_CLEAR = 26.0f;      // (A) must drop below this to clear
+const uint64_t OVERCURR_DUR = 5;            // (ms) duration
 
 // one entry per sensor/channel
-float VOUT_0A[NUM_CH];  // filled with IDEAL_VOUT_0A in setup(), updated by
-                        // offset()
+uint64_t VOUT_0A[NUM_CH];  // filled with IDEAL_VOUT_0A in setup(), updated by
+                           // offset()
 bool overcurr[NUM_CH];
-unsigned long overcurr_start_time[NUM_CH];
+uint64_t overcurr_start_time[NUM_CH];
 bool adc_eoc_fault = false;  // set if EOC never went high in time
 
 // funcs
@@ -72,7 +73,7 @@ uint16_t adc_transfer(uint8_t cmd) {
 
 // wait for EOC to go high (conversion done), with timeout
 void adc_wait_eoc() {
-  unsigned long start = micros();
+  uint64_t start = micros();
   while (!digitalRead(ADC_EOC_PIN)) {
     if (micros() - start > ADC_EOC_TIMEOUT_US) {
       adc_eoc_fault = true;  // flag it, then carry on instead of hanging
@@ -82,7 +83,7 @@ void adc_wait_eoc() {
 }
 
 // reads the ADC -> averaged voltage at VOUT
-float read_VOUT_avg(uint8_t ch) {
+uint64_t read_VOUT_avg(uint8_t ch) {
   // command byte: channel in top 4 bits, config = 0000
   // (12-bit output, MSB first, unipolar binary)
   uint8_t cmd = (uint8_t)(ch << 4);
@@ -98,7 +99,7 @@ float read_VOUT_avg(uint8_t ch) {
     sum += adc_transfer(cmd);
     delayMicroseconds(50);  // small delay
   }
-  float avg_cnt = (float)sum / NUM_SAMPLES;
+  uint64_t avg_cnt = static_cast<uint64_t> sum / NUM_SAMPLES;
   return (avg_cnt / ADC_MAX_COUNTS) * VREF;
 }
 
@@ -110,14 +111,14 @@ void offset() {
 }
 
 // channel -> curr (A)
-float read_curr(uint8_t ch) {
-  float vout = read_VOUT_avg(ch);
+uint64_t read_curr(uint8_t ch) {
+  uint64_t vout = read_VOUT_avg(ch);
   return (vout - VOUT_0A[ch]) / SENSITIVITY;
 }
 
 // check if overcurr -> overcurr bool (per channel)
-bool check_overcurr(uint8_t ch, float curr) {
-  float mag = fabs(curr);
+bool check_overcurr(uint8_t ch, uint64_t curr) {
+  uint64_t mag = fabs(curr);
 
   if (!overcurr[ch]) {
     if (mag >= OVERCURR_THRESHOLD) {
@@ -173,7 +174,7 @@ void setup() {
 void loop() {
   Serial.print("Current: ");
   for (int ch = 0; ch < NUM_CH; ch++) {
-    float curr = read_curr(ch);
+    uint64_t curr = read_curr(ch);
     bool x = check_overcurr(ch, curr);
 
     Serial.print("[");
